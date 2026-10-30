@@ -48,14 +48,54 @@ Set all `NEXT_PUBLIC_*` and server secrets from `.env.example`. Redeploy after c
 
 ## HTTPS
 
-Terminate TLS at Cloudflare or Caddy in front of the Go service. Enable HTTP/2. Disable response compression for `/download` (already identity).
+Terminate TLS at Cloudflare or Caddy in front of the Go service. Enable HTTP/2. Do not compress `/download` or `/upload` bodies (identity encoding is intentional).
+
+Example Caddy config: [`deploy/Caddyfile.example`](../deploy/Caddyfile.example).
+
+```bash
+# On the VPS
+sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile
+# edit hostname, then:
+sudo systemctl reload caddy
+curl -fsS https://speed.example.com/health
+```
+
+## Database migrations & jobs
+
+```bash
+psql "$DATABASE_URL" -f supabase/migrations/20260322000000_init.sql
+# Schedule retention + aggregates (daily)
+psql "$DATABASE_URL" -f scripts/retention.sql
+psql "$DATABASE_URL" -f scripts/aggregate_stats.sql
+```
+
+## Monitoring & alerting
+
+| Signal | Source | Suggested alert |
+|--------|--------|-----------------|
+| Measurement health | `GET /health` → `healthy=false` | Page within 2m |
+| Capacity rejections | `/admin/metrics` `testsRejectedToday` spike | Warn if >5% of starts |
+| Daily bandwidth | `bytesTransferredToday / dailyLimitBytes` | Warn at 80%, page at 95% |
+| Web availability | Vercel / uptime check on `/` | Page on 5xx |
+| Failure rate | analytics `speed_test_failed` / started | Warn if >10% |
+| Completion rate | completed / started | Warn if <85% |
+
+Pull admin metrics with:
+
+```bash
+curl -fsS -H "Authorization: Bearer $SPEEDTEST_ADMIN_TOKEN" \
+  https://speed.example.com/admin/metrics
+```
+
+Wire these into UptimeRobot, Better Stack, Grafana Cloud, or Cloudflare Health Checks. Keep tokens in the secret store—never in frontend env.
 
 ## Health & rollback
 
 - Health: `GET /health` on measurement service; Vercel deployment health
-- Rollback web: previous Vercel deployment
-- Rollback speedtest: `docker compose up -d` prior image tag
+- Rollback web: promote previous Vercel deployment
+- Rollback speedtest: `docker compose up -d` with the prior image tag
 - Feature flags: `NEXT_PUBLIC_ENABLE_ADS=false` kills ads without redeploying binary
+- Quotas: lower `SPEEDTEST_DAILY_BANDWIDTH_GB` via `/admin/config` under incident load
 
 ## CI
 

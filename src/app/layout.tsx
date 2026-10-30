@@ -3,6 +3,7 @@ import { Inter, Manrope } from "next/font/google";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { AnalyticsScripts } from "@/components/ads/analytics-scripts";
+import { ConsentBanner } from "@/components/ads/consent-banner";
 import { buildMetadata } from "@/lib/seo/metadata";
 import "./globals.css";
 
@@ -36,6 +37,7 @@ export default function RootLayout({
         <SiteHeader />
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter />
+        <ConsentBanner />
         <AnalyticsScripts />
       </body>
     </html>

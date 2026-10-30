@@ -1,52 +1,51 @@
 # Test Results
 
-Last verified: 2026-10-30 (America/New_York evening run)
+Last verified: 2026-10-30 ~23:50 UTC (evening America/New_York)
 
 ## Go measurement service — PASSED
 
 ```
 go test ./...
 ok  bandwidth
-ok  handlers  (includes session/download/upload, invalid token, admin auth, daily quota 429, rate limit 429)
+ok  handlers  (session/download/upload, invalid token, admin auth, daily quota 429, rate limit 429)
 ok  session
 ```
 
-Manual live checks against `http://127.0.0.1:18443`:
-
-- Session create → 201
-- Download transferred exact requested bytes
-- Upload acknowledged received bytes
-- Invalid token → 401
-- Cancel → cancelled true
+Live checks against `http://127.0.0.1:18443` also exercised from Vitest `tests/api/live-speedtest.test.ts`.
 
 ## Frontend unit / contract — PASSED
 
 ```
 npm test
-9 tests passed (utils, throughput math, results Zod contract)
+13 tests passed (utils, throughput math, results Zod contract, timeouts, entropy chunking, live API)
 ```
 
 ## Lint / typecheck / build — PASSED
 
 ```
-npm run lint       # clean
-npm run typecheck  # clean
-npm run build      # Next.js 16 production build, 29 routes
+npm run lint
+npm run typecheck
+npm run build   # Next.js 16, 30 routes including /api/results/history
 ```
 
 ## Playwright E2E — PASSED
 
 ```
 npx playwright test
-2 passed (homepage hero/GO, SEO tool pages)
+6 passed:
+  - homepage hero/GO
+  - SEO tool pages
+  - real lightweight GO measurement completes with metrics
+  - mobile GO usability
+  - a11y landmarks
+  - sitemap + canonical validation
 ```
 
-## API smoke — PASSED
+## Critical bugfixes verified in browser
 
-- `POST /api/results` stores private result
-- `GET /api/admin/analytics` unauthorized without token; OK with token
-- `/sitemap.xml` and `/robots.txt` serve correctly
+1. Chromium `getRandomValues` 64 KiB entropy cap — chunked payload fill
+2. Concurrent worker overshoot of signed session budget — reserved phase budget + graceful exhaustion
 
 ## Controlled network note
 
-Local loopback throughput is not comparable to WAN speed tests. Expect ±10–20% variance vs reference tools on the same remote path under identical conditions.
+Local loopback Mbps is not comparable to WAN. Expect ±10–20% variance vs reference tools on the same remote path.

@@ -11,6 +11,7 @@
 - [x] Signed HMAC sessions with TTL
 - [x] Cancellation endpoint
 - [x] Invalid session rejection
+- [x] Connection timeouts (client)
 - [x] Server list + health endpoints
 
 ## Bandwidth controls
@@ -27,9 +28,11 @@
 
 - [x] Anonymous result persistence (local JSON / Supabase)
 - [x] Optional local browser history
+- [x] Optional account-based history API (`/api/results/history`)
 - [x] Private-by-default results
 - [x] Opt-in public share links
 - [x] Masked IP display (no raw IP storage by default)
+- [x] Retention + aggregate SQL jobs (`scripts/`)
 - [x] SQL migrations + RLS stubs
 
 ## SEO
@@ -47,6 +50,7 @@
 
 - [x] AdSense slot component (feature-flagged)
 - [x] Reserved ad dimensions (CLS-safe)
+- [x] Consent banner scaffolding for ads/analytics
 - [x] Affiliate offer cards + disclosure
 - [x] Sponsored labels + `rel=sponsored`
 - [x] Click analytics event

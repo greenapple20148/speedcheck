@@ -1,0 +1,30 @@
+# Example reverse proxy for the SpeedCheck measurement service.
+# Replace speed.example.com and point DNS A/AAAA records here.
+
+speed.example.com {
+	encode zstd gzip {
+		# Do not compress measurement payloads — identity responses matter for accuracy
+		match {
+			header Content-Type application/json*
+			path /health /servers /sessions* /admin* /ping
+		}
+	}
+
+	reverse_proxy 127.0.0.1:18443 {
+		flush_interval -1
+		transport http {
+			read_timeout 60s
+			write_timeout 60s
+		}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+
+	log {
+		output file /var/log/caddy/speedcheck-access.log
+	}
+}

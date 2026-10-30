@@ -5,10 +5,13 @@ import type {
   TestMode,
   TestPhase,
 } from "@/types/speedtest";
+import { withTimeout } from "@/lib/speedtest/fetch-timeout";
 
 const DEFAULT_BASE =
   process.env.NEXT_PUBLIC_SPEEDTEST_URL?.replace(/\/$/, "") ||
   "http://127.0.0.1:18443";
+
+const REQUEST_TIMEOUT_MS = 20_000;
 
 function nowMs(): number {
   if (typeof performance !== "undefined" && performance.now) {
@@ -34,18 +37,23 @@ async function createSession(
   mode: TestMode,
   signal?: AbortSignal,
 ): Promise<SessionConfig> {
-  const res = await fetch(`${baseUrl}/sessions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode }),
-    signal,
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Failed to create session (${res.status})`);
+  const { signal: timed, cleanup } = withTimeout(signal, REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${baseUrl}/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode }),
+      signal: timed,
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Failed to create session (${res.status})`);
+    }
+    return res.json();
+  } finally {
+    cleanup();
   }
-  return res.json();
 }
 
 async function measurePing(
@@ -85,32 +93,48 @@ async function downloadOnce(
   size: number,
   signal?: AbortSignal,
 ): Promise<{ bytes: number; ms: number }> {
+  const { signal: timed, cleanup } = withTimeout(signal, REQUEST_TIMEOUT_MS);
   const t0 = nowMs();
-  const res = await fetch(
-    `${baseUrl}/download?size=${size}&token=${encodeURIComponent(token)}&_=${Date.now()}`,
-    {
-      method: "GET",
-      cache: "no-store",
-      signal,
-      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-    },
-  );
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Download failed (${res.status})`);
+  try {
+    const res = await fetch(
+      `${baseUrl}/download?size=${size}&token=${encodeURIComponent(token)}&_=${Date.now()}`,
+      {
+        method: "GET",
+        cache: "no-store",
+        signal: timed,
+        headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+      },
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Download failed (${res.status})`);
+    }
+    const reader = res.body?.getReader();
+    if (!reader) {
+      const buf = await res.arrayBuffer();
+      return { bytes: buf.byteLength, ms: Math.max(1, nowMs() - t0) };
+    }
+    let bytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+    }
+    return { bytes, ms: Math.max(1, nowMs() - t0) };
+  } finally {
+    cleanup();
   }
-  const reader = res.body?.getReader();
-  if (!reader) {
-    const buf = await res.arrayBuffer();
-    return { bytes: buf.byteLength, ms: Math.max(1, nowMs() - t0) };
+}
+
+/** Chromium caps crypto.getRandomValues at 65536 bytes per call. */
+function randomPayload(size: number): Uint8Array {
+  const payload = new Uint8Array(size);
+  const maxChunk = 65536;
+  for (let offset = 0; offset < size; offset += maxChunk) {
+    const end = Math.min(offset + maxChunk, size);
+    crypto.getRandomValues(payload.subarray(offset, end));
   }
-  let bytes = 0;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    bytes += value.byteLength;
-  }
-  return { bytes, ms: Math.max(1, nowMs() - t0) };
+  return payload;
 }
 
 async function uploadOnce(
@@ -119,33 +143,44 @@ async function uploadOnce(
   size: number,
   signal?: AbortSignal,
 ): Promise<{ bytes: number; ms: number }> {
-  const payload = new Uint8Array(size);
-  crypto.getRandomValues(payload);
+  const payload = randomPayload(size);
+  const { signal: timed, cleanup } = withTimeout(signal, REQUEST_TIMEOUT_MS);
   const t0 = nowMs();
-  const res = await fetch(
-    `${baseUrl}/upload?token=${encodeURIComponent(token)}&_=${Date.now()}`,
-    {
-      method: "POST",
-      body: payload,
-      signal,
-      cache: "no-store",
-      headers: {
-        "Content-Type": "application/octet-stream",
-        "Cache-Control": "no-cache",
+  try {
+    const res = await fetch(
+      `${baseUrl}/upload?token=${encodeURIComponent(token)}&_=${Date.now()}`,
+      {
+        method: "POST",
+        body: payload.buffer.slice(
+          payload.byteOffset,
+          payload.byteOffset + payload.byteLength,
+        ) as ArrayBuffer,
+        signal: timed,
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Cache-Control": "no-cache",
+        },
       },
-    },
-  );
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Upload failed (${res.status})`);
+    );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || `Upload failed (${res.status})`);
+    }
+    const json = await res.json();
+    const bytes = Number(json.receivedBytes ?? size);
+    return { bytes, ms: Math.max(1, nowMs() - t0) };
+  } finally {
+    cleanup();
   }
-  const json = await res.json();
-  const bytes = Number(json.receivedBytes ?? size);
-  return { bytes, ms: Math.max(1, nowMs() - t0) };
 }
 
 function bytesToMbps(bytes: number, ms: number): number {
   return (bytes * 8) / (ms / 1000) / 1_000_000;
+}
+
+function isBudgetExhausted(err: unknown): boolean {
+  return err instanceof Error && /budget|402|Payment Required/i.test(err.message);
 }
 
 async function measureThroughput(
@@ -160,31 +195,44 @@ async function measureThroughput(
       ? session.downloadConnections
       : session.uploadConnections;
   const deadline = nowMs() + session.maxDurationMs;
-  const halfBudget = Math.floor(session.maxBytes / 2);
+  // Keep client phase budget under half of the signed session so concurrent
+  // workers cannot overshoot server-side quotas on ultra-fast links.
+  const phaseBudget = Math.floor(session.maxBytes * 0.4);
   let transferred = 0;
+  let reserved = 0;
   const rates: number[] = [];
 
+  const reserve = (wanted: number): number => {
+    const remaining = phaseBudget - reserved;
+    if (remaining <= 0) return 0;
+    const size = Math.min(wanted, remaining);
+    reserved += size;
+    return size;
+  };
+
   const worker = async () => {
-    while (!signal?.aborted && nowMs() < deadline && transferred < halfBudget) {
-      const remaining = halfBudget - transferred;
-      const size = Math.min(session.chunkSize, Math.max(64 * 1024, remaining));
+    while (!signal?.aborted && nowMs() < deadline) {
+      const size = reserve(Math.min(session.chunkSize, 256 * 1024));
       if (size <= 0) break;
-      const result =
-        kind === "download"
-          ? await downloadOnce(baseUrl, session.token, size, signal)
-          : await uploadOnce(baseUrl, session.token, size, signal);
-      transferred += result.bytes;
-      const mbps = bytesToMbps(result.bytes, result.ms);
-      rates.push(mbps);
-      onSample(mbps, transferred, Math.min(1, transferred / halfBudget));
+      try {
+        const result =
+          kind === "download"
+            ? await downloadOnce(baseUrl, session.token, size, signal)
+            : await uploadOnce(baseUrl, session.token, size, signal);
+        transferred += result.bytes;
+        const mbps = bytesToMbps(result.bytes, result.ms);
+        rates.push(mbps);
+        onSample(mbps, transferred, Math.min(1, transferred / phaseBudget));
+      } catch (err) {
+        if (isBudgetExhausted(err)) break;
+        throw err;
+      }
     }
   };
 
-  await Promise.all(
-    Array.from({ length: connections }, () => worker()),
-  );
+  await Promise.all(Array.from({ length: connections }, () => worker()));
 
-  // Use upper quartile of samples to reduce TCP slow-start bias
+  // Use upper half of samples to reduce TCP slow-start bias
   const sorted = [...rates].sort((a, b) => a - b);
   const start = Math.floor(sorted.length * 0.5);
   const slice = sorted.slice(start);
