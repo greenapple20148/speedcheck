@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #fafaf7;
+    --foreground: #172b2a;
+    --card: #ffffff;
+    --card-foreground: #172b2a;
+    --popover: #ffffff;
+    --popover-foreground: #172b2a;
+    --primary: #087f6d;
+    --primary-hover: #066756;
+    --primary-foreground: #ffffff;
+    --secondary: #ddf4eb;
+    --secondary-foreground: #066756;
+    --muted: #f0f4f2;
+    --muted-foreground: #657775;
+    --accent: #ddf4eb;
+    --accent-foreground: #087f6d;
+    --destructive: #c2410c;
+    --destructive-foreground: #ffffff;
+    --border: #e3eae6;
+    --input: #e3eae6;
+    --ring: #087f6d;
+    --radius: 0.75rem;
+    --chart-1: #087f6d;
+    --chart-2: #0ea5a0;
+    --chart-3: #34d399;
+    --chart-4: #657775;
+    --chart-5: #172b2a;
+    --hero-glow: rgba(8, 127, 109, 0.12);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, var(--hero-glow), transparent),
+      linear-gradient(180deg, #fafaf7 0%, #f3f7f5 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .speed-value {
+    font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+
+  @media (min-width: 768px) {
+    .speed-value {
+      font-size: 4rem;
+    }
+  }
+
+  .heading-1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  @media (min-width: 768px) {
+    .heading-1 {
+      font-size: 2.5rem;
+    }
+  }
+
+  .heading-2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  @media (min-width: 768px) {
+    .heading-2 {
+      font-size: 1.75rem;
+    }
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.35;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
