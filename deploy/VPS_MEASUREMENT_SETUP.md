@@ -64,6 +64,16 @@ curl -sS http://127.0.0.1:18443/servers
 
 You should **not** see `Local Dev` / `local-1` if `.env` is loaded.
 
+If `printenv` shows correct `SPEEDTEST_SERVER_*` but `/servers` still says `Local Dev`, recreate so the `/speedtest` process restarts:
+
+```bash
+docker compose up -d --force-recreate speedtest
+docker compose logs speedtest --tail 3
+curl -sS http://127.0.0.1:18443/servers
+```
+
+Logs should include `server=MySpeedGauge US id=do-mkc1-1`.
+
 If `/servers` still shows `Local Dev`, run:
 
 ```bash

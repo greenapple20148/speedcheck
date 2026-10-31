@@ -34,7 +34,14 @@ func main() {
 		IdleTimeout:       120 * time.Second,
 	}
 
-	log.Printf("SpeedCheck measurement service listening on %s (public %s)", cfg.ListenAddr, cfg.PublicURL)
+	log.Printf(
+		"SpeedCheck measurement service listening on %s (public %s) server=%s id=%s location=%s",
+		cfg.ListenAddr,
+		cfg.PublicURL,
+		cfg.ServerName,
+		cfg.ServerID,
+		cfg.ServerLocation,
+	)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Println(err)
 		os.Exit(1)
