@@ -25,7 +25,13 @@ function proxyEnabled(): boolean {
 
 async function forward(req: NextRequest, pathSegments: string[]) {
   if (!proxyEnabled()) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      {
+        error:
+          "Measurement proxy disabled. Set SPEEDTEST_INTERNAL_URL on Vercel to your Go service (e.g. http://YOUR_DROPLET_IP:18443).",
+      },
+      { status: 503 },
+    );
   }
 
   const upstream = serverMeasurementOrigin();
@@ -48,14 +54,13 @@ async function forward(req: NextRequest, pathSegments: string[]) {
       headers,
       cache: "no-store",
       body: hasBody ? req.body : undefined,
-      // Required when streaming request bodies in Node 18+
       ...(hasBody ? { duplex: "half" as const } : {}),
     });
   } catch {
     return NextResponse.json(
       {
         error:
-          "Measurement service unavailable. Start it with: npm run dev:speedtest",
+          "Measurement service unavailable. Check the Go service on your droplet and SPEEDTEST_INTERNAL_URL.",
       },
       { status: 503 },
     );

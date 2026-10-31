@@ -12,7 +12,7 @@ describe("resolveSpeedtestBaseUrl", () => {
       location: { origin: "http://127.0.0.1:43123" },
     } as Window);
     expect(resolveSpeedtestBaseUrl()).toBe(
-      "http://127.0.0.1:43123/api/measurement",
+      "http://127.0.0.1:43123/api/speedtest/measure",
     );
   });
 

@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  async rewrites() {
+    return [
+      {
+        source: "/api/measurement/:path*",
+        destination: "/api/speedtest/measure/:path*",
+      },
+    ];
+  },
   images: {
     formats: ["image/avif", "image/webp"],
   },

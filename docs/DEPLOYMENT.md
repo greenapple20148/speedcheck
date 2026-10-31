@@ -62,7 +62,7 @@ The browser must reach your **Go measurement service**. Without this, users see 
 **Alternative (same-origin proxy via Vercel):**
 
 1. Set **server-only** `SPEEDTEST_INTERNAL_URL` = `https://your-measurement-host` (no `NEXT_PUBLIC_` prefix).
-2. Redeploy. The app uses `/api/measurement` on your domain (works without browser CORS). Prefer direct mode for large transfers when possible.
+2. Redeploy. The app uses `/api/speedtest/measure` on your domain (works without browser CORS). Prefer direct mode for large transfers when possible.
 
 Verify after deploy: open `https://yourdomain.com/api/speedtest/config` — `ready` should be `true` and `probeOk` should be `true`.
 
