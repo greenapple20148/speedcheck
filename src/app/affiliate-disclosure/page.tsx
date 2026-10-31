@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
   title: "Affiliate Disclosure",
-  description: "How SpeedCheck discloses sponsored and affiliate relationships.",
+  description: "How MySpeedGauge discloses sponsored and affiliate relationships.",
   path: "/affiliate-disclosure",
 });
 

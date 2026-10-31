@@ -3,7 +3,10 @@ import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { FaqSection, type FaqItem } from "@/components/seo/faq-section";
 import { JsonLd } from "@/components/seo/json-ld";
 import { AdSlot } from "@/components/ads/ad-slot";
-import { absoluteUrl } from "@/lib/seo/metadata";
+import {
+  faqPageJsonLd,
+  webApplicationJsonLd,
+} from "@/lib/seo/structured-data";
 import type { TestMode } from "@/types/speedtest";
 import Link from "next/link";
 
@@ -28,17 +31,15 @@ export function ToolPage({
   defaultMode = "standard",
   related = [],
 }: ToolPageProps) {
+  const structured: Record<string, unknown>[] = [
+    webApplicationJsonLd({ name: title, description, path }),
+  ];
+  const faqLd = faqPageJsonLd(faqs);
+  if (faqLd) structured.push(faqLd);
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "WebPage",
-          name: title,
-          description,
-          url: absoluteUrl(path),
-        }}
-      />
+      <JsonLd data={structured} />
       <Breadcrumbs items={[{ label: title }]} />
       <header className="mb-8 max-w-3xl">
         <h1 className="heading-1 text-foreground">{title}</h1>

@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
   title: "Terms of Use",
-  description: "Terms governing use of the SpeedCheck speed testing platform.",
+  description: "Terms governing use of the MySpeedGauge speed testing platform.",
   path: "/terms",
 });
 

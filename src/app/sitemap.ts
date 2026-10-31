@@ -11,6 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/upload-speed-test",
     "/ping-test",
     "/jitter-test",
+    "/results/history",
     "/tools/mbps-to-mbs",
     "/guides/why-is-my-internet-slow",
     "/guides/what-is-good-internet-speed",

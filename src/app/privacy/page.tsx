@@ -3,7 +3,7 @@ import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
   title: "Privacy Policy",
-  description: "How SpeedCheck handles measurement data, cookies, and analytics.",
+  description: "How MySpeedGauge handles measurement data, cookies, and analytics.",
   path: "/privacy",
 });
 

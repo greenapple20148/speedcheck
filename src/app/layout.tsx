@@ -5,7 +5,9 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { AnalyticsScripts } from "@/components/ads/analytics-scripts";
 import { ConsentBanner } from "@/components/ads/consent-banner";
+import { JsonLd } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo/metadata";
+import { organizationJsonLd, webSiteJsonLd } from "@/lib/seo/structured-data";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
+        <JsonLd data={[organizationJsonLd(), webSiteJsonLd()]} />
         <SiteHeader />
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter />
