@@ -1,4 +1,5 @@
 import {
+  HIGH_DOWNLOAD_ACTIVITY_FLOOR_MBPS,
   OVERALL_DOWNLOAD_TIERS_MBPS,
   SEVERE_LATENCY_INCREASE_MS,
   SEVERE_LOADED_LATENCY_MS,
@@ -111,6 +112,14 @@ function underLoadIsSevere(input: AssessmentInput): boolean {
   return false;
 }
 
+/** Only D/F (or extreme loaded metrics without grade) harshly cap activity chips. */
+function shouldPenalizeActivitiesForLoad(input: AssessmentInput): boolean {
+  const grade = input.bufferbloatGrade;
+  if (grade === "D" || grade === "F") return true;
+  if (grade === "A" || grade === "B" || grade === "C") return false;
+  return underLoadIsSevere(input);
+}
+
 /** Headline + copy for responsiveness under load; never positive when severity triggers. */
 export function buildUnderLoadAssessment(
   input: AssessmentInput,
@@ -198,7 +207,12 @@ export function buildOverallAssessment(
     qualityLevel = "limited";
   }
 
-  if (underLoadIsSevere(input)) {
+  const grade = input.bufferbloatGrade;
+  const harshLoad =
+    grade === "D" ||
+    grade === "F" ||
+    (grade == null && underLoadIsSevere(input));
+  if (harshLoad) {
     if (qualityLevel === "excellent" || qualityLevel === "good") {
       qualityLevel = "limited";
     }
@@ -206,6 +220,9 @@ export function buildOverallAssessment(
       description =
         `${description} Latency spikes sharply when the line is busy.`;
     }
+  } else if (grade === "C" && !description.includes("busy")) {
+    description =
+      `${description} You may notice extra lag when the line is fully busy.`;
   }
 
   const ping = input.pingMs;
@@ -232,7 +249,7 @@ function activityStatusLabel(
   input: AssessmentInput,
 ): string {
   let s = item.suitability;
-  if (underLoadIsSevere(input)) {
+  if (shouldPenalizeActivitiesForLoad(input)) {
     s = downgradeSuitability(s);
     if (item.id === "gaming" || item.id === "video-calls") {
       s = downgradeSuitability(s);
@@ -242,7 +259,6 @@ function activityStatusLabel(
   if (item.id === "gaming") {
     if (s === "poor") return "Poor";
     if (s === "fair") return "Limited";
-    if (s === "good") return "Fair";
     return "Good";
   }
 
@@ -257,39 +273,65 @@ function activityStatusLabel(
       return "Unstable";
     }
     if (s === "fair") return "Unstable";
-    if (s === "good") return "Fair";
     return "Good";
   }
 
   if (item.id === "streaming") {
     if (s === "poor" || s === "fair") return "Limited";
-    if (s === "good") return "Fair";
     return "Good";
   }
 
   if (item.id === "browsing") {
     if (s === "poor" || s === "fair") return "Limited";
-    if (s === "good") return "Fair";
     return "Good";
   }
 
   return "—";
 }
 
+const STATUS_RANK: Record<string, number> = {
+  Poor: 0,
+  Limited: 1,
+  Unstable: 1,
+  Fair: 2,
+  Good: 3,
+};
+
+function maxStatus(current: string, floor: string): string {
+  return (STATUS_RANK[current] ?? 0) >= (STATUS_RANK[floor] ?? 0)
+    ? current
+    : floor;
+}
+
 /** Keep activity chips aligned with overall download tier (no “Good” browsing on <25 Mbps). */
 function alignActivitiesWithOverall(
   activities: ActivityAssessment[],
   qualityLevel: QualityLevel,
-  downloadMbps: number | null,
+  input: AssessmentInput,
 ): ActivityAssessment[] {
+  const downloadMbps = input.downloadMbps;
   const lowDownload =
     downloadMbps != null &&
     downloadMbps < OVERALL_DOWNLOAD_TIERS_MBPS.everyday;
+
+  const highDownloadHealthy =
+    downloadMbps != null &&
+    downloadMbps >= HIGH_DOWNLOAD_ACTIVITY_FLOOR_MBPS &&
+    (qualityLevel === "excellent" || qualityLevel === "good") &&
+    !shouldPenalizeActivitiesForLoad(input);
 
   return activities.map((a) => {
     let status = a.status;
     if (lowDownload && (a.id === "browsing" || a.id === "streaming")) {
       if (status === "Good" || status === "Fair") status = "Limited";
+    }
+    if (highDownloadHealthy) {
+      if (a.id === "browsing" || a.id === "streaming") {
+        status = maxStatus(status, "Good");
+      }
+      if (a.id === "video-calls" || a.id === "gaming") {
+        status = maxStatus(status, "Good");
+      }
     }
     if (
       (qualityLevel === "limited" || qualityLevel === "poor") &&
@@ -306,7 +348,9 @@ export function buildConnectionAssessment(
   input: AssessmentInput,
 ): ConnectionAssessment {
   const overall = buildOverallAssessment(input);
-  const effective = effectiveInsightMetrics(input);
+  const effective = shouldPenalizeActivitiesForLoad(input)
+    ? effectiveInsightMetrics(input)
+    : input;
   const insights = buildConnectionInsights(effective);
 
   let activities: ActivityAssessment[] = insights.map((item) => ({
@@ -319,7 +363,7 @@ export function buildConnectionAssessment(
   activities = alignActivitiesWithOverall(
     activities,
     overall.qualityLevel,
-    input.downloadMbps,
+    input,
   );
 
   const underLoad = buildUnderLoadAssessment(input);
