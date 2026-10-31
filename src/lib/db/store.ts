@@ -3,6 +3,7 @@ import path from "path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createHash, randomBytes } from "crypto";
 import type { TestResultPayload } from "@/types/speedtest";
+import { resolveResultsStorePath } from "@/lib/db/results-store-path";
 
 export interface StoredResult extends TestResultPayload {
   id: string;
@@ -16,9 +17,9 @@ interface LocalStore {
   bandwidthDaily: Array<{ day: string; bytes: number; tests: number }>;
 }
 
-const DATA_DIR = path.join(process.cwd(), ".data");
-const DATA_PATH =
-  process.env.RESULTS_STORE_PATH || path.join(DATA_DIR, "results.json");
+function dataPath(): string {
+  return resolveResultsStorePath();
+}
 
 function getSupabase(): SupabaseClient | null {
   const url = process.env.SUPABASE_URL;
@@ -29,7 +30,7 @@ function getSupabase(): SupabaseClient | null {
 
 async function readLocal(): Promise<LocalStore> {
   try {
-    const raw = await fs.readFile(/*turbopackIgnore: true*/ DATA_PATH, "utf8");
+    const raw = await fs.readFile(/*turbopackIgnore: true*/ dataPath(), "utf8");
     return JSON.parse(raw) as LocalStore;
   } catch {
     return { results: [], events: [], bandwidthDaily: [] };
@@ -37,11 +38,12 @@ async function readLocal(): Promise<LocalStore> {
 }
 
 async function writeLocal(store: LocalStore) {
-  await fs.mkdir(/*turbopackIgnore: true*/ path.dirname(DATA_PATH), {
+  const filePath = dataPath();
+  await fs.mkdir(/*turbopackIgnore: true*/ path.dirname(filePath), {
     recursive: true,
   });
   await fs.writeFile(
-    /*turbopackIgnore: true*/ DATA_PATH,
+    /*turbopackIgnore: true*/ filePath,
     JSON.stringify(store, null, 2),
     "utf8",
   );

@@ -27,9 +27,11 @@ Open http://127.0.0.1:43123
 
 ## Measurement VPS
 
+Full walkthrough: [`deploy/VPS_MEASUREMENT_SETUP.md`](../deploy/VPS_MEASUREMENT_SETUP.md).
+
 ```bash
 cd /opt/speedcheck
-docker compose up -d --build speedtest
+docker compose -f deploy/docker-compose.production.yml up -d --build
 curl -fsS https://speed.example.com/health
 ```
 
@@ -45,6 +47,8 @@ psql "$DATABASE_URL" -f supabase/migrations/20260322000000_init.sql
 ## Vercel env
 
 Set all `NEXT_PUBLIC_*` and server secrets from `.env.example`. Redeploy after changes.
+
+**Results persistence on Vercel:** Without `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, saves use `/tmp` (ephemeral). For share links and history that survive cold starts, configure Supabase and run migrations.
 
 ### Speed test (required for production)
 
