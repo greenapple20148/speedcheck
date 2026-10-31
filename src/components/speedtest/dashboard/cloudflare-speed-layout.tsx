@@ -207,8 +207,16 @@ export function CloudflareSpeedLayout({
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Packet loss
               </p>
-              <p className="mt-0.5 text-lg font-medium text-foreground">—</p>
-              <p className="text-[10px] text-muted-foreground">Not measured</p>
+              <p className="mt-0.5 text-lg font-medium tabular-nums text-foreground">
+                {m.packetLossPercent != null
+                  ? `${m.packetLossPercent.toFixed(1)}%`
+                  : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {m.packetLossPercent != null
+                  ? "Cloudflare TURN measurement"
+                  : "Not measured"}
+              </p>
             </div>
           </div>
 
