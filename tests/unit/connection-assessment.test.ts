@@ -99,4 +99,23 @@ describe("connection-assessment", () => {
     expect(a.activities.find((x) => x.id === "video-calls")?.status).toBe("Good");
     expect(a.activities.find((x) => x.id === "gaming")?.status).toBe("Good");
   });
+
+  it("keeps Fast + green-tier summary when idle is stable but bufferbloat grade is F from the test", () => {
+    const a = buildConnectionAssessment({
+      downloadMbps: 91,
+      uploadMbps: 89,
+      pingMs: 35,
+      jitterMs: 6,
+      bufferbloatGrade: "F",
+      bufferbloatIdleMs: 35,
+      bufferbloatLoadedDownMs: 800,
+      bufferbloatLoadedUpMs: 600,
+      mode: "standard",
+    });
+    expect(a.overallHeadline).toBe("Fast connection");
+    expect(a.qualityLevel).toBe("good");
+    expect(a.overallDescription).not.toMatch(/spikes sharply/i);
+    expect(a.activities.find((x) => x.id === "gaming")?.status).toBe("Good");
+    expect(a.underLoad?.grade).toBe("F");
+  });
 });
