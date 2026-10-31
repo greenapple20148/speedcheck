@@ -112,8 +112,20 @@ function underLoadIsSevere(input: AssessmentInput): boolean {
   return false;
 }
 
+/** Fast link + stable idle latency — bufferbloat grade reflects the speed test itself, not daily use. */
+function hasStableIdleBaseline(input: AssessmentInput): boolean {
+  const dl = input.downloadMbps;
+  if (dl == null || dl < OVERALL_DOWNLOAD_TIERS_MBPS.fast) return false;
+  const ping = input.bufferbloatIdleMs ?? input.pingMs;
+  const jitter = input.jitterMs;
+  if (ping == null || ping > 50) return false;
+  if (jitter == null || jitter > 20) return false;
+  return true;
+}
+
 /** Only D/F (or extreme loaded metrics without grade) harshly cap activity chips. */
 function shouldPenalizeActivitiesForLoad(input: AssessmentInput): boolean {
+  if (hasStableIdleBaseline(input)) return false;
   const grade = input.bufferbloatGrade;
   if (grade === "D" || grade === "F") return true;
   if (grade === "A" || grade === "B" || grade === "C") return false;
@@ -208,10 +220,12 @@ export function buildOverallAssessment(
   }
 
   const grade = input.bufferbloatGrade;
+  const stableIdle = hasStableIdleBaseline(input);
   const harshLoad =
-    grade === "D" ||
-    grade === "F" ||
-    (grade == null && underLoadIsSevere(input));
+    !stableIdle &&
+    (grade === "D" ||
+      grade === "F" ||
+      (grade == null && underLoadIsSevere(input)));
   if (harshLoad) {
     if (qualityLevel === "excellent" || qualityLevel === "good") {
       qualityLevel = "limited";
@@ -220,7 +234,11 @@ export function buildOverallAssessment(
       description =
         `${description} Latency spikes sharply when the line is busy.`;
     }
-  } else if (grade === "C" && !description.includes("busy")) {
+  } else if (
+    !stableIdle &&
+    grade === "C" &&
+    !description.includes("busy")
+  ) {
     description =
       `${description} You may notice extra lag when the line is fully busy.`;
   }
