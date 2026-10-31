@@ -25,5 +25,11 @@ export const BUFFERBLOAT_GRADE_LABEL: Record<BufferbloatGrade, string> = {
   F: "Very poor under load",
 };
 
-export const BUFFERBLOAT_SUMMARY =
-  "Your connection stays responsive under load";
+/** One-line headline shown under the letter grade. */
+export const BUFFERBLOAT_GRADE_SUMMARY: Record<BufferbloatGrade, string> = {
+  A: "Your connection stays responsive under load",
+  B: "Latency rises slightly under load but stays usable",
+  C: "You may notice lag on calls or games when the line is busy",
+  D: "Expect noticeable lag when downloading or uploading",
+  F: "Heavy lag under load — video calls and gaming will suffer",
+};
