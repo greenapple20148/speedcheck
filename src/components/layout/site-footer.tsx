@@ -9,7 +9,12 @@ const columns = [
       { href: "/upload-speed-test", label: "Upload speed test" },
       { href: "/ping-test", label: "Ping test" },
       { href: "/jitter-test", label: "Jitter test" },
+      { href: "/results/history", label: "Results history" },
     ],
+  },
+  {
+    title: "Tools",
+    links: [{ href: "/tools/mbps-to-mbs", label: "Mbps to MB/s converter" }],
   },
   {
     title: "Guides",
@@ -32,7 +37,7 @@ const columns = [
 export function SiteFooter() {
   return (
     <footer className="mt-20 border-t border-border bg-card">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-4">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <div className="text-lg font-bold text-foreground">MySpeedGauge</div>
           <p className="mt-2 text-sm text-muted-foreground">

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbListJsonLd } from "@/lib/seo/structured-data";
 
 export interface Crumb {
   href?: string;
@@ -8,7 +10,9 @@ export interface Crumb {
 
 export function Breadcrumbs({ items }: { items: Crumb[] }) {
   return (
-    <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+    <>
+      <JsonLd data={breadcrumbListJsonLd(items)} />
+      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
       <ol className="flex flex-wrap items-center gap-1">
         <li>
           <Link href="/" className="hover:text-primary">
@@ -29,5 +33,6 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
         ))}
       </ol>
     </nav>
+    </>
   );
 }

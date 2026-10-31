@@ -43,7 +43,7 @@ export default function WhySlowGuide() {
       <p className="mt-3 text-muted-foreground">
         Run a{" "}
         <Link href="/internet-speed-test" className="text-primary hover:underline">
-          SpeedCheck test
+          MySpeedGauge test
         </Link>{" "}
         on Ethernet (or with Wi‑Fi as close to the router as possible). If wired is fast but wireless
         is not, the bottleneck is local Wi‑Fi.

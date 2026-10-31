@@ -16,7 +16,7 @@ export default function InternetSpeedTestPage() {
       title="Internet Speed Test"
       description="Free internet speed test"
       path="/internet-speed-test"
-      intro="Check your connection with a real multi-connection download and upload against SpeedCheck measurement servers."
+      intro="Check your connection with a real multi-connection download and upload against MySpeedGauge measurement servers."
       bullets={[
         "Download and upload in Mbps",
         "Ping and jitter latency metrics",
