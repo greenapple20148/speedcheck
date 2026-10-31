@@ -17,4 +17,17 @@ describe("throughput math", () => {
     const mbps = bytesToMbps(1_000_000, 1);
     expect(Number.isFinite(mbps)).toBe(true);
   });
+
+  it("aggregate Mbps sums parallel streams (8×12 Mbps streams ≈ 96 Mbps)", () => {
+    const streamMbps = 12;
+    const streams = 8;
+    const phaseMs = 1000;
+    const bytesPerStream = (streamMbps * 1_000_000 * (phaseMs / 1000)) / 8;
+    const totalBytes = bytesPerStream * streams;
+    const aggregate = bytesToMbps(totalBytes, phaseMs);
+    expect(aggregate).toBeGreaterThan(90);
+    expect(aggregate).toBeLessThan(102);
+    const wrongMeanStream = streamMbps;
+    expect(aggregate).toBeGreaterThan(wrongMeanStream * 5);
+  });
 });

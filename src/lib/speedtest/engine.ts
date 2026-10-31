@@ -242,13 +242,13 @@ async function measureThroughput(
     kind === "download"
       ? session.downloadConnections
       : session.uploadConnections;
-  const deadline = nowMs() + session.maxDurationMs;
+  const phaseStarted = nowMs();
+  const deadline = phaseStarted + session.maxDurationMs;
   // Keep client phase budget under half of the signed session so concurrent
   // workers cannot overshoot server-side quotas on ultra-fast links.
   const phaseBudget = Math.floor(session.maxBytes * 0.4);
   let transferred = 0;
   let reserved = 0;
-  const rates: number[] = [];
 
   const reserve = (wanted: number): number => {
     const remaining = phaseBudget - reserved;
@@ -268,9 +268,9 @@ async function measureThroughput(
             ? await downloadOnce(baseUrl, session.token, size, signal)
             : await uploadOnce(baseUrl, session.token, size, signal);
         transferred += result.bytes;
-        const mbps = bytesToMbps(result.bytes, result.ms);
-        rates.push(mbps);
-        onSample(mbps, transferred, Math.min(1, transferred / phaseBudget));
+        const elapsed = Math.max(1, nowMs() - phaseStarted);
+        const liveMbps = bytesToMbps(transferred, elapsed);
+        onSample(liveMbps, transferred, Math.min(1, transferred / phaseBudget));
       } catch (err) {
         if (isBudgetExhausted(err)) break;
         throw err;
@@ -287,14 +287,9 @@ async function measureThroughput(
   phaseActive = false;
   const loadedPingSamples = await loadedPingPromise;
 
-  // Use upper half of samples to reduce TCP slow-start bias
-  const sorted = [...rates].sort((a, b) => a - b);
-  const start = Math.floor(sorted.length * 0.5);
-  const slice = sorted.slice(start);
-  const mbps =
-    slice.length === 0
-      ? 0
-      : slice.reduce((a, b) => a + b, 0) / slice.length;
+  // Aggregate across parallel workers: total bytes / wall time (not mean per-stream chunk rate).
+  const phaseMs = Math.max(1, nowMs() - phaseStarted);
+  const mbps = transferred > 0 ? bytesToMbps(transferred, phaseMs) : 0;
   return { mbps, bytes: transferred, loadedPingSamples };
 }
 
