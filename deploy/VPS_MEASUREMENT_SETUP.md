@@ -37,14 +37,16 @@ SPEEDTEST_PER_TEST_BUDGET_MB_STANDARD=250
 
 ## 2. Start Docker
 
-From repo root:
+From repo root (either works; root compose builds `./services/speedtest`):
 
 ```bash
+docker compose up -d --build
+# or production file (env_file-only, 18443 on localhost):
 docker compose -f deploy/docker-compose.production.yml up -d --build
 curl -fsS http://127.0.0.1:18443/health
 ```
 
-Or, if you use a root-level `docker-compose.yml` with `env_file: .env` only, run `docker compose up -d --build` in `/opt/speedcheck`.
+If your VPS `docker-compose.yml` uses `env_file: .env` only (no empty `${VAR}` overrides), prefer that file over the stock root `docker-compose.yml` in git, which inlines defaults.
 
 ## 3. Caddy (HTTPS)
 
