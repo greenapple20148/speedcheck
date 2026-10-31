@@ -51,19 +51,19 @@ export function LiveSpeedChart({ samples, compact, className }: LiveSpeedChartPr
       <div className="w-full" style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke="#E3EBE8" strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid stroke="var(--chart-grid)" strokeDasharray="3 3" vertical={false} />
             <XAxis
               dataKey="t"
               type="number"
               domain={["dataMin", "dataMax"]}
-              tick={{ fill: "#647873", fontSize: 10 }}
+              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
               tickLine={false}
-              axisLine={{ stroke: "#E3EBE8" }}
+              axisLine={{ stroke: "var(--chart-grid)" }}
               tickFormatter={(v) => `${Number(v).toFixed(1)}s`}
             />
             <YAxis
               domain={[yMin, yMax]}
-              tick={{ fill: "#647873", fontSize: 10 }}
+              tick={{ fill: "var(--chart-axis)", fontSize: 10 }}
               tickLine={false}
               axisLine={false}
               width={44}
@@ -75,7 +75,7 @@ export function LiveSpeedChart({ samples, compact, className }: LiveSpeedChartPr
                       value: "Mbps",
                       angle: -90,
                       position: "insideLeft",
-                      fill: "#647873",
+                      fill: "var(--chart-axis)",
                       fontSize: 10,
                     }
               }
@@ -83,12 +83,12 @@ export function LiveSpeedChart({ samples, compact, className }: LiveSpeedChartPr
             {uploadStart != null && !compact && (
               <ReferenceLine
                 x={uploadStart}
-                stroke="#647873"
+                stroke="var(--chart-axis)"
                 strokeDasharray="4 4"
                 label={{
                   value: "Upload",
                   position: "insideTopRight",
-                  fill: "#647873",
+                  fill: "var(--chart-axis)",
                   fontSize: 10,
                 }}
               />
@@ -96,7 +96,9 @@ export function LiveSpeedChart({ samples, compact, className }: LiveSpeedChartPr
             <Tooltip
               contentStyle={{
                 borderRadius: 8,
-                border: "1px solid #E3EBE8",
+                border: "1px solid var(--card-border)",
+                background: "var(--card)",
+                color: "var(--foreground)",
                 fontSize: 12,
               }}
               formatter={(value, name) =>
@@ -109,18 +111,22 @@ export function LiveSpeedChart({ samples, compact, className }: LiveSpeedChartPr
             <Line
               type="monotone"
               dataKey="download"
-              stroke="#218C77"
+              stroke="var(--accent-teal)"
               strokeWidth={2}
+              strokeLinecap="butt"
               dot={false}
+              activeDot={false}
               isAnimationActive={false}
               connectNulls={false}
             />
             <Line
               type="monotone"
               dataKey="upload"
-              stroke="#60A5FA"
+              stroke="var(--chart-2)"
               strokeWidth={2}
+              strokeLinecap="butt"
               dot={false}
+              activeDot={false}
               isAnimationActive={false}
               connectNulls={false}
             />

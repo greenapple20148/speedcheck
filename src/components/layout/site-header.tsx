@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SiteHeaderNav } from "./site-header-nav";
+import { ThemeToggle } from "./theme-toggle";
 
 function GaugeLogo() {
   return (
@@ -29,8 +30,11 @@ function GaugeLogo() {
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card">
-      <div className="mx-auto flex h-[60px] max-w-[1120px] items-center justify-between px-4">
+    <header
+      className="sticky top-0 z-40 border-b border-border backdrop-blur-md"
+      style={{ backgroundColor: "var(--header-bg)" }}
+    >
+      <div className="mx-auto flex h-[60px] max-w-[1120px] items-center justify-between gap-3 px-4">
         <Link
           href="/"
           className="flex items-center gap-2.5 text-lg font-bold tracking-tight text-foreground"
@@ -40,10 +44,13 @@ export function SiteHeader() {
           </span>
           MySpeedGauge
         </Link>
-        <SiteHeaderNav />
+        <div className="flex items-center gap-2">
+          <SiteHeaderNav />
+          <ThemeToggle />
+        </div>
         <Link
           href="/#speed-test"
-          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover md:hidden"
+          className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow hover:bg-primary-hover md:hidden"
         >
           Test
         </Link>

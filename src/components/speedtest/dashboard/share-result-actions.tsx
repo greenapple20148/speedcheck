@@ -32,7 +32,7 @@ export function ShareResultActions({ shareUrl }: ShareResultActionsProps) {
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] lg:justify-start">
       <Link
         href={shareUrl}
-        className="inline-flex items-center gap-1.5 rounded-sm font-medium text-[#218C77] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#218C77]"
+        className="inline-flex items-center gap-1.5 rounded-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <ExternalLink className="h-4 w-4" aria-hidden />
         Share results
@@ -40,7 +40,7 @@ export function ShareResultActions({ shareUrl }: ShareResultActionsProps) {
       <button
         type="button"
         onClick={copy}
-        className="inline-flex items-center gap-1.5 rounded-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#218C77]"
+        className="inline-flex items-center gap-1.5 rounded-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <Copy className="h-4 w-4" aria-hidden />
         {copied ? "Copied" : "Copy result link"}

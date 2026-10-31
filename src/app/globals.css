@@ -2,50 +2,175 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: #f8faf9;
-    --foreground: #142f2a;
-    --card: #ffffff;
-    --card-foreground: #142f2a;
-    --popover: #ffffff;
-    --popover-foreground: #142f2a;
-    --primary: #16856d;
-    --primary-hover: #12755f;
-    --primary-foreground: #ffffff;
-    --secondary: #f8faf9;
-    --secondary-foreground: #16856d;
-    --muted: #f8faf9;
-    --muted-foreground: #647872;
-    --accent: #f0f7f5;
-    --accent-foreground: #16856d;
-    --accent-teal: #16856d;
-    --success-text: #12755f;
-    --destructive: #c2410c;
-    --destructive-foreground: #ffffff;
-    --success: #12755f;
-    --warning: #d97706;
-    --border: #e2eae6;
-    --input: #e2eae6;
-    --ring: #16856d;
-    --card-border: #e2eae6;
-    --gauge-track: #e2eae6;
-    --surface-subtle: #f8faf9;
-    --page-bg: #f8faf9;
-    --radius: 1rem;
-    --chart-1: #008c78;
-    --chart-2: #60a5fa;
-    --chart-3: #34d399;
-    --chart-4: #647873;
-    --chart-5: #172b29;
-  }
+/* CollegeFind theme tokens (shared with college-find.com) */
+:root,
+[data-theme="dark"] {
+  --bg-primary: #0c0a09;
+  --bg-secondary: #171412;
+  --bg-tertiary: #1e1b18;
+  --bg-surface: #171412;
+  --bg-surface-hover: #1e1b18;
 
+  --border-primary: #2a2520;
+  --border-subtle: #221f1b;
+
+  --text-primary: #faf9f6;
+  --text-secondary: #e8e4dd;
+  --text-tertiary: #c8c3ba;
+  --text-muted: rgba(232, 228, 221, 0.7);
+  --text-faint: rgba(200, 195, 186, 0.6);
+  --text-ghost: rgba(200, 195, 186, 0.35);
+
+  --gold-primary: #c9923c;
+  --gold-light: #d4ad6a;
+  --gold-dark: #a07228;
+  --gold-gradient: linear-gradient(135deg, #c9923c, #d4ad6a);
+
+  --selection-bg: rgba(201, 146, 60, 0.3);
+  --selection-fg: #faf9f6;
+
+  --header-bg: rgba(12, 10, 9, 0.85);
+
+  --shadow-soft: 0 2px 20px rgba(0, 0, 0, 0.15);
+  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 40px rgba(201, 146, 60, 0.12);
+
+  --input-bg: #141210;
+  --input-border: #2a2520;
+  --input-focus-ring: rgba(201, 146, 60, 0.5);
+
+  --donut-track: rgba(255, 255, 255, 0.06);
+
+  --error-fg: #f87171;
+
+  color-scheme: dark;
+
+  /* App UI mapping (shadcn-style) */
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --card: var(--bg-secondary);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-secondary);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--gold-primary);
+  --primary-hover: var(--gold-dark);
+  --primary-foreground: #0c0a09;
+  --secondary: var(--bg-tertiary);
+  --secondary-foreground: var(--gold-light);
+  --muted: var(--bg-tertiary);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-surface-hover);
+  --accent-foreground: var(--gold-primary);
+  --accent-teal: var(--gold-primary);
+  --success-text: var(--gold-light);
+  --destructive: var(--error-fg);
+  --destructive-foreground: #faf9f6;
+  --success: var(--gold-primary);
+  --warning: #fbbf24;
+  --border: var(--border-primary);
+  --input: var(--input-border);
+  --ring: var(--gold-primary);
+  --card-border: var(--border-primary);
+  --gauge-track: var(--donut-track);
+  --surface-subtle: var(--bg-tertiary);
+  --page-bg: var(--bg-primary);
+  --radius: 1rem;
+  --chart-1: var(--gold-primary);
+  --chart-2: #38bdf8;
+  --chart-3: #34d399;
+  --chart-4: var(--text-tertiary);
+  --chart-5: var(--text-primary);
+  --chart-grid: var(--border-primary);
+  --chart-axis: #8a8580;
+}
+
+[data-theme="light"] {
+  --bg-primary: #faf8f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f5f3ef;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #f0ede8;
+
+  --border-primary: #e0dcd5;
+  --border-subtle: #e8e4de;
+
+  --text-primary: #1a1814;
+  --text-secondary: #2d2a25;
+  --text-tertiary: #4a4640;
+  --text-muted: #5c5750;
+  --text-faint: #8a8580;
+  --text-ghost: #b0aba5;
+
+  --gold-primary: #a07228;
+  --gold-light: #b8832e;
+  --gold-dark: #8a6223;
+  --gold-gradient: linear-gradient(135deg, #a07228, #b8832e);
+
+  --selection-bg: rgba(160, 114, 40, 0.2);
+  --selection-fg: #1a1814;
+
+  --header-bg: rgba(250, 248, 245, 0.9);
+
+  --shadow-soft: 0 2px 20px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.07);
+  --shadow-glow: 0 0 30px rgba(160, 114, 40, 0.1);
+
+  --input-bg: #ffffff;
+  --input-border: #e0dcd5;
+  --input-focus-ring: rgba(160, 114, 40, 0.35);
+
+  --donut-track: rgba(0, 0, 0, 0.06);
+
+  --error-fg: #dc2626;
+
+  color-scheme: light;
+
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+  --card: var(--bg-secondary);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-secondary);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--gold-primary);
+  --primary-hover: var(--gold-dark);
+  --primary-foreground: #faf8f5;
+  --secondary: var(--bg-tertiary);
+  --secondary-foreground: var(--gold-dark);
+  --muted: var(--bg-tertiary);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-surface-hover);
+  --accent-foreground: var(--gold-primary);
+  --accent-teal: var(--gold-primary);
+  --success-text: var(--gold-dark);
+  --destructive: var(--error-fg);
+  --destructive-foreground: #faf8f5;
+  --success: var(--gold-primary);
+  --warning: #d97706;
+  --border: var(--border-primary);
+  --input: var(--input-border);
+  --ring: var(--gold-primary);
+  --card-border: var(--border-primary);
+  --gauge-track: var(--donut-track);
+  --surface-subtle: var(--bg-tertiary);
+  --page-bg: var(--bg-primary);
+  --chart-1: var(--gold-primary);
+  --chart-2: #0284c7;
+  --chart-3: #059669;
+  --chart-4: var(--text-tertiary);
+  --chart-5: var(--text-primary);
+  --chart-grid: var(--border-primary);
+  --chart-axis: var(--text-faint);
+}
+
+@layer base {
   * {
     @apply border-border;
   }
 
   html {
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -75,8 +200,17 @@
   }
 
   body {
-    @apply bg-[var(--page-bg)] font-sans text-foreground antialiased;
+    @apply bg-[var(--page-bg)] font-sans antialiased;
+    color: var(--text-secondary);
     min-height: 100vh;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
+  }
+
+  ::selection {
+    background-color: var(--selection-bg);
+    color: var(--selection-fg);
   }
 
   h1,
@@ -84,6 +218,7 @@
   h3,
   h4 {
     letter-spacing: -0.02em;
+    color: var(--text-primary);
   }
 }
 

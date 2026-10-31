@@ -32,7 +32,7 @@ export function SiteHeaderNav() {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "font-bold text-[var(--accent-teal)]"
+                ? "font-bold text-primary"
                 : "text-muted-foreground transition-colors hover:text-foreground"
             }
           >

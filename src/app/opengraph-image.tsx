@@ -17,8 +17,8 @@ export default function OpenGraphImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: 64,
-          background: "#F8FAF9",
-          color: "#142F2A",
+          background: "#0c0a09",
+          color: "#FAF9F6",
         }}
       >
         <div
@@ -34,11 +34,11 @@ export default function OpenGraphImage() {
               width: 72,
               height: 72,
               borderRadius: 20,
-              background: "#16856D",
+              background: "linear-gradient(135deg, #C9923C, #D4AD6A)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "white",
+              color: "#0c0a09",
               fontSize: 36,
               fontWeight: 700,
             }}
@@ -47,7 +47,7 @@ export default function OpenGraphImage() {
           </div>
           <div style={{ fontSize: 56, fontWeight: 700 }}>{SITE_NAME}</div>
         </div>
-        <div style={{ fontSize: 36, fontWeight: 500, color: "#647872", maxWidth: 900 }}>
+        <div style={{ fontSize: 36, fontWeight: 500, color: "#C8C3BA", maxWidth: 900 }}>
           Measure download, upload, ping, and jitter with real network transfers.
         </div>
       </div>

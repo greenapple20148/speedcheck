@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const tone: Record<Suitability, string> = {
   excellent: "text-success",
-  good: "text-[#218C77]",
+  good: "text-primary",
   fair: "text-warning",
   poor: "text-destructive",
   unknown: "text-muted-foreground",
@@ -18,7 +18,7 @@ const tone: Record<Suitability, string> = {
 
 const dot: Record<Suitability, string> = {
   excellent: "bg-success",
-  good: "bg-[#218C77]",
+  good: "bg-primary",
   fair: "bg-warning",
   poor: "bg-destructive",
   unknown: "bg-muted-foreground",
@@ -38,7 +38,7 @@ export function ConnectionQualitySummary({
   if (items.length === 0) return null;
 
   return (
-    <div className="rounded-xl bg-[#F5F8F7] px-3.5 py-3">
+    <div className="rounded-xl bg-muted px-3.5 py-3">
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         Connection quality
       </p>
