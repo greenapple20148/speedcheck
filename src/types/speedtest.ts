@@ -18,6 +18,9 @@ export interface ServerInfo {
   location: string;
   url: string;
   healthy: boolean;
+  /** WGS84 degrees when configured on the measurement node */
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface SessionConfig {
@@ -45,6 +48,8 @@ export interface SpeedMetrics {
   downloadedBytes: number;
   uploadedBytes: number;
   durationMs: number;
+  /** Set when packet-loss measurement is configured (not default on public Cloudflare). */
+  packetLossPercent?: number | null;
   /** Standard mode: loaded latency / bufferbloat (optional). */
   bufferbloatIdleMs?: number | null;
   bufferbloatLoadedDownMs?: number | null;
@@ -93,11 +98,14 @@ export interface TestResultPayload {
   connectionTag?: ConnectionTag | null;
 }
 
+export type SpeedtestProvider = "cloudflare" | "dedicated";
+
 export interface SpeedTestOptions {
   mode?: TestMode;
   signal?: AbortSignal;
   onProgress?: (state: ProgressState) => void;
   baseUrl?: string;
+  provider?: SpeedtestProvider;
 }
 
 export interface SpeedSample {

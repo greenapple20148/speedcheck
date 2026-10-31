@@ -119,7 +119,7 @@ export function CloudflareSpeedLayout({
   const showQuality = complete && qualityRows.length > 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-card">
+    <div className="speed-test-card rounded-2xl border border-border bg-card text-card-foreground shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
         <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
           Your internet speed
@@ -153,7 +153,7 @@ export function CloudflareSpeedLayout({
             <MetricBlock
               label="Download"
               valueMbps={
-                phase === "download" || complete
+                phase === "download"
                   ? (state.currentMbps ?? m.downloadMbps)
                   : m.downloadMbps
               }
@@ -165,7 +165,7 @@ export function CloudflareSpeedLayout({
             <MetricBlock
               label="Upload"
               valueMbps={
-                phase === "upload" || complete
+                phase === "upload"
                   ? (state.currentMbps ?? m.uploadMbps)
                   : m.uploadMbps
               }
@@ -207,8 +207,16 @@ export function CloudflareSpeedLayout({
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Packet loss
               </p>
-              <p className="mt-0.5 text-lg font-medium text-foreground">—</p>
-              <p className="text-[10px] text-muted-foreground">Not measured</p>
+              <p className="mt-0.5 text-lg font-medium tabular-nums text-foreground">
+                {m.packetLossPercent != null
+                  ? `${m.packetLossPercent.toFixed(1)}%`
+                  : "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">
+                {m.packetLossPercent != null
+                  ? "Cloudflare TURN measurement"
+                  : "Not measured"}
+              </p>
             </div>
           </div>
 

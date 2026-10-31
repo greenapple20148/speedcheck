@@ -324,7 +324,7 @@ func (s *Server) authorizeAdmin(r *http.Request) bool {
 }
 
 func (s *Server) serverInfo() map[string]any {
-	return map[string]any{
+	info := map[string]any{
 		"id":       s.Cfg.ServerID,
 		"name":     s.Cfg.ServerName,
 		"region":   s.Cfg.ServerRegion,
@@ -332,6 +332,11 @@ func (s *Server) serverInfo() map[string]any {
 		"url":      s.Cfg.PublicURL,
 		"healthy":  true,
 	}
+	if s.Cfg.ServerLatitude != nil && s.Cfg.ServerLongitude != nil {
+		info["latitude"] = *s.Cfg.ServerLatitude
+		info["longitude"] = *s.Cfg.ServerLongitude
+	}
+	return info
 }
 
 func (s *Server) withCORS(next http.Handler) http.Handler {

@@ -1,3 +1,8 @@
+import {
+  cancelCloudflareSpeedTest,
+  runCloudflareSpeedTest,
+} from "@/lib/speedtest/cloudflare-engine";
+import { resolveClientSpeedtestProvider } from "@/lib/speedtest/provider";
 import type {
   SessionConfig,
   SpeedMetrics,
@@ -296,6 +301,16 @@ async function measureThroughput(
 export async function runSpeedTest(
   options: SpeedTestOptions = {},
 ): Promise<{ metrics: SpeedMetrics; session: SessionConfig }> {
+  const provider = resolveClientSpeedtestProvider(options.provider);
+  if (provider === "cloudflare") {
+    return runCloudflareSpeedTest(options);
+  }
+  return runDedicatedSpeedTest(options);
+}
+
+async function runDedicatedSpeedTest(
+  options: SpeedTestOptions = {},
+): Promise<{ metrics: SpeedMetrics; session: SessionConfig }> {
   const mode = options.mode ?? "standard";
   const resolved =
     options.baseUrl?.replace(/\/$/, "") ||
@@ -409,7 +424,12 @@ function clientBaseUrl(override?: string): string {
 export async function cancelSession(
   token: string,
   baseUrl?: string,
+  provider?: SpeedTestOptions["provider"],
 ): Promise<void> {
+  if (resolveClientSpeedtestProvider(provider) === "cloudflare") {
+    cancelCloudflareSpeedTest();
+    return;
+  }
   const resolved = clientBaseUrl(baseUrl);
   if (!resolved) return;
   try {

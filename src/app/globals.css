@@ -82,6 +82,7 @@
   --chart-5: var(--text-primary);
   --chart-grid: var(--border-primary);
   --chart-axis: #8a8580;
+  --speed-map-bg: var(--input-bg);
 }
 
 [data-theme="light"] {
@@ -160,6 +161,7 @@
   --chart-5: var(--text-primary);
   --chart-grid: var(--border-primary);
   --chart-axis: var(--text-faint);
+  --speed-map-bg: #ebe7e0;
 }
 
 @layer base {
