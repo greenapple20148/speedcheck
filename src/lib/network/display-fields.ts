@@ -10,22 +10,27 @@ export function formatIspDisplay(network: ClientNetworkInfo | null): string {
   return network.ispVerified ? network.isp : `${network.isp} (estimated)`;
 }
 
+export function isDevMeasurementServer(server: ServerInfo | null): boolean {
+  if (!server) return false;
+  return (
+    server.region === "local" ||
+    server.id.startsWith("local") ||
+    /development/i.test(server.location)
+  );
+}
+
 export function formatServerDisplay(server: ServerInfo | null): string {
   if (!server?.name) return "Unavailable";
-  if (server.region === "local" || server.id.startsWith("local")) {
-    return `${server.name} (development)`;
+  if (isDevMeasurementServer(server)) {
+    return server.name;
   }
   return server.name;
 }
 
 export function formatServerLocation(server: ServerInfo | null): string {
   if (!server) return "Unavailable";
-  if (
-    server.region === "local" ||
-    /development/i.test(server.location) ||
-    server.id.startsWith("local")
-  ) {
-    return "Unavailable — not a production measurement node";
+  if (isDevMeasurementServer(server)) {
+    return "Set SPEEDTEST_SERVER_NAME and SPEEDTEST_SERVER_LOCATION on your measurement host (e.g. DigitalOcean droplet).";
   }
   return server.location;
 }

@@ -55,7 +55,9 @@ function GridItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
       <dt className="text-[12px] font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 truncate text-[14px] font-medium text-foreground">{value}</dd>
+      <dd className="mt-0.5 break-words text-[14px] font-medium leading-snug text-foreground">
+        {value}
+      </dd>
     </div>
   );
 }

@@ -33,6 +33,17 @@ docker compose up -d --build speedtest
 curl -fsS https://speed.example.com/health
 ```
 
+On the VPS, set **server metadata** in `.env` or `docker-compose` overrides so results show a real test node (not “Local Dev”):
+
+```bash
+SPEEDTEST_SERVER_ID=do-kansas-1
+SPEEDTEST_SERVER_NAME=MySpeedGauge Kansas
+SPEEDTEST_SERVER_REGION=us-central
+SPEEDTEST_SERVER_LOCATION=Kansas City, US
+```
+
+Restart the speedtest container after changing env. The session API returns these fields to the browser diagnostics panel.
+
 Point `NEXT_PUBLIC_SPEEDTEST_URL` at the VPS HTTPS origin. Do **not** proxy measurement payloads through Vercel.
 
 ## Database
