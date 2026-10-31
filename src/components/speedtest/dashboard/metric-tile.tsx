@@ -27,13 +27,13 @@ export function MetricTile({
   return (
     <div
       className={cn(
-        "flex min-h-[76px] min-w-0 flex-col justify-center rounded-xl bg-[#F5F8F7] px-2 py-2 text-center motion-safe:transition-colors",
-        active && "ring-1 ring-[#218C77]/25",
+        "flex min-h-[76px] min-w-0 flex-col justify-center rounded-xl bg-muted px-2 py-2 text-center motion-safe:transition-colors",
+        active && "ring-1 ring-primary/25",
         primary && "lg:min-h-[80px]",
       )}
     >
       <div className="flex items-center justify-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-[#218C77]" aria-hidden />}
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />}
         <span className="truncate">{label}</span>
       </div>
       <div

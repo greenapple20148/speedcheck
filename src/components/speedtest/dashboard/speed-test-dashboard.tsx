@@ -28,9 +28,8 @@ import { cn, formatSpeedParts } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import { ModeToggle } from "./mode-toggle";
 import { StartTestButton } from "./start-test-button";
-import { LiveSpeedHero } from "./live-speed-hero";
-import { PrimaryMetricsRow } from "./primary-metrics-row";
-import { ConnectionAssessmentSection } from "./connection-assessment-section";
+import { DiagnoseConnectionPanel } from "@/components/diagnostics/diagnose-connection-panel";
+import { CloudflareSpeedLayout } from "./cloudflare-speed-layout";
 import { AdvancedDiagnosticsPanel } from "./advanced-diagnostics-panel";
 
 const SAMPLE_INTERVAL_MS = 120;
@@ -76,25 +75,6 @@ const statusCopy: Record<string, string> = {
   error: "Something went wrong",
   cancelled: "Test cancelled",
 };
-
-function liveMbps(phase: TestPhase, state: ProgressState): number | null {
-  if (phase === "upload") {
-    return state.metrics.uploadMbps ?? state.currentMbps;
-  }
-  if (phase === "download" || phase === "complete") {
-    return state.currentMbps ?? state.metrics.downloadMbps;
-  }
-  return null;
-}
-
-function activeMetricPhase(
-  phase: TestPhase,
-): "download" | "upload" | "ping" | null {
-  if (phase === "download") return "download";
-  if (phase === "upload") return "upload";
-  if (phase === "ping") return "ping";
-  return null;
-}
 
 export function SpeedTestDashboard({
   defaultMode = "standard",
@@ -199,6 +179,27 @@ export function SpeedTestDashboard({
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!measurementBaseUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${measurementBaseUrl.replace(/\/$/, "")}/servers`, {
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { servers?: ServerInfo[] };
+        const first = data.servers?.[0];
+        if (first && !cancelled) setServer(first);
+      } catch {
+        /* optional */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [measurementBaseUrl]);
 
   useEffect(() => {
     if (state.phase === "complete") {
@@ -422,14 +423,6 @@ export function SpeedTestDashboard({
     return "";
   }, [running, complete, buttonStatus, state.metrics.downloadMbps]);
 
-  const showLiveHero =
-    running &&
-    state.phase !== "ping" &&
-    (state.phase === "download" ||
-      state.phase === "upload" ||
-      state.phase === "preparing" ||
-      state.phase === "saving");
-
   return (
     <section
       aria-label="Internet speed test"
@@ -444,31 +437,23 @@ export function SpeedTestDashboard({
         </div>
       )}
 
-      <article className="overflow-x-hidden rounded-2xl border border-[var(--card-border)] bg-card px-3 py-4 shadow-sm sm:px-5 sm:py-5">
+      <div>
         <p className="sr-only" aria-live="polite" aria-atomic="true">
           {liveAnnouncement}
         </p>
 
-        <LiveSpeedHero
-          phase={state.phase}
-          progress={state.progress}
-          valueMbps={liveMbps(state.phase, state)}
-          showLive={showLiveHero}
+        <CloudflareSpeedLayout
+          state={state}
+          samples={samples}
+          server={server}
+          network={network}
+          assessment={assessment}
+          running={running}
+          complete={complete}
+          statusLine={buttonStatus}
+          onStart={start}
+          onCancel={cancel}
         />
-
-        <PrimaryMetricsRow
-          downloadMbps={state.metrics.downloadMbps}
-          uploadMbps={state.metrics.uploadMbps}
-          pingMs={state.metrics.pingMs}
-          jitterMs={state.metrics.jitterMs}
-          activePhase={activeMetricPhase(state.phase)}
-          showCaptions={complete}
-          uploadCaption={uploadCaption}
-        />
-
-        {complete && assessment && (
-          <ConnectionAssessmentSection assessment={assessment} />
-        )}
 
         {state.error && (
           <p className="mt-3 text-[14px] text-destructive" role="alert">
@@ -476,7 +461,24 @@ export function SpeedTestDashboard({
           </p>
         )}
 
-        <div className="mt-4 flex flex-col gap-3 border-t border-[var(--card-border)] pt-4 lg:flex-row lg:items-center lg:justify-between">
+        {complete && uploadCaption && (
+          <p className="mt-2 text-center text-[12px] text-muted-foreground">
+            Upload {uploadCaption}
+          </p>
+        )}
+
+        {complete && (
+          <DiagnoseConnectionPanel
+            className="mt-4"
+            metrics={state.metrics}
+            mode={mode}
+            server={server}
+            plan={plan}
+            history={historySnapshot}
+          />
+        )}
+
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[var(--card-border)] bg-card px-3 py-4 lg:flex-row lg:items-center lg:justify-between sm:px-4">
           {showModeToggle && (
             <ModeToggle
               mode={mode}
@@ -539,7 +541,7 @@ export function SpeedTestDashboard({
             }}
           />
         )}
-      </article>
+      </div>
     </section>
   );
 }

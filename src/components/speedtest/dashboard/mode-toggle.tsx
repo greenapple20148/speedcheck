@@ -31,7 +31,7 @@ export function ModeToggle({ mode, disabled, onChange, compact }: ModeToggleProp
             aria-pressed={mode === m.id}
             onClick={() => onChange(m.id)}
             className={cn(
-              "flex-1 rounded-full px-3 text-xs font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-teal)] focus-visible:ring-offset-2 sm:text-sm",
+              "flex-1 rounded-full px-3 text-xs font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--page-bg)] sm:text-sm",
               compact ? "min-h-[36px]" : "min-h-[44px]",
               mode === m.id
                 ? "bg-card text-foreground shadow-sm"

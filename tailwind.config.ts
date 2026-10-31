@@ -46,6 +46,25 @@ const config: Config = {
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
+        cream: {
+          50: "#FDFCFA",
+          100: "#FAF9F6",
+          200: "#F5F3EF",
+          300: "#EBE7E0",
+        },
+        gold: {
+          300: "#D4AD6A",
+          400: "#C9923C",
+          500: "#B8832E",
+          600: "#A07228",
+          700: "#8A6223",
+        },
+        dark: {
+          700: "#1C1917",
+          800: "#141210",
+          900: "#0A0A0A",
+          950: "#050505",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -53,15 +72,13 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: [
-          "var(--font-inter)",
-          "ui-sans-serif",
-          "system-ui",
-          "sans-serif",
-        ],
+        sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
+        serif: ["var(--font-playfair)", "Georgia", "serif"],
       },
       boxShadow: {
-        soft: "0 10px 40px -20px rgba(23, 43, 42, 0.18)",
+        soft: "var(--shadow-soft)",
+        card: "var(--shadow-card)",
+        glow: "var(--shadow-glow)",
       },
       keyframes: {
         "accordion-down": {
