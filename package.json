@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 43123",
+    "dev:all": "npx concurrently -k -n speedtest,web \"npm run dev:speedtest\" \"npm run dev\"",
     "build": "next build",
     "start": "next start -H 127.0.0.1 -p 43123",
     "lint": "eslint src tests --max-warnings 50",

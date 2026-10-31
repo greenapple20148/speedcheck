@@ -138,6 +138,9 @@ export function SpeedTestDashboard({
   const [browserLinkEstimate, setBrowserLinkEstimate] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [previousUploadMbps, setPreviousUploadMbps] = useState<number | null>(null);
+  const [measurementBaseUrl, setMeasurementBaseUrl] = useState<string | null>(null);
+  const [measurementReady, setMeasurementReady] = useState(true);
+  const [measurementNotice, setMeasurementNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const abortRef = useRef<AbortController | null>(null);
   const sessionRef = useRef<SessionConfig | null>(null);
@@ -167,6 +170,44 @@ export function SpeedTestDashboard({
     void loadNetwork();
     setBrowserLinkEstimate(readBrowserLinkEstimate());
   }, [loadNetwork]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/speedtest/config", { cache: "no-store" });
+        const data = (await res.json()) as {
+          baseUrl?: string | null;
+          ready?: boolean;
+          message?: string;
+          probeOk?: boolean;
+        };
+        if (cancelled) return;
+        setMeasurementBaseUrl(data.baseUrl ?? null);
+        setMeasurementReady(Boolean(data.ready && data.baseUrl));
+        if (data.message) {
+          setMeasurementNotice(data.message);
+        } else if (data.probeOk === false) {
+          setMeasurementNotice(
+            "Measurement service is offline or misconfigured.",
+          );
+        }
+        if (data.ready === false || data.probeOk === false) {
+          setMeasurementReady(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setMeasurementReady(false);
+          setMeasurementNotice(
+            "Could not load speed test configuration. Try refreshing the page.",
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (state.phase === "complete") {
@@ -240,6 +281,16 @@ export function SpeedTestDashboard({
 
   const start = () => {
     if (running || isPending) return;
+    if (!measurementReady || !measurementBaseUrl) {
+      setState((s) => ({
+        ...s,
+        phase: "error",
+        error:
+          measurementNotice ??
+          "Speed test is not available on this deployment yet.",
+      }));
+      return;
+    }
     setShareUrl(null);
     setSamples([]);
     setTestedAt(null);
@@ -259,6 +310,7 @@ export function SpeedTestDashboard({
       try {
         const { metrics, session } = await runSpeedTest({
           mode,
+          baseUrl: measurementBaseUrl,
           signal: controller.signal,
           onProgress: handleProgress,
         });
@@ -374,6 +426,14 @@ export function SpeedTestDashboard({
       aria-label="Internet speed test"
       className={cn("mx-auto w-full max-w-[1120px] px-4", className)}
     >
+      {!measurementReady && measurementNotice && state.phase === "idle" && (
+        <div
+          className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-[14px] leading-snug text-foreground"
+          role="status"
+        >
+          {measurementNotice}
+        </div>
+      )}
       <div className="overflow-x-hidden rounded-[20px] border border-[var(--card-border)] bg-card px-4 py-4 sm:px-5 sm:py-5">
         <div className="flex min-w-0 flex-col gap-4 min-[800px]:grid min-[800px]:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] min-[800px]:items-start min-[800px]:gap-6">
           <div className="flex flex-col items-center gap-3">
