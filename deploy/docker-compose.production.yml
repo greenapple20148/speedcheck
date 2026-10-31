@@ -1,4 +1,5 @@
 # Production measurement node — copy to /opt/speedcheck/docker-compose.yml
+# Do NOT put this file in services/ — env_file .env must sit next to this file.
 #
 # Prerequisites on the VPS:
 #   /opt/speedcheck/.env          (SPEEDTEST_* secrets + server metadata)

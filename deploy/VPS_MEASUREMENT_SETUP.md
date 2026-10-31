@@ -7,9 +7,15 @@ Use this when you only have `/opt/speedcheck/services/speedtest` and a `.env` on
 ```text
 /opt/speedcheck/
   .env                          # your SPEEDTEST_* variables
-  docker-compose.yml            # copy from deploy/docker-compose.production.yml
+  docker-compose.yml            # MUST be here — NOT in services/
   services/speedtest/           # Go source + Dockerfile (already there)
 ```
+
+**Common mistake:** `docker-compose.yml` under `/opt/speedcheck/services/` makes Compose look for `.env` at `services/.env` and breaks the build path. If you see:
+
+`env file /opt/speedcheck/services/.env not found`
+
+move compose to `/opt/speedcheck/docker-compose.yml` and run `docker compose` from there.
 
 ## 2. Create `docker-compose.yml`
 
