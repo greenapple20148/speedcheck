@@ -28,7 +28,7 @@ describe("resolveMeasurementConfig", () => {
     vi.stubEnv("SPEEDTEST_INTERNAL_URL", "https://measure.example.com");
     const cfg = resolveMeasurementConfig("https://myspeedgauge.com");
     expect(cfg.mode).toBe("proxy");
-    expect(cfg.baseUrl).toBe("https://myspeedgauge.com/api/measurement");
+    expect(cfg.baseUrl).toBe("https://myspeedgauge.com/api/speedtest/measure");
     expect(cfg.ready).toBe(true);
   });
 });

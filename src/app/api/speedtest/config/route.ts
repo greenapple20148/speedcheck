@@ -26,14 +26,16 @@ export async function GET(req: NextRequest) {
   const probeTarget = measurementProbeOrigin(config, siteOrigin);
 
   let probeOk: boolean | undefined;
-  if (config.ready && probeTarget) {
+  if (config.ready && config.mode === "proxy" && config.baseUrl) {
+    probeOk = await probeHealth(config.baseUrl);
+  } else if (config.ready && probeTarget) {
     probeOk = await probeHealth(probeTarget);
   }
 
   let message = config.message;
   if (config.ready && probeOk === false) {
     message =
-      "Measurement service is not reachable from the web app. Check that the Go service is running, HTTPS is valid, and Vercel env vars point to the correct host.";
+      "Measurement service is not reachable from the web app. Confirm the Go service on your droplet (port 18443) and SPEEDTEST_INTERNAL_URL on Vercel, then redeploy.";
   }
 
   return NextResponse.json({

@@ -184,16 +184,20 @@ export function SpeedTestDashboard({
         };
         if (cancelled) return;
         setMeasurementBaseUrl(data.baseUrl ?? null);
-        setMeasurementReady(Boolean(data.ready && data.baseUrl));
-        if (data.message) {
-          setMeasurementNotice(data.message);
+        const ready = Boolean(data.ready && data.baseUrl);
+        setMeasurementReady(ready);
+        if (!ready) {
+          setMeasurementNotice(
+            data.message ??
+              "Speed test is not configured for this deployment.",
+          );
         } else if (data.probeOk === false) {
           setMeasurementNotice(
-            "Measurement service is offline or misconfigured.",
+            data.message ??
+              "Measurement service may be offline; you can still try a test.",
           );
-        }
-        if (data.ready === false || data.probeOk === false) {
-          setMeasurementReady(false);
+        } else if (data.message) {
+          setMeasurementNotice(data.message);
         }
       } catch {
         if (!cancelled) {
