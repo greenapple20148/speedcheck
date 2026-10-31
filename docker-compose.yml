@@ -3,6 +3,8 @@ services:
     build: ./services/speedtest
     ports:
       - "18443:18443"
+    env_file:
+      - .env
     environment:
       SPEEDTEST_LISTEN_ADDR: ":18443"
       SPEEDTEST_PUBLIC_URL: ${SPEEDTEST_PUBLIC_URL:-http://127.0.0.1:18443}

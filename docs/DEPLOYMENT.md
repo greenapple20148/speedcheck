@@ -44,6 +44,16 @@ SPEEDTEST_SERVER_LOCATION=Kansas City, US
 
 Restart the speedtest container after changing env. The session API returns these fields to the browser diagnostics panel.
 
+**Important:** A `.env` file on the VPS is not read by the Go binary by itself—Docker must pass variables into the container. Use `env_file: .env` in `docker-compose.yml` (included in this repo) and recreate:
+
+```bash
+cd /opt/speedcheck
+docker compose up -d --force-recreate speedtest
+curl -sS http://127.0.0.1:18443/servers | jq .
+```
+
+You should see your `SPEEDTEST_SERVER_NAME` and `SPEEDTEST_SERVER_LOCATION`, not `Local Dev` / `Development`.
+
 Point `NEXT_PUBLIC_SPEEDTEST_URL` at the VPS HTTPS origin. Do **not** proxy measurement payloads through Vercel.
 
 ## Database
