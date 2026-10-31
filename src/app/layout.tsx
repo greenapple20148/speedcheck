@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { AnalyticsScripts } from "@/components/ads/analytics-scripts";
@@ -33,6 +34,7 @@ export default function RootLayout({
         <SiteFooter />
         <ConsentBanner />
         <AnalyticsScripts />
+        <Analytics />
       </body>
     </html>
   );
