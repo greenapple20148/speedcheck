@@ -179,15 +179,9 @@ async function downloadOnce(
   }
 }
 
-/** Chromium caps crypto.getRandomValues at 65536 bytes per call. */
-function randomPayload(size: number): Uint8Array {
-  const payload = new Uint8Array(size);
-  const maxChunk = 65536;
-  for (let offset = 0; offset < size; offset += maxChunk) {
-    const end = Math.min(offset + maxChunk, size);
-    crypto.getRandomValues(payload.subarray(offset, end));
-  }
-  return payload;
+/** Zero-filled body — avoids client CPU spent on crypto.getRandomValues during upload. */
+function uploadPayload(size: number): Uint8Array {
+  return new Uint8Array(size);
 }
 
 async function uploadOnce(
@@ -196,7 +190,7 @@ async function uploadOnce(
   size: number,
   signal?: AbortSignal,
 ): Promise<{ bytes: number; ms: number }> {
-  const payload = randomPayload(size);
+  const payload = uploadPayload(size);
   const { signal: timed, cleanup } = withTimeout(signal, REQUEST_TIMEOUT_MS);
   const t0 = nowMs();
   try {

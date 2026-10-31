@@ -5,7 +5,7 @@ Reviewed the client engine (`src/lib/speedtest/engine.ts`) and Go service handle
 ## Throughput (download / upload)
 
 - **Mbps** = `(bytes × 8) / (elapsedMs / 1000) / 1_000_000` per chunk (`bytesToMbps`).
-- Download reads the full response body; upload sends random octets and uses server-reported `receivedBytes` when present.
+- Download reads the full response body; upload sends zero-filled octets and uses server-reported `receivedBytes` when present.
 - Final phase Mbps uses the **upper half** of per-chunk samples to reduce TCP slow-start bias (documented in code).
 - Download and upload are **separate phases** with independent worker pools and session byte budgets.
 - Client requests use `cache: "no-store"` and `Cache-Control: no-cache`; the Go service wraps routes with `Cache-Control: no-store`.
