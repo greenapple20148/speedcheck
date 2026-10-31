@@ -15,7 +15,7 @@ export function AffiliateOffers({
   if (!offers.length) return null;
 
   return (
-    <section className="mx-auto max-w-3xl" aria-labelledby="affiliate-heading">
+    <section className="w-full" aria-labelledby="affiliate-heading">
       <h2 id="affiliate-heading" className="heading-2 mb-2 text-foreground">
         {heading}
       </h2>

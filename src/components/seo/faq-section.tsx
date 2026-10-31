@@ -12,7 +12,7 @@ export interface FaqItem {
 
 export function FaqSection({ items }: { items: FaqItem[] }) {
   return (
-    <section className="mx-auto max-w-3xl" aria-labelledby="faq-heading">
+    <section className="w-full" aria-labelledby="faq-heading">
       <h2 id="faq-heading" className="heading-2 mb-6 text-center text-foreground">
         Frequently asked questions
       </h2>

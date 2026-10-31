@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Manrope } from "next/font/google";
+import { Inter } from "next/font/google";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { AnalyticsScripts } from "@/components/ads/analytics-scripts";
@@ -13,16 +13,10 @@ const inter = Inter({
   display: "swap",
 });
 
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-manrope",
-  display: "swap",
-});
-
 export const metadata: Metadata = buildMetadata({
-  title: "SpeedCheck — Test Your Internet Speed",
+  title: "MySpeedGauge — How Fast Is Your Internet?",
   description:
-    "Measure download, upload, ping, and jitter with real transfers. Free, privacy-conscious internet speed testing.",
+    "Test download, upload, ping, and jitter in seconds with real network transfers. Free, privacy-conscious speed testing.",
   path: "/",
 });
 
@@ -33,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${manrope.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <SiteHeader />
         <main className="min-h-[70vh]">{children}</main>
         <SiteFooter />

@@ -34,7 +34,7 @@ export function SiteFooter() {
     <footer className="mt-20 border-t border-border bg-card">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-4">
         <div>
-          <div className="font-heading text-lg font-bold text-foreground">SpeedCheck</div>
+          <div className="text-lg font-bold text-foreground">MySpeedGauge</div>
           <p className="mt-2 text-sm text-muted-foreground">
             Fast, privacy-conscious internet speed testing with real measurements—not estimates.
           </p>
@@ -55,7 +55,7 @@ export function SiteFooter() {
         ))}
       </div>
       <div className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} SpeedCheck. Measurements vary with network conditions.
+        © {new Date().getFullYear()} MySpeedGauge. Measurements vary with network conditions.
       </div>
     </footer>
   );

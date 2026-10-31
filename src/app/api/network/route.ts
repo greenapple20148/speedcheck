@@ -1,57 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
 import { maskIp } from "@/lib/db/store";
+import { isPrivateOrLoopbackIp } from "@/lib/network/ip";
+
+type IpLookup = {
+  ip?: string;
+  org?: string;
+  asn?: string;
+  city?: string;
+  country_name?: string;
+};
+
+async function fetchIpLookup(): Promise<IpLookup | null> {
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch("https://ipapi.co/json/", {
+      signal: controller.signal,
+      next: { revalidate: 3600 },
+    });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    return (await res.json()) as IpLookup;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(req: NextRequest) {
   const forwarded = req.headers.get("x-forwarded-for");
   const realIp = req.headers.get("x-real-ip");
-  const ip = (forwarded?.split(",")[0] || realIp || "").trim() || null;
+  const clientIp = (forwarded?.split(",")[0] || realIp || "").trim() || null;
 
-  // Prefer Cloudflare / edge headers when present — never store raw IP
-  const isp =
-    req.headers.get("x-vercel-ip-org") ||
-    req.headers.get("cf-isp") ||
-    null;
+  const edgeIsp =
+    req.headers.get("x-vercel-ip-org") || req.headers.get("cf-isp") || null;
   const city =
-    req.headers.get("x-vercel-ip-city") ||
-    req.headers.get("cf-ipcity") ||
-    null;
+    req.headers.get("x-vercel-ip-city") || req.headers.get("cf-ipcity") || null;
   const country =
     req.headers.get("x-vercel-ip-country") ||
     req.headers.get("cf-ipcountry") ||
     null;
 
-  // Optional external enrichment (blocked gracefully if unavailable)
-  let enriched = { isp, city, country, org: isp, asn: null as string | null };
-  if (!isp) {
-    try {
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 1500);
-      const res = await fetch("https://ipapi.co/json/", {
-        signal: controller.signal,
-        next: { revalidate: 3600 },
-      });
-      clearTimeout(t);
-      if (res.ok) {
-        const data = await res.json();
-        enriched = {
-          isp: data.org || data.asn || null,
-          city: data.city || city,
-          country: data.country_name || country,
-          org: data.org || null,
-          asn: data.asn || null,
-        };
+  let isp: string | null = edgeIsp;
+  let ispVerified = Boolean(edgeIsp);
+  let org: string | null = edgeIsp;
+  let asn: string | null = null;
+  let enrichedCity = city;
+  let enrichedCountry = country;
+
+  let publicIpMasked: string | null = null;
+  let publicIpSource: "edge" | "lookup" | "unavailable" = "unavailable";
+
+  if (clientIp && !isPrivateOrLoopbackIp(clientIp)) {
+    publicIpMasked = maskIp(clientIp);
+    publicIpSource = "edge";
+  }
+
+  const needsLookup =
+    !publicIpMasked || !isp || isPrivateOrLoopbackIp(clientIp ?? undefined);
+
+  if (needsLookup) {
+    const lookup = await fetchIpLookup();
+    if (lookup?.ip && !isPrivateOrLoopbackIp(lookup.ip)) {
+      if (!publicIpMasked) {
+        publicIpMasked = maskIp(lookup.ip);
+        publicIpSource = "lookup";
       }
-    } catch {
-      // offline / blocked — continue without enrichment
     }
+    if (!isp && lookup?.org) {
+      isp = lookup.org;
+      org = lookup.org;
+      ispVerified = false;
+    }
+    if (lookup?.asn) asn = lookup.asn;
+    if (lookup?.city) enrichedCity = lookup.city;
+    if (lookup?.country_name) enrichedCountry = lookup.country_name;
   }
 
   return NextResponse.json({
-    publicIpMasked: maskIp(ip) || (ip ? "hidden" : null),
-    isp: enriched.isp,
-    org: enriched.org,
-    city: enriched.city,
-    country: enriched.country,
-    asn: enriched.asn,
+    publicIpMasked,
+    publicIpSource,
+    ispVerified,
+    isp,
+    org,
+    city: enrichedCity,
+    country: enrichedCountry,
+    asn,
   });
 }

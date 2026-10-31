@@ -53,6 +53,8 @@ export interface ProgressState {
 
 export interface ClientNetworkInfo {
   publicIpMasked: string | null;
+  publicIpSource?: "edge" | "lookup" | "unavailable";
+  ispVerified?: boolean;
   isp: string | null;
   org: string | null;
   country: string | null;
@@ -82,4 +84,13 @@ export interface SpeedTestOptions {
   signal?: AbortSignal;
   onProgress?: (state: ProgressState) => void;
   baseUrl?: string;
+}
+
+export interface SpeedSample {
+  /** Seconds since test start */
+  testElapsedSec: number;
+  /** Seconds since current download/upload phase start */
+  phaseElapsedSec: number;
+  mbps: number;
+  kind: "download" | "upload";
 }

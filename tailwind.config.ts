@@ -41,6 +41,8 @@ const config: Config = {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",
         },
+        success: "var(--success)",
+        warning: "var(--warning)",
         border: "var(--border)",
         input: "var(--input)",
         ring: "var(--ring)",
@@ -51,8 +53,13 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
-        heading: ["var(--font-manrope)", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: [
+          "var(--font-inter)",
+          "Geist Sans",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
       },
       boxShadow: {
         soft: "0 10px 40px -20px rgba(23, 43, 42, 0.18)",
