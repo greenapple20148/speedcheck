@@ -4,28 +4,34 @@
 
 @layer base {
   :root {
-    --background: #ffffff;
-    --foreground: #172b29;
+    --background: #f4f7f6;
+    --foreground: #12302b;
     --card: #ffffff;
-    --card-foreground: #172b29;
+    --card-foreground: #12302b;
     --popover: #ffffff;
-    --popover-foreground: #172b29;
-    --primary: #218c77;
-    --primary-hover: #176b5b;
+    --popover-foreground: #12302b;
+    --primary: #0b7d69;
+    --primary-hover: #096958;
     --primary-foreground: #ffffff;
-    --secondary: #f7faf9;
-    --secondary-foreground: #006b5c;
-    --muted: #f7faf9;
-    --muted-foreground: #647873;
+    --secondary: #f4f7f6;
+    --secondary-foreground: #0b7d69;
+    --muted: #f4f7f6;
+    --muted-foreground: #4a5f5b;
     --accent: #f0f7f5;
-    --accent-foreground: #008c78;
+    --accent-foreground: #0b7d69;
+    --accent-teal: #0b7d69;
+    --success-text: #0a6b4f;
     --destructive: #c2410c;
     --destructive-foreground: #ffffff;
-    --success: #16a34a;
+    --success: #0a6b4f;
     --warning: #f59e0b;
-    --border: #e3ebe8;
-    --input: #e3ebe8;
-    --ring: #008c78;
+    --border: #e2e9e7;
+    --input: #e2e9e7;
+    --ring: #0b7d69;
+    --card-border: #e2e9e7;
+    --gauge-track: #dde8e5;
+    --surface-subtle: #f4f7f6;
+    --page-bg: #f4f7f6;
     --radius: 1rem;
     --chart-1: #008c78;
     --chart-2: #60a5fa;
@@ -60,6 +66,7 @@
     .motion-safe\:transition-colors,
     .motion-safe\:transition-shadow,
     .motion-safe\:transition-transform,
+    .motion-safe\:transition-\[stroke-dashoffset\],
     .motion-safe\:duration-200,
     .motion-safe\:duration-300,
     .motion-safe\:duration-500 {
@@ -68,7 +75,7 @@
   }
 
   body {
-    @apply bg-[#F7FAF9] font-sans text-foreground antialiased;
+    @apply bg-[var(--page-bg)] font-sans text-foreground antialiased;
     min-height: 100vh;
   }
 

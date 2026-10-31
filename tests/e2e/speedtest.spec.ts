@@ -9,10 +9,10 @@ test.describe("real measurement flow", () => {
     await expect(
       page.getByText(/Preparing|Measuring|Testing download|Testing upload|Saving/i).first(),
     ).toBeVisible();
-    await expect(page.getByText("Test complete", { exact: true }).first()).toBeVisible({
+    await expect(page.getByText("Connection quality")).toBeVisible({
       timeout: 75_000,
     });
-    await expect(page.getByText("Download", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("DOWNLOAD")).toBeVisible();
     // After completion, download Mbps should not remain as an em dash placeholder
     await expect(page.locator(".speed-value")).not.toHaveText("—");
   });
@@ -29,7 +29,7 @@ test.describe("responsive + a11y smoke", () => {
       const start = page.getByRole("button", { name: "Start Speed Test", exact: true });
       await expect(start).toBeVisible();
       await expect(start).toBeInViewport();
-      await expect(page.getByText("Download", { exact: true }).first()).toBeInViewport();
+      await expect(page.getByText("DOWNLOAD")).toBeInViewport();
       await expect(page.getByText("Upload", { exact: true }).first()).toBeInViewport();
       await expect(page.getByText("Ping", { exact: true }).first()).toBeInViewport();
       await expect(page.getByText("Jitter", { exact: true }).first()).toBeInViewport();
