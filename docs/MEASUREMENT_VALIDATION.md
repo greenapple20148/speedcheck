@@ -9,6 +9,8 @@ Reviewed the client engine (`src/lib/speedtest/engine.ts`) and Go service handle
 - Final phase Mbps uses the **upper half** of per-chunk samples to reduce TCP slow-start bias (documented in code).
 - Download and upload are **separate phases** with independent worker pools and session byte budgets.
 - Client requests use `cache: "no-store"` and `Cache-Control: no-cache`; the Go service wraps routes with `Cache-Control: no-store`.
+- Go `/download` streams a **zero-filled** payload (not `crypto/rand`) so small VPS CPUs are not the bottleneck.
+- **Standard** sessions use **8** parallel download/upload connections; **lightweight** uses 2.
 
 ## Results above ~1 Gbps
 

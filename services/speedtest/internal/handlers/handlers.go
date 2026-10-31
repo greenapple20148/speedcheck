@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -93,7 +92,7 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connections := 4
+	connections := 8
 	chunk := 1 << 20 // 1 MiB
 	if body.Mode == session.ModeLightweight {
 		connections = 2
@@ -182,6 +181,8 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Encoding", "identity")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
+	// Zero-filled payload: throughput tests do not need cryptographic randomness.
+	// Avoids CPU saturation on small VPSes (was crypto/rand per chunk).
 	buf := make([]byte, 64*1024)
 	var written int64
 	for written < size {
@@ -191,9 +192,6 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 		n := int64(len(buf))
 		if size-written < n {
 			n = size - written
-		}
-		if _, err := rand.Read(buf[:n]); err != nil {
-			return
 		}
 		nw, err := w.Write(buf[:n])
 		written += int64(nw)
