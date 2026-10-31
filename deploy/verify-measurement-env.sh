@@ -3,7 +3,11 @@
 set -euo pipefail
 
 echo "=== Host .env (server metadata) ==="
-grep -E '^SPEEDTEST_SERVER_' .env 2>/dev/null || echo "No SPEEDTEST_SERVER_* in ./.env"
+if [[ ! -f .env ]]; then
+  echo "MISSING /opt/speedcheck/.env"
+else
+  grep -E '^SPEEDTEST_SERVER_' .env || echo "No SPEEDTEST_SERVER_* lines in .env"
+fi
 
 echo ""
 echo "=== docker-compose env wiring ==="

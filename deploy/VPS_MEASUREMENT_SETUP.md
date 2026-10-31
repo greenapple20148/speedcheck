@@ -64,6 +64,18 @@ curl -sS http://127.0.0.1:18443/servers
 
 You should **not** see `Local Dev` / `local-1` if `.env` is loaded.
 
+If `/servers` still shows `Local Dev`, run:
+
+```bash
+cd /opt/speedcheck
+grep SPEEDTEST_SERVER .env
+docker compose exec speedtest printenv | grep SPEEDTEST_SERVER
+```
+
+- **Host has values, container is empty** → replace `docker-compose.yml` with `deploy/docker-compose.production.yml` from this repo (uses `env_file` + `${SPEEDTEST_SERVER_*}`), then `docker compose up -d --force-recreate speedtest`.
+- **Both empty** → `.env` is missing or uses wrong variable names (must be exactly `SPEEDTEST_SERVER_NAME`, etc.).
+- **Values with spaces** → quote them: `SPEEDTEST_SERVER_NAME="MySpeedGauge US"`.
+
 ## Alternative: `docker run` (no compose file)
 
 ```bash

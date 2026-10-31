@@ -1,13 +1,5 @@
-# Production measurement node — copy to /opt/speedcheck/docker-compose.yml
-# Do NOT put this file in services/ — env_file .env must sit next to this file.
-#
-# Prerequisites on the VPS:
-#   /opt/speedcheck/.env          (SPEEDTEST_* secrets + server metadata)
-#   /opt/speedcheck/services/speedtest/   (Go service + Dockerfile)
-#
-#   cd /opt/speedcheck
-#   docker compose up -d --build speedtest
-#   curl -sS http://127.0.0.1:18443/servers
+# Copy to /opt/speedcheck/docker-compose.yml (same directory as .env)
+# Run: cd /opt/speedcheck && docker compose up -d --build speedtest
 
 services:
   speedtest:
@@ -18,6 +10,22 @@ services:
       - .env
     environment:
       SPEEDTEST_LISTEN_ADDR: ":18443"
+      # Compose also reads /opt/speedcheck/.env for ${VAR} substitution below:
+      SPEEDTEST_PUBLIC_URL: ${SPEEDTEST_PUBLIC_URL}
+      SPEEDTEST_HMAC_SECRET: ${SPEEDTEST_HMAC_SECRET}
+      SPEEDTEST_ADMIN_TOKEN: ${SPEEDTEST_ADMIN_TOKEN}
+      SPEEDTEST_CORS_ORIGINS: ${SPEEDTEST_CORS_ORIGINS}
+      SPEEDTEST_SERVER_ID: ${SPEEDTEST_SERVER_ID}
+      SPEEDTEST_SERVER_NAME: ${SPEEDTEST_SERVER_NAME}
+      SPEEDTEST_SERVER_REGION: ${SPEEDTEST_SERVER_REGION}
+      SPEEDTEST_SERVER_LOCATION: ${SPEEDTEST_SERVER_LOCATION}
+      SPEEDTEST_MAX_CONCURRENT_TESTS: ${SPEEDTEST_MAX_CONCURRENT_TESTS:-50}
+      SPEEDTEST_DAILY_BANDWIDTH_GB: ${SPEEDTEST_DAILY_BANDWIDTH_GB:-500}
+      SPEEDTEST_PER_TEST_BUDGET_MB_LIGHT: ${SPEEDTEST_PER_TEST_BUDGET_MB_LIGHT:-20}
+      SPEEDTEST_PER_TEST_BUDGET_MB_STANDARD: ${SPEEDTEST_PER_TEST_BUDGET_MB_STANDARD:-80}
+      SPEEDTEST_MAX_DURATION_SEC: ${SPEEDTEST_MAX_DURATION_SEC:-20}
+      SPEEDTEST_SESSION_TTL_SEC: ${SPEEDTEST_SESSION_TTL_SEC:-120}
+      SPEEDTEST_RATE_LIMIT_PER_IP: ${SPEEDTEST_RATE_LIMIT_PER_IP:-30}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:18443/health"]
       interval: 15s
