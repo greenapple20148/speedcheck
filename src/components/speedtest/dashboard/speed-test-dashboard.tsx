@@ -4,6 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { cancelSession, runSpeedTest } from "@/lib/speedtest/engine";
 import { getPreviousUploadMbps } from "@/lib/speedtest/history";
 import {
+  appendHistory,
+  readHistory,
+  readPlan,
+  writeHistory,
+  type PlanSettings,
+} from "@/lib/speedtest/history-store";
+import {
   jitterDescriptor,
   pingDescriptor,
   uploadDeltaCaption,
@@ -11,6 +18,7 @@ import {
 import { trackEvent } from "@/lib/analytics/events";
 import type {
   ClientNetworkInfo,
+  ConnectionTag,
   ProgressState,
   ServerInfo,
   SessionConfig,
@@ -28,6 +36,9 @@ import { DetailedResultsPanel } from "./detailed-results-panel";
 import { ConnectionQuality } from "./connection-quality";
 import { ResultSummary } from "./result-summary";
 import { ResultFooter } from "./result-footer";
+import { BufferbloatCard } from "./bufferbloat-card";
+import { ConnectionTagToggle } from "./connection-tag-toggle";
+import { DiagnosisCard } from "./diagnosis-card";
 
 const SAMPLE_INTERVAL_MS = 120;
 const DETAILS_PANEL_ID = "speed-test-detailed-results";
@@ -141,6 +152,10 @@ export function SpeedTestDashboard({
   const [measurementBaseUrl, setMeasurementBaseUrl] = useState<string | null>(null);
   const [measurementReady, setMeasurementReady] = useState(true);
   const [measurementNotice, setMeasurementNotice] = useState<string | null>(null);
+  const [connectionTag, setConnectionTag] = useState<ConnectionTag>("wifi");
+  const [lastHistoryId, setLastHistoryId] = useState<string | null>(null);
+  const [plan, setPlan] = useState<PlanSettings | null>(null);
+  const [historySnapshot, setHistorySnapshot] = useState(readHistory);
   const [isPending, startTransition] = useTransition();
   const abortRef = useRef<AbortController | null>(null);
   const sessionRef = useRef<SessionConfig | null>(null);
@@ -169,7 +184,17 @@ export function SpeedTestDashboard({
   useEffect(() => {
     void loadNetwork();
     setBrowserLinkEstimate(readBrowserLinkEstimate());
+    setPlan(readPlan());
+    setHistorySnapshot(readHistory());
   }, [loadNetwork]);
+
+  const patchHistoryTag = useCallback((id: string, tag: ConnectionTag) => {
+    const list = readHistory().map((e) =>
+      e.id === id ? { ...e, connectionTag: tag } : e,
+    );
+    writeHistory(list);
+    setHistorySnapshot(list);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -300,6 +325,8 @@ export function SpeedTestDashboard({
     setTestedAt(null);
     setDetailsOpen(false);
     setPreviousUploadMbps(null);
+    setConnectionTag("wifi");
+    setLastHistoryId(null);
     lastPhaseRef.current = "idle";
     testStartedRef.current = performance.now();
     phaseStartedRef.current = testStartedRef.current;
@@ -338,8 +365,15 @@ export function SpeedTestDashboard({
           city: network?.city,
           country: network?.country,
           isPublic: false,
+          bufferbloatIdleMs: metrics.bufferbloatIdleMs,
+          bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
+          bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
+          bufferbloatGrade: metrics.bufferbloatGrade,
+          connectionTag,
         });
+        const historyId = saved?.id ?? crypto.randomUUID();
         if (saved?.id) setShareUrl(`/results/${saved.id}`);
+        setLastHistoryId(historyId);
         setTestedAt(new Date());
         setState({
           phase: "complete",
@@ -354,23 +388,22 @@ export function SpeedTestDashboard({
           pingMs: metrics.pingMs,
         });
         try {
-          const key = "speedcheck_history";
-          const prev = JSON.parse(localStorage.getItem(key) || "[]");
-          localStorage.setItem(
-            key,
-            JSON.stringify(
-              [
-                {
-                  id: saved?.id ?? crypto.randomUUID(),
-                  ...metrics,
-                  mode,
-                  serverName: session.server.name,
-                  createdAt: new Date().toISOString(),
-                },
-                ...(Array.isArray(prev) ? prev : []),
-              ].slice(0, 25),
-            ),
-          );
+          appendHistory({
+            id: historyId,
+            downloadMbps: metrics.downloadMbps,
+            uploadMbps: metrics.uploadMbps,
+            pingMs: metrics.pingMs,
+            jitterMs: metrics.jitterMs,
+            mode,
+            serverName: session.server.name,
+            createdAt: new Date().toISOString(),
+            bufferbloatIdleMs: metrics.bufferbloatIdleMs,
+            bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
+            bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
+            bufferbloatGrade: metrics.bufferbloatGrade,
+            connectionTag,
+          });
+          setHistorySnapshot(readHistory());
         } catch {
           /* quota */
         }
@@ -492,12 +525,40 @@ export function SpeedTestDashboard({
               />
             </div>
 
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
+              <BufferbloatCard
+                mode={mode}
+                complete={complete}
+                grade={state.metrics.bufferbloatGrade}
+                idleMs={state.metrics.bufferbloatIdleMs}
+                loadedDownMs={state.metrics.bufferbloatLoadedDownMs}
+                loadedUpMs={state.metrics.bufferbloatLoadedUpMs}
+                onSelectStandard={() => setMode("standard")}
+              />
+            </div>
+
             <ResultSummary
               downloadMbps={state.metrics.downloadMbps}
               visible={complete}
             />
 
             <ConnectionQuality metrics={state.metrics} visible={complete} />
+
+            <DiagnosisCard
+              metrics={state.metrics}
+              plan={plan}
+              history={historySnapshot}
+              visible={complete}
+            />
+
+            <ConnectionTagToggle
+              visible={complete}
+              value={connectionTag}
+              onChange={(tag) => {
+                setConnectionTag(tag);
+                if (lastHistoryId) patchHistoryTag(lastHistoryId, tag);
+              }}
+            />
 
             <ResultFooter
               shareUrl={shareUrl}

@@ -7,7 +7,11 @@ import type {
 } from "@/types/speedtest";
 import { resolveSpeedtestBaseUrl } from "@/lib/speedtest/base-url";
 import { normalizeSpeedtestError } from "@/lib/speedtest/fetch-errors";
+import { computeBufferbloat, median } from "@/lib/speedtest/bufferbloat";
 import { withTimeout } from "@/lib/speedtest/fetch-timeout";
+
+const LOADED_PING_INTERVAL_MS = 200;
+const IDLE_PING_SAMPLES = 11;
 
 const DEFAULT_BASE =
   process.env.NEXT_PUBLIC_SPEEDTEST_URL?.replace(/\/$/, "") ||
@@ -50,12 +54,58 @@ async function createSession(
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `Failed to create session (${res.status})`);
+      const detail = body.error || `Failed to create session (${res.status})`;
+      if (res.status === 404) {
+        throw new Error(
+          `${detail}. The measurement API route may be missing on this deployment — redeploy the latest app and set SPEEDTEST_INTERNAL_URL on Vercel.`,
+        );
+      }
+      throw new Error(detail);
     }
     return res.json();
   } finally {
     cleanup();
   }
+}
+
+async function pingOnce(baseUrl: string, signal?: AbortSignal): Promise<number> {
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  const t0 = nowMs();
+  const res = await fetch(`${baseUrl}/ping?_=${Date.now()}`, {
+    method: "GET",
+    cache: "no-store",
+    signal,
+    headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+  });
+  if (!res.ok && res.status !== 204) {
+    throw new Error("Ping failed");
+  }
+  return nowMs() - t0;
+}
+
+function jitterFromSamples(usable: number[]): number {
+  let jitter = 0;
+  for (let i = 1; i < usable.length; i++) {
+    jitter += Math.abs(usable[i] - usable[i - 1]);
+  }
+  return jitter / Math.max(1, usable.length - 1);
+}
+
+/** Median of N pings (drops first warmup sample). Used for idle / bufferbloat baseline. */
+async function measureIdleLatency(
+  baseUrl: string,
+  signal?: AbortSignal,
+  samples = IDLE_PING_SAMPLES,
+): Promise<{ idleMs: number; jitterMs: number }> {
+  const latencies: number[] = [];
+  for (let i = 0; i < samples; i++) {
+    latencies.push(await pingOnce(baseUrl, signal));
+    await new Promise((r) => setTimeout(r, 40));
+  }
+  const usable = latencies.slice(1);
+  const idleMed = median(usable);
+  if (idleMed == null) throw new Error("Ping failed");
+  return { idleMs: idleMed, jitterMs: jitterFromSamples(usable) };
 }
 
 async function measurePing(
@@ -65,28 +115,29 @@ async function measurePing(
 ): Promise<{ pingMs: number; jitterMs: number }> {
   const latencies: number[] = [];
   for (let i = 0; i < samples; i++) {
-    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-    const t0 = nowMs();
-    const res = await fetch(`${baseUrl}/ping?_=${Date.now()}-${i}`, {
-      method: "GET",
-      cache: "no-store",
-      signal,
-      headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
-    });
-    if (!res.ok && res.status !== 204) {
-      throw new Error("Ping failed");
-    }
-    latencies.push(nowMs() - t0);
+    latencies.push(await pingOnce(baseUrl, signal));
     await new Promise((r) => setTimeout(r, 40));
   }
-  // Drop first sample (warmup)
   const usable = latencies.slice(1);
   const pingMs = usable.reduce((a, b) => a + b, 0) / usable.length;
-  let jitter = 0;
-  for (let i = 1; i < usable.length; i++) {
-    jitter += Math.abs(usable[i] - usable[i - 1]);
+  return { pingMs, jitterMs: jitterFromSamples(usable) };
+}
+
+async function sampleLoadedLatencies(
+  baseUrl: string,
+  signal: AbortSignal | undefined,
+  isActive: () => boolean,
+): Promise<number[]> {
+  const out: number[] = [];
+  while (!signal?.aborted && isActive()) {
+    try {
+      out.push(await pingOnce(baseUrl, signal));
+    } catch {
+      /* skip failed sample */
+    }
+    await new Promise((r) => setTimeout(r, LOADED_PING_INTERVAL_MS));
   }
-  return { pingMs, jitterMs: jitter / Math.max(1, usable.length - 1) };
+  return out;
 }
 
 async function downloadOnce(
@@ -191,7 +242,8 @@ async function measureThroughput(
   baseUrl: string,
   signal: AbortSignal | undefined,
   onSample: (mbps: number, bytes: number, progress: number) => void,
-): Promise<{ mbps: number; bytes: number }> {
+  sampleLoadedPing = false,
+): Promise<{ mbps: number; bytes: number; loadedPingSamples: number[] }> {
   const connections =
     kind === "download"
       ? session.downloadConnections
@@ -232,7 +284,14 @@ async function measureThroughput(
     }
   };
 
+  let phaseActive = true;
+  const loadedPingPromise = sampleLoadedPing
+    ? sampleLoadedLatencies(baseUrl, signal, () => phaseActive)
+    : Promise.resolve([] as number[]);
+
   await Promise.all(Array.from({ length: connections }, () => worker()));
+  phaseActive = false;
+  const loadedPingSamples = await loadedPingPromise;
 
   // Use upper half of samples to reduce TCP slow-start bias
   const sorted = [...rates].sort((a, b) => a - b);
@@ -242,7 +301,7 @@ async function measureThroughput(
     slice.length === 0
       ? 0
       : slice.reduce((a, b) => a + b, 0) / slice.length;
-  return { mbps, bytes: transferred };
+  return { mbps, bytes: transferred, loadedPingSamples };
 }
 
 export async function runSpeedTest(
@@ -280,10 +339,18 @@ export async function runSpeedTest(
     emit("preparing", 0.02);
     const session = await createSession(baseUrl, mode, signal);
 
+    const measureBufferbloat = mode === "standard";
+
     emit("ping", 0.08);
-    const { pingMs, jitterMs } = await measurePing(baseUrl, 8, signal);
-    metrics.pingMs = pingMs;
-    metrics.jitterMs = jitterMs;
+    if (measureBufferbloat) {
+      const idle = await measureIdleLatency(baseUrl, signal);
+      metrics.pingMs = idle.idleMs;
+      metrics.jitterMs = idle.jitterMs;
+    } else {
+      const { pingMs, jitterMs } = await measurePing(baseUrl, 8, signal);
+      metrics.pingMs = pingMs;
+      metrics.jitterMs = jitterMs;
+    }
     emit("ping", 0.15);
 
     emit("download", 0.2);
@@ -297,6 +364,7 @@ export async function runSpeedTest(
         metrics.downloadMbps = mbps;
         emit("download", 0.2 + p * 0.4, mbps);
       },
+      measureBufferbloat,
     );
     metrics.downloadMbps = download.mbps;
     metrics.downloadedBytes = download.bytes;
@@ -312,9 +380,25 @@ export async function runSpeedTest(
         metrics.uploadMbps = mbps;
         emit("upload", 0.65 + p * 0.3, mbps);
       },
+      measureBufferbloat,
     );
     metrics.uploadMbps = upload.mbps;
     metrics.uploadedBytes = upload.bytes;
+
+    if (measureBufferbloat && metrics.pingMs != null) {
+      const bb = computeBufferbloat(
+        metrics.pingMs,
+        download.loadedPingSamples,
+        upload.loadedPingSamples,
+      );
+      if (bb) {
+        metrics.bufferbloatIdleMs = bb.idleMs;
+        metrics.bufferbloatLoadedDownMs = bb.loadedDownMs;
+        metrics.bufferbloatLoadedUpMs = bb.loadedUpMs;
+        metrics.bufferbloatGrade = bb.grade;
+      }
+    }
+
     metrics.durationMs = nowMs() - started;
 
     emit("complete", 1, metrics.downloadMbps);

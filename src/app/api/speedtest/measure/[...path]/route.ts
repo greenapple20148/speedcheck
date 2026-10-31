@@ -1,101 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { serverMeasurementOrigin } from "@/lib/speedtest/base-url";
+import type { NextRequest } from "next/server";
+import {
+  measurementProxyGET,
+  measurementProxyOPTIONS,
+  measurementProxyPOST,
+  measurementProxyPUT,
+} from "@/lib/speedtest/measurement-proxy-handler";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-/** Large download/upload phases need extended time on Vercel Pro+. */
 export const maxDuration = 60;
-
-const HOP_BY_HOP = new Set([
-  "connection",
-  "keep-alive",
-  "proxy-authenticate",
-  "proxy-authorization",
-  "te",
-  "trailers",
-  "transfer-encoding",
-  "upgrade",
-  "host",
-]);
-
-function proxyEnabled(): boolean {
-  if (process.env.SPEEDTEST_INTERNAL_URL) return true;
-  return process.env.NODE_ENV === "development";
-}
-
-async function forward(req: NextRequest, pathSegments: string[]) {
-  if (!proxyEnabled()) {
-    return NextResponse.json(
-      {
-        error:
-          "Measurement proxy disabled. Set SPEEDTEST_INTERNAL_URL on Vercel to your Go service (e.g. http://YOUR_DROPLET_IP:18443).",
-      },
-      { status: 503 },
-    );
-  }
-
-  const upstream = serverMeasurementOrigin();
-  const subpath = pathSegments.join("/");
-  const target = `${upstream}/${subpath}${req.nextUrl.search}`;
-
-  const headers = new Headers();
-  req.headers.forEach((value, key) => {
-    const lower = key.toLowerCase();
-    if (HOP_BY_HOP.has(lower)) return;
-    headers.set(key, value);
-  });
-
-  const hasBody = req.method !== "GET" && req.method !== "HEAD";
-
-  let upstreamRes: Response;
-  try {
-    upstreamRes = await fetch(target, {
-      method: req.method,
-      headers,
-      cache: "no-store",
-      body: hasBody ? req.body : undefined,
-      ...(hasBody ? { duplex: "half" as const } : {}),
-    });
-  } catch {
-    return NextResponse.json(
-      {
-        error:
-          "Measurement service unavailable. Check the Go service on your droplet and SPEEDTEST_INTERNAL_URL.",
-      },
-      { status: 503 },
-    );
-  }
-
-  const outHeaders = new Headers();
-  upstreamRes.headers.forEach((value, key) => {
-    if (HOP_BY_HOP.has(key.toLowerCase())) return;
-    outHeaders.set(key, value);
-  });
-
-  return new NextResponse(upstreamRes.body, {
-    status: upstreamRes.status,
-    headers: outHeaders,
-  });
-}
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
-export async function GET(req: NextRequest, ctx: Ctx) {
-  const { path } = await ctx.params;
-  return forward(req, path);
-}
-
-export async function POST(req: NextRequest, ctx: Ctx) {
-  const { path } = await ctx.params;
-  return forward(req, path);
-}
-
-export async function PUT(req: NextRequest, ctx: Ctx) {
-  const { path } = await ctx.params;
-  return forward(req, path);
-}
-
-export async function OPTIONS(req: NextRequest, ctx: Ctx) {
-  const { path } = await ctx.params;
-  return forward(req, path);
-}
+export const GET = (req: NextRequest, ctx: Ctx) => measurementProxyGET(req, ctx);
+export const POST = (req: NextRequest, ctx: Ctx) => measurementProxyPOST(req, ctx);
+export const PUT = (req: NextRequest, ctx: Ctx) => measurementProxyPUT(req, ctx);
+export const OPTIONS = (req: NextRequest, ctx: Ctx) =>
+  measurementProxyOPTIONS(req, ctx);
