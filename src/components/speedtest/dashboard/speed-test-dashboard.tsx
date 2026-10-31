@@ -10,11 +10,8 @@ import {
   writeHistory,
   type PlanSettings,
 } from "@/lib/speedtest/history-store";
-import {
-  jitterDescriptor,
-  pingDescriptor,
-  uploadDeltaCaption,
-} from "@/lib/speedtest/ui-config";
+import { buildConnectionAssessment } from "@/lib/speedtest/connection-assessment";
+import { uploadDeltaCaption } from "@/lib/speedtest/ui-config";
 import { trackEvent } from "@/lib/analytics/events";
 import type {
   ClientNetworkInfo,
@@ -28,17 +25,13 @@ import type {
   TestResultPayload,
 } from "@/types/speedtest";
 import { cn, formatSpeedParts } from "@/lib/utils";
-import { SpeedGauge } from "./speed-gauge";
-import { MetricCard } from "./metric-card";
+import { ChevronDown } from "lucide-react";
 import { ModeToggle } from "./mode-toggle";
 import { StartTestButton } from "./start-test-button";
-import { DetailedResultsPanel } from "./detailed-results-panel";
-import { ConnectionQuality } from "./connection-quality";
-import { ResultSummary } from "./result-summary";
-import { ResultFooter } from "./result-footer";
-import { BufferbloatCard } from "./bufferbloat-card";
-import { ConnectionTagToggle } from "./connection-tag-toggle";
-import { DiagnosisCard } from "./diagnosis-card";
+import { LiveSpeedHero } from "./live-speed-hero";
+import { PrimaryMetricsRow } from "./primary-metrics-row";
+import { ConnectionAssessmentSection } from "./connection-assessment-section";
+import { AdvancedDiagnosticsPanel } from "./advanced-diagnostics-panel";
 
 const SAMPLE_INTERVAL_MS = 120;
 const DETAILS_PANEL_ID = "speed-test-detailed-results";
@@ -84,54 +77,23 @@ const statusCopy: Record<string, string> = {
   cancelled: "Test cancelled",
 };
 
-function gaugeMbps(phase: TestPhase, state: ProgressState): number | null {
-  if (phase === "complete") return state.metrics.downloadMbps;
+function liveMbps(phase: TestPhase, state: ProgressState): number | null {
   if (phase === "upload") {
     return state.metrics.uploadMbps ?? state.currentMbps;
   }
-  if (phase === "download") {
+  if (phase === "download" || phase === "complete") {
     return state.currentMbps ?? state.metrics.downloadMbps;
   }
   return null;
 }
 
-function showGaugeSpeed(phase: TestPhase): boolean {
-  return phase === "download" || phase === "upload" || phase === "complete";
-}
-
-function TestControls({
-  phase,
-  running,
-  buttonStatus,
-  showModeToggle,
-  mode,
-  onStart,
-  onCancel,
-  onModeChange,
-}: {
-  phase: TestPhase;
-  running: boolean;
-  buttonStatus: string;
-  showModeToggle: boolean;
-  mode: TestMode;
-  onStart: () => void;
-  onCancel: () => void;
-  onModeChange: (m: TestMode) => void;
-}) {
-  return (
-    <div className="flex w-full flex-col items-center gap-3">
-      {showModeToggle && (
-        <ModeToggle mode={mode} disabled={running} onChange={onModeChange} />
-      )}
-      <StartTestButton
-        phase={phase}
-        running={running}
-        statusLine={buttonStatus}
-        onStart={onStart}
-        onCancel={onCancel}
-      />
-    </div>
-  );
+function activeMetricPhase(
+  phase: TestPhase,
+): "download" | "upload" | "ping" | null {
+  if (phase === "download") return "download";
+  if (phase === "upload") return "upload";
+  if (phase === "ping") return "ping";
+  return null;
 }
 
 export function SpeedTestDashboard({
@@ -435,18 +397,20 @@ export function SpeedTestDashboard({
         ? "Testing Upload…"
         : statusCopy[state.phase] ?? "Testing…";
 
-  const showStatusLine =
-    state.phase !== "idle" &&
-    state.phase !== "complete" &&
-    state.phase in statusCopy;
-
   const complete = state.phase === "complete";
 
   const uploadCaption = useMemo(
-    () =>
-      uploadDeltaCaption(state.metrics.uploadMbps, previousUploadMbps),
+    () => uploadDeltaCaption(state.metrics.uploadMbps, previousUploadMbps),
     [state.metrics.uploadMbps, previousUploadMbps],
   );
+
+  const assessment = useMemo(() => {
+    if (!complete) return null;
+    return buildConnectionAssessment({
+      ...state.metrics,
+      mode,
+    });
+  }, [complete, state.metrics, mode]);
 
   const liveAnnouncement = useMemo(() => {
     if (running) return buttonStatus;
@@ -458,152 +422,124 @@ export function SpeedTestDashboard({
     return "";
   }, [running, complete, buttonStatus, state.metrics.downloadMbps]);
 
+  const showLiveHero =
+    running &&
+    state.phase !== "ping" &&
+    (state.phase === "download" ||
+      state.phase === "upload" ||
+      state.phase === "preparing" ||
+      state.phase === "saving");
+
   return (
     <section
       aria-label="Internet speed test"
-      className={cn("mx-auto w-full max-w-[1120px] px-4", className)}
+      className={cn("mx-auto w-full max-w-[1100px] px-3 sm:px-4", className)}
     >
       {!measurementReady && measurementNotice && state.phase === "idle" && (
         <div
-          className="mb-3 rounded-xl border border-warning/40 bg-warning/10 px-4 py-3 text-[14px] leading-snug text-foreground"
+          className="mb-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5 text-[13px] leading-snug text-foreground"
           role="status"
         >
           {measurementNotice}
         </div>
       )}
-      <div className="overflow-x-hidden rounded-[20px] border border-[var(--card-border)] bg-card px-4 py-4 sm:px-5 sm:py-5">
-        <div className="flex min-w-0 flex-col gap-4 min-[800px]:grid min-[800px]:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] min-[800px]:items-start min-[800px]:gap-6">
-          <div className="flex flex-col items-center gap-3">
-            <SpeedGauge
-              valueMbps={gaugeMbps(state.phase, state)}
+
+      <article className="overflow-x-hidden rounded-2xl border border-[var(--card-border)] bg-card px-3 py-4 shadow-sm sm:px-5 sm:py-5">
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {liveAnnouncement}
+        </p>
+
+        <LiveSpeedHero
+          phase={state.phase}
+          progress={state.progress}
+          valueMbps={liveMbps(state.phase, state)}
+          showLive={showLiveHero}
+        />
+
+        <PrimaryMetricsRow
+          downloadMbps={state.metrics.downloadMbps}
+          uploadMbps={state.metrics.uploadMbps}
+          pingMs={state.metrics.pingMs}
+          jitterMs={state.metrics.jitterMs}
+          activePhase={activeMetricPhase(state.phase)}
+          showCaptions={complete}
+          uploadCaption={uploadCaption}
+        />
+
+        {complete && assessment && (
+          <ConnectionAssessmentSection assessment={assessment} />
+        )}
+
+        {state.error && (
+          <p className="mt-3 text-[14px] text-destructive" role="alert">
+            {state.error}
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-col gap-3 border-t border-[var(--card-border)] pt-4 lg:flex-row lg:items-center lg:justify-between">
+          {showModeToggle && (
+            <ModeToggle
+              mode={mode}
+              disabled={running}
+              onChange={setMode}
+              compact
+            />
+          )}
+          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end lg:ml-auto lg:w-auto">
+            {complete && (
+              <button
+                type="button"
+                id={`${DETAILS_PANEL_ID}-trigger`}
+                aria-expanded={detailsOpen}
+                aria-controls={DETAILS_PANEL_ID}
+                onClick={() => setDetailsOpen(!detailsOpen)}
+                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-3 text-[14px] font-semibold text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                View detailed diagnostics
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 motion-safe:transition-transform",
+                    detailsOpen && "rotate-180",
+                  )}
+                  aria-hidden
+                />
+              </button>
+            )}
+            <StartTestButton
               phase={state.phase}
-              showSpeed={showGaugeSpeed(state.phase)}
+              running={running}
+              statusLine={buttonStatus}
+              onStart={start}
+              onCancel={cancel}
             />
-            <p className="sr-only" aria-live="polite" aria-atomic="true">
-              {liveAnnouncement}
-            </p>
-            {showStatusLine && (
-              <p className="text-center text-[14px] text-muted-foreground" aria-hidden>
-                {statusCopy[state.phase]}
-              </p>
-            )}
-            <div className="hidden w-full min-[800px]:flex min-[800px]:justify-center">
-              <TestControls
-                phase={state.phase}
-                running={running}
-                buttonStatus={buttonStatus}
-                showModeToggle={showModeToggle}
-                mode={mode}
-                onStart={start}
-                onCancel={cancel}
-                onModeChange={setMode}
-              />
-            </div>
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
-              <MetricCard
-                label="Upload"
-                value={state.metrics.uploadMbps}
-                unit="speed"
-                caption={complete ? uploadCaption : null}
-                active={state.phase === "upload"}
-              />
-              <MetricCard
-                label="Ping"
-                value={state.metrics.pingMs}
-                unit="ms"
-                caption={complete ? pingDescriptor(state.metrics.pingMs) : null}
-                active={state.phase === "ping"}
-              />
-              <MetricCard
-                label="Jitter"
-                value={state.metrics.jitterMs}
-                unit="ms"
-                caption={complete ? jitterDescriptor(state.metrics.jitterMs) : null}
-              />
-            </div>
-
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-2">
-              <BufferbloatCard
-                mode={mode}
-                complete={complete}
-                grade={state.metrics.bufferbloatGrade}
-                idleMs={state.metrics.bufferbloatIdleMs}
-                loadedDownMs={state.metrics.bufferbloatLoadedDownMs}
-                loadedUpMs={state.metrics.bufferbloatLoadedUpMs}
-                onSelectStandard={() => setMode("standard")}
-              />
-            </div>
-
-            <ResultSummary
-              downloadMbps={state.metrics.downloadMbps}
-              visible={complete}
-            />
-
-            <ConnectionQuality metrics={state.metrics} visible={complete} />
-
-            <DiagnosisCard
-              metrics={state.metrics}
-              plan={plan}
-              history={historySnapshot}
-              visible={complete}
-            />
-
-            <ConnectionTagToggle
-              visible={complete}
-              value={connectionTag}
-              onChange={(tag) => {
-                setConnectionTag(tag);
-                if (lastHistoryId) patchHistoryTag(lastHistoryId, tag);
-              }}
-            />
-
-            <ResultFooter
-              shareUrl={shareUrl}
-              network={network}
-              server={server}
-              visible={complete}
-            />
-
-            {state.error && (
-              <p className="text-[14px] text-destructive" role="alert">
-                {state.error}
-              </p>
-            )}
-
-            <div className="min-[800px]:hidden">
-              <TestControls
-                phase={state.phase}
-                running={running}
-                buttonStatus={buttonStatus}
-                showModeToggle={showModeToggle}
-                mode={mode}
-                onStart={start}
-                onCancel={cancel}
-                onModeChange={setMode}
-              />
-            </div>
           </div>
         </div>
-      </div>
 
-      {complete && (
-        <DetailedResultsPanel
-          open={detailsOpen}
-          onOpenChange={setDetailsOpen}
-          panelId={DETAILS_PANEL_ID}
-          network={network}
-          server={server}
-          browserLinkEstimate={browserLinkEstimate}
-          testedAt={testedAt}
-          samples={samples}
-          metrics={state.metrics}
-          mode={mode}
-          showChart
-        />
-      )}
+        {complete && assessment && (
+          <AdvancedDiagnosticsPanel
+            showToggle={false}
+            open={detailsOpen}
+            onOpenChange={setDetailsOpen}
+            panelId={DETAILS_PANEL_ID}
+            assessment={assessment}
+            metrics={state.metrics}
+            mode={mode}
+            network={network}
+            server={server}
+            browserLinkEstimate={browserLinkEstimate}
+            testedAt={testedAt}
+            samples={samples}
+            plan={plan}
+            history={historySnapshot}
+            shareUrl={shareUrl}
+            connectionTag={connectionTag}
+            onConnectionTagChange={(tag) => {
+              setConnectionTag(tag);
+              if (lastHistoryId) patchHistoryTag(lastHistoryId, tag);
+            }}
+          />
+        )}
+      </article>
     </section>
   );
 }

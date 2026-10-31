@@ -12,15 +12,16 @@ interface ModeToggleProps {
   mode: TestMode;
   disabled?: boolean;
   onChange: (mode: TestMode) => void;
+  compact?: boolean;
 }
 
-export function ModeToggle({ mode, disabled, onChange }: ModeToggleProps) {
+export function ModeToggle({ mode, disabled, onChange, compact }: ModeToggleProps) {
   return (
-    <div className="w-full max-w-[280px]">
+    <div className={cn(compact ? "w-auto" : "w-full max-w-[280px]")}>
       <div
         role="group"
         aria-label="Test mode"
-        className="flex rounded-full bg-[var(--surface-subtle)] p-1"
+        className="flex rounded-full bg-[var(--surface-subtle)] p-0.5"
       >
         {MODES.map((m) => (
           <button
@@ -30,7 +31,8 @@ export function ModeToggle({ mode, disabled, onChange }: ModeToggleProps) {
             aria-pressed={mode === m.id}
             onClick={() => onChange(m.id)}
             className={cn(
-              "min-h-[44px] flex-1 rounded-full px-3 text-sm font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-teal)] focus-visible:ring-offset-2",
+              "flex-1 rounded-full px-3 text-xs font-medium motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-teal)] focus-visible:ring-offset-2 sm:text-sm",
+              compact ? "min-h-[36px]" : "min-h-[44px]",
               mode === m.id
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
@@ -41,9 +43,11 @@ export function ModeToggle({ mode, disabled, onChange }: ModeToggleProps) {
           </button>
         ))}
       </div>
-      <p className="mt-2 text-center text-[12px] leading-snug text-muted-foreground">
-        Lightweight uses less data. Standard is more thorough.
-      </p>
+      {!compact && (
+        <p className="mt-2 text-center text-[12px] leading-snug text-muted-foreground">
+          Lightweight uses less data. Standard is more thorough.
+        </p>
+      )}
     </div>
   );
 }

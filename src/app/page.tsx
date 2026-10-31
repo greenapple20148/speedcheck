@@ -46,16 +46,16 @@ export default function HomePage() {
         }}
       />
 
-      <section className="mx-auto max-w-[1120px] px-4 pb-0 pt-3 text-center">
-        <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-[2rem]">
+      <section className="mx-auto max-w-[1100px] px-3 pb-0 pt-2 text-center sm:px-4 sm:pt-3">
+        <h1 className="text-[1.5rem] font-semibold leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
           How fast is your internet?
         </h1>
-        <p className="mx-auto mt-1 max-w-md text-[14px] text-muted-foreground sm:text-[15px]">
-          Test download, upload, ping, and jitter in seconds.
+        <p className="mx-auto mt-1 max-w-lg text-[13px] text-muted-foreground sm:text-[14px]">
+          Measure your connection speed and stability in seconds.
         </p>
       </section>
 
-      <div id="speed-test" className="pb-2">
+      <div id="speed-test" className="pb-1 pt-2">
         <SpeedTestDashboard />
       </div>
 
