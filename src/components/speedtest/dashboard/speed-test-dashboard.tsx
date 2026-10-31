@@ -28,6 +28,7 @@ import { cn, formatSpeedParts } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import { ModeToggle } from "./mode-toggle";
 import { StartTestButton } from "./start-test-button";
+import { DiagnoseConnectionPanel } from "@/components/diagnostics/diagnose-connection-panel";
 import { CloudflareSpeedLayout } from "./cloudflare-speed-layout";
 import { AdvancedDiagnosticsPanel } from "./advanced-diagnostics-panel";
 
@@ -464,6 +465,17 @@ export function SpeedTestDashboard({
           <p className="mt-2 text-center text-[12px] text-muted-foreground">
             Upload {uploadCaption}
           </p>
+        )}
+
+        {complete && (
+          <DiagnoseConnectionPanel
+            className="mt-4"
+            metrics={state.metrics}
+            mode={mode}
+            server={server}
+            plan={plan}
+            history={historySnapshot}
+          />
         )}
 
         <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[var(--card-border)] bg-card px-3 py-4 lg:flex-row lg:items-center lg:justify-between sm:px-4">

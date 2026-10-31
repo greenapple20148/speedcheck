@@ -12,6 +12,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/ping-test",
     "/jitter-test",
     "/results/history",
+    "/diagnostics",
     "/tools/mbps-to-mbs",
     "/guides/why-is-my-internet-slow",
     "/guides/what-is-good-internet-speed",

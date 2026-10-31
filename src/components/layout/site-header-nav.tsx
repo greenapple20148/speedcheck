@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/#speed-test", label: "Speed Test", matchHome: true },
-  { href: "/results/history", label: "Results History", matchHome: false },
-  { href: "/tools/mbps-to-mbs", label: "Network Tools", matchHome: false },
-  { href: "/guides/what-is-good-internet-speed", label: "About", matchHome: false },
+  { href: "/results/history", label: "History", matchHome: false },
+  { href: "/diagnostics", label: "Diagnostics", matchHome: false },
+  { href: "/tools/mbps-to-mbs", label: "Tools", matchHome: false },
 ] as const;
 
 function isActive(pathname: string, link: (typeof links)[number]): boolean {
