@@ -27,6 +27,8 @@ Open http://127.0.0.1:43123
 
 ## Measurement VPS
 
+You need **`/opt/speedcheck/docker-compose.yml`** beside `.env` and `services/speedtest/`. If you only copied the Go tree, add compose from [`deploy/docker-compose.production.yml`](../deploy/docker-compose.production.yml) — see [`deploy/VPS_MEASUREMENT_SETUP.md`](../deploy/VPS_MEASUREMENT_SETUP.md).
+
 ```bash
 cd /opt/speedcheck
 docker compose up -d --build speedtest
