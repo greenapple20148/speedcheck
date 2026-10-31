@@ -26,7 +26,7 @@ const tips = [
 
 export function TroubleshootingSection() {
   return (
-    <section className="mx-auto max-w-6xl px-4" aria-labelledby="troubleshoot-heading">
+    <section className="mx-auto max-w-[960px]" aria-labelledby="troubleshoot-heading">
       <h2 id="troubleshoot-heading" className="heading-2 text-foreground">
         Connection troubleshooting
       </h2>

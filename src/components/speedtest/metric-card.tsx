@@ -1,4 +1,4 @@
-import { cn, formatMbps, formatMs } from "@/lib/utils";
+import { cn, formatMs, formatSpeedParts } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
 interface MetricCardProps {
@@ -16,8 +16,9 @@ export function MetricCard({
   icon: Icon,
   className,
 }: MetricCardProps) {
-  const display =
-    unit === "Mbps" ? formatMbps(value) : formatMs(value);
+  const speed = unit === "Mbps" ? formatSpeedParts(value) : null;
+  const display = unit === "Mbps" ? (speed?.amount ?? "—") : formatMs(value);
+  const displayUnit = unit === "Mbps" ? (speed?.unit ?? "Mbps") : unit;
   return (
     <div
       className={cn(
@@ -35,7 +36,7 @@ export function MetricCard({
         <span className="font-heading text-2xl font-bold tabular-nums text-foreground md:text-3xl">
           {display}
         </span>
-        <span className="text-sm text-muted-foreground">{unit}</span>
+        <span className="text-sm text-muted-foreground">{displayUnit}</span>
       </div>
     </div>
   );

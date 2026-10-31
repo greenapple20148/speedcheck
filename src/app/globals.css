@@ -4,33 +4,34 @@
 
 @layer base {
   :root {
-    --background: #fafaf7;
-    --foreground: #172b2a;
+    --background: #ffffff;
+    --foreground: #172b29;
     --card: #ffffff;
-    --card-foreground: #172b2a;
+    --card-foreground: #172b29;
     --popover: #ffffff;
-    --popover-foreground: #172b2a;
-    --primary: #087f6d;
-    --primary-hover: #066756;
+    --popover-foreground: #172b29;
+    --primary: #218c77;
+    --primary-hover: #176b5b;
     --primary-foreground: #ffffff;
-    --secondary: #ddf4eb;
-    --secondary-foreground: #066756;
-    --muted: #f0f4f2;
-    --muted-foreground: #657775;
-    --accent: #ddf4eb;
-    --accent-foreground: #087f6d;
+    --secondary: #f7faf9;
+    --secondary-foreground: #006b5c;
+    --muted: #f7faf9;
+    --muted-foreground: #647873;
+    --accent: #f0f7f5;
+    --accent-foreground: #008c78;
     --destructive: #c2410c;
     --destructive-foreground: #ffffff;
-    --border: #e3eae6;
-    --input: #e3eae6;
-    --ring: #087f6d;
-    --radius: 0.75rem;
-    --chart-1: #087f6d;
-    --chart-2: #0ea5a0;
+    --success: #16a34a;
+    --warning: #f59e0b;
+    --border: #e3ebe8;
+    --input: #e3ebe8;
+    --ring: #008c78;
+    --radius: 1rem;
+    --chart-1: #008c78;
+    --chart-2: #60a5fa;
     --chart-3: #34d399;
-    --chart-4: #657775;
-    --chart-5: #172b2a;
-    --hero-glow: rgba(8, 127, 109, 0.12);
+    --chart-4: #647873;
+    --chart-5: #172b29;
   }
 
   * {
@@ -41,12 +42,33 @@
     scroll-behavior: smooth;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    .motion-safe\:animate-fade-up,
+    .motion-safe\:animate-pulse-ring,
+    .motion-safe\:animate-ping,
+    .motion-safe\:animate-spin,
+    .animate-fade-up,
+    .animate-pulse-ring {
+      animation: none !important;
+    }
+
+    .motion-safe\:transition-all,
+    .motion-safe\:transition-colors,
+    .motion-safe\:transition-shadow,
+    .motion-safe\:transition-transform,
+    .motion-safe\:duration-200,
+    .motion-safe\:duration-300,
+    .motion-safe\:duration-500 {
+      transition: none !important;
+    }
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, var(--hero-glow), transparent),
-      linear-gradient(180deg, #fafaf7 0%, #f3f7f5 100%);
-    background-attachment: fixed;
+    @apply bg-[#F7FAF9] font-sans text-foreground antialiased;
     min-height: 100vh;
   }
 
@@ -54,7 +76,6 @@
   h2,
   h3,
   h4 {
-    font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
 }
@@ -65,34 +86,26 @@
   }
 
   .speed-value {
-    font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
-    font-size: 3rem;
-    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     letter-spacing: -0.04em;
     line-height: 1;
   }
 
-  @media (min-width: 768px) {
-    .speed-value {
-      font-size: 4rem;
-    }
-  }
-
   .heading-1 {
-    font-size: 1.875rem;
+    font-size: 2.25rem;
     font-weight: 700;
-    line-height: 1.15;
+    line-height: 1.12;
   }
 
   @media (min-width: 768px) {
     .heading-1 {
-      font-size: 2.5rem;
+      font-size: 3rem;
     }
   }
 
   .heading-2 {
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.2;
   }
 

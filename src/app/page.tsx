@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SpeedTestWidget } from "@/components/speedtest/speed-test-widget";
+import { SpeedTestDashboard } from "@/components/speedtest/dashboard/speed-test-dashboard";
 import { TroubleshootingSection } from "@/components/speedtest/troubleshooting";
 import { FaqSection } from "@/components/seo/faq-section";
 import { JsonLd } from "@/components/seo/json-ld";
@@ -25,7 +25,7 @@ export default function HomePage() {
         data={{
           "@context": "https://schema.org",
           "@type": "WebApplication",
-          name: "SpeedCheck",
+          name: "MySpeedGauge",
           url: absoluteUrl("/"),
           applicationCategory: "UtilitiesApplication",
           operatingSystem: "Any",
@@ -46,27 +46,24 @@ export default function HomePage() {
         }}
       />
 
-      <section className="mx-auto max-w-6xl px-4 pb-8 pt-10 text-center md:pt-16">
-        <p className="mb-3 font-heading text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-          SpeedCheck
-        </p>
-        <h1 className="heading-1 text-balance text-foreground">
-          Test Your Internet Speed
+      <section className="mx-auto max-w-[960px] px-4 pb-1 pt-3 text-center">
+        <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-[2rem]">
+          How fast is your internet?
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground md:text-lg">
-          Measure real download, upload, ping, and jitter in seconds—no account required.
+        <p className="mx-auto mt-1 max-w-md text-[14px] text-muted-foreground sm:text-[15px]">
+          Test download, upload, ping, and jitter in seconds.
         </p>
       </section>
 
-      <div id="speed-test" className="px-4">
-        <SpeedTestWidget />
+      <div id="speed-test" className="pb-2">
+        <SpeedTestDashboard />
       </div>
 
-      <div className="mt-16">
+      <div className="mx-auto mt-8 max-w-[960px] border-t border-[#E3EBE8] bg-[#F7FAF9] px-4 py-8 sm:py-10">
         <TroubleshootingSection />
       </div>
 
-      <section className="mx-auto mt-16 max-w-6xl px-4" aria-labelledby="learn-heading">
+      <section className="mx-auto mt-12 w-full max-w-[960px] px-4" aria-labelledby="learn-heading">
         <h2 id="learn-heading" className="heading-2 text-foreground">
           Understand your results
         </h2>
@@ -86,15 +83,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-3xl px-4">
-        <AdSlot format="horizontal" slot="home-below-results" />
+      <div className="mx-auto w-full max-w-[960px] px-4">
+        <AdSlot format="horizontal" slot="home-below-results" className="my-6" />
       </div>
 
-      <div className="mt-8 px-4">
+      <div className="mx-auto mt-8 w-full max-w-[960px] px-4">
         <AffiliateOffers offers={AFFILIATE_OFFERS} />
       </div>
 
-      <div className="mt-16 px-4 pb-16">
+      <div className="mx-auto mt-12 w-full max-w-[960px] px-4 pb-12">
         <FaqSection items={HOME_FAQS} />
       </div>
     </>

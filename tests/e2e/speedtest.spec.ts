@@ -5,24 +5,42 @@ test.describe("real measurement flow", () => {
     test.setTimeout(90_000);
     await page.goto("/");
     await page.getByRole("button", { name: "Lightweight", exact: true }).click();
-    await page.getByRole("button", { name: "GO", exact: true }).click();
+    await page.getByRole("button", { name: "Start Speed Test", exact: true }).click();
     await expect(
-      page.getByText(/Preparing|Measuring|Testing download|Testing upload|Saving|Test complete/i).first(),
+      page.getByText(/Preparing|Measuring|Testing download|Testing upload|Saving/i).first(),
     ).toBeVisible();
-    await expect(page.getByText("Test complete", { exact: true })).toBeVisible({
+    await expect(page.getByText("Test complete", { exact: true }).first()).toBeVisible({
       timeout: 75_000,
     });
-    await expect(page.getByText("Download").first()).toBeVisible();
+    await expect(page.getByText("Download", { exact: true }).first()).toBeVisible();
     // After completion, download Mbps should not remain as an em dash placeholder
     await expect(page.locator(".speed-value")).not.toHaveText("—");
   });
 });
 
 test.describe("responsive + a11y smoke", () => {
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 1366, height: 768 },
+  ]) {
+    test(`primary UI fits viewport ${size.width}x${size.height}`, async ({ page }) => {
+      await page.setViewportSize(size);
+      await page.goto("/");
+      const start = page.getByRole("button", { name: "Start Speed Test", exact: true });
+      await expect(start).toBeVisible();
+      await expect(start).toBeInViewport();
+      await expect(page.getByText("Download", { exact: true }).first()).toBeInViewport();
+      await expect(page.getByText("Upload", { exact: true }).first()).toBeInViewport();
+      await expect(page.getByText("Ping", { exact: true }).first()).toBeInViewport();
+      await expect(page.getByText("Jitter", { exact: true }).first()).toBeInViewport();
+      await expect(page.getByText("Lightweight", { exact: true })).toBeInViewport();
+    });
+  }
+
   test("mobile viewport keeps GO usable", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/");
-    const go = page.getByRole("button", { name: "GO", exact: true });
+    const go = page.getByRole("button", { name: "Start Speed Test", exact: true });
     await expect(go).toBeVisible();
     const box = await go.boundingBox();
     expect(box).toBeTruthy();

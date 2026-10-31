@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatMbps, formatMs, slugify } from "@/lib/utils";
+import { formatMbps, formatMs, formatSpeedParts, slugify } from "@/lib/utils";
 
 describe("formatMbps", () => {
   it("formats normal speeds", () => {
@@ -7,6 +7,12 @@ describe("formatMbps", () => {
   });
   it("formats gigabit", () => {
     expect(formatMbps(1500)).toBe("1.50 Gbps");
+  });
+
+  it("formatSpeedParts splits amount and unit", () => {
+    const parts = formatSpeedParts(1300);
+    expect(parts?.amount).toBe("1.30");
+    expect(parts?.unit).toBe("Gbps");
   });
   it("handles null", () => {
     expect(formatMbps(null)).toBe("—");

@@ -5,10 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function formatSpeedParts(
+  value: number | null | undefined,
+  digits = 1,
+): { amount: string; unit: "Mbps" | "Gbps" } | null {
+  if (value == null || Number.isNaN(value)) return null;
+  if (value >= 1000) {
+    return { amount: (value / 1000).toFixed(2), unit: "Gbps" };
+  }
+  return { amount: value.toFixed(digits), unit: "Mbps" };
+}
+
 export function formatMbps(value: number | null | undefined, digits = 1): string {
-  if (value == null || Number.isNaN(value)) return "—";
-  if (value >= 1000) return `${(value / 1000).toFixed(2)} Gbps`;
-  return `${value.toFixed(digits)}`;
+  const parts = formatSpeedParts(value, digits);
+  if (!parts) return "—";
+  return parts.unit === "Gbps" ? `${parts.amount} Gbps` : parts.amount;
 }
 
 export function formatMs(value: number | null | undefined, digits = 0): string {

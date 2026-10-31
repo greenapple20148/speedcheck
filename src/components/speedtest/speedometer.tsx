@@ -1,6 +1,6 @@
 "use client";
 
-import { cn, formatMbps } from "@/lib/utils";
+import { cn, formatSpeedParts } from "@/lib/utils";
 
 interface SpeedometerProps {
   value: number | null;
@@ -12,11 +12,13 @@ interface SpeedometerProps {
 
 export function Speedometer({
   value,
-  label = "Mbps",
+  label,
   progress = 0,
   active = false,
   className,
 }: SpeedometerProps) {
+  const speed = formatSpeedParts(value);
+  const unitLabel = label ?? speed?.unit ?? "Mbps";
   const capped = Math.min(Math.max(value ?? 0, 0), 1000);
   const angle = (capped / 1000) * 220 - 110;
   const arcProgress = Math.min(Math.max(progress, 0), 1);
@@ -69,10 +71,10 @@ export function Speedometer({
       </svg>
       <div className="absolute inset-x-0 bottom-2 text-center">
         <div className="speed-value text-foreground tabular-nums">
-          {formatMbps(value)}
+          {speed?.amount ?? "—"}
         </div>
         <div className="mt-1 text-sm font-medium text-muted-foreground">
-          {label}
+          {unitLabel}
         </div>
       </div>
     </div>
