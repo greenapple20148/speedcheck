@@ -18,6 +18,9 @@ export interface ServerInfo {
   location: string;
   url: string;
   healthy: boolean;
+  /** WGS84 degrees when configured on the measurement node */
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface SessionConfig {
