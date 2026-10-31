@@ -46,6 +46,8 @@ psql "$DATABASE_URL" -f supabase/migrations/20260322000000_init.sql
 
 Set all `NEXT_PUBLIC_*` and server secrets from `.env.example`. Redeploy after changes.
 
+**Results persistence on Vercel:** Without `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, saves use `/tmp` (ephemeral). For share links and history that survive cold starts, configure Supabase and run migrations.
+
 ### Speed test (required for production)
 
 The browser must reach your **Go measurement service**. Without this, users see “Failed to fetch”.
