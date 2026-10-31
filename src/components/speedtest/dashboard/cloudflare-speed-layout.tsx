@@ -119,7 +119,7 @@ export function CloudflareSpeedLayout({
   const showQuality = complete && qualityRows.length > 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-card">
+    <div className="speed-test-card rounded-2xl border border-border bg-card text-card-foreground shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
         <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
           Your internet speed

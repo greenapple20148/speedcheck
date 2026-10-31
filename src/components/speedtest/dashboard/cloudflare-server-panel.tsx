@@ -12,7 +12,7 @@ interface CloudflareServerPanelProps {
 /** Stylized east-coast map with server pin (Cloudflare-inspired, not a live map tile). */
 function ServerMap({ label }: { label: string }) {
   return (
-    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-muted">
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-border bg-[var(--speed-map-bg)]">
       <svg
         viewBox="0 0 400 280"
         className="h-full w-full text-muted-foreground/35"
