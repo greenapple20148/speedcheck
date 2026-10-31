@@ -27,9 +27,11 @@ Open http://127.0.0.1:43123
 
 ## Measurement VPS
 
+Full walkthrough: [`deploy/VPS_MEASUREMENT_SETUP.md`](../deploy/VPS_MEASUREMENT_SETUP.md).
+
 ```bash
 cd /opt/speedcheck
-docker compose up -d --build speedtest
+docker compose -f deploy/docker-compose.production.yml up -d --build
 curl -fsS https://speed.example.com/health
 ```
 

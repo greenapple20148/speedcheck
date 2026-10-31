@@ -1,0 +1,24 @@
+# Production measurement stack on a VPS (e.g. /opt/speedcheck).
+# Copy repo here, create .env from .env.example, then:
+#   docker compose -f deploy/docker-compose.production.yml up -d --build
+#
+# Prefer env_file only — do not duplicate SPEEDTEST_* in `environment` with
+# empty ${VAR} defaults or the container will ignore values from .env.
+
+services:
+  speedtest:
+    build:
+      context: ..
+      dockerfile: services/speedtest/Dockerfile
+    ports:
+      - "127.0.0.1:18443:18443"
+    env_file:
+      - ../.env
+    environment:
+      SPEEDTEST_LISTEN_ADDR: ":18443"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:18443/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
