@@ -11,6 +11,10 @@ export const VIDEO_CALLS_UNSTABLE_JITTER_MS = 20;
 
 export const OVERALL_DOWNLOAD_TIERS_MBPS = {
   gigabit: 1000,
-  fast: 100,
+  /** ~100 Mbps consumer plans often measure in the 75–99 range to a single server. */
+  fast: 75,
   everyday: 25,
 } as const;
+
+/** Below this download (Mbps), activity chips may be capped regardless of ping. */
+export const HIGH_DOWNLOAD_ACTIVITY_FLOOR_MBPS = 50;

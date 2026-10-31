@@ -79,4 +79,24 @@ describe("connection-assessment", () => {
       }),
     ).toBe(true);
   });
+
+  it("aligns ~90 Mbps + stable latency with Fast headline and Good activities", () => {
+    const a = buildConnectionAssessment({
+      downloadMbps: 91,
+      uploadMbps: 89,
+      pingMs: 35,
+      jitterMs: 6,
+      bufferbloatGrade: "B",
+      bufferbloatIdleMs: 35,
+      bufferbloatLoadedDownMs: 48,
+      bufferbloatLoadedUpMs: 42,
+      mode: "standard",
+    });
+    expect(a.overallHeadline).toBe("Fast connection");
+    expect(a.overallDescription).not.toMatch(/spikes sharply/i);
+    expect(a.activities.find((x) => x.id === "browsing")?.status).toBe("Good");
+    expect(a.activities.find((x) => x.id === "streaming")?.status).toBe("Good");
+    expect(a.activities.find((x) => x.id === "video-calls")?.status).toBe("Good");
+    expect(a.activities.find((x) => x.id === "gaming")?.status).toBe("Good");
+  });
 });
