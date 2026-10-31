@@ -33,6 +33,10 @@ export interface SessionConfig {
   server: ServerInfo;
 }
 
+export type BufferbloatGrade = "A" | "B" | "C" | "D" | "F";
+
+export type ConnectionTag = "wifi" | "wired";
+
 export interface SpeedMetrics {
   downloadMbps: number | null;
   uploadMbps: number | null;
@@ -41,6 +45,11 @@ export interface SpeedMetrics {
   downloadedBytes: number;
   uploadedBytes: number;
   durationMs: number;
+  /** Standard mode: loaded latency / bufferbloat (optional). */
+  bufferbloatIdleMs?: number | null;
+  bufferbloatLoadedDownMs?: number | null;
+  bufferbloatLoadedUpMs?: number | null;
+  bufferbloatGrade?: BufferbloatGrade | null;
 }
 
 export interface ProgressState {
@@ -77,6 +86,11 @@ export interface TestResultPayload {
   country?: string | null;
   isPublic: boolean;
   createdAt?: string;
+  bufferbloatIdleMs?: number | null;
+  bufferbloatLoadedDownMs?: number | null;
+  bufferbloatLoadedUpMs?: number | null;
+  bufferbloatGrade?: BufferbloatGrade | null;
+  connectionTag?: ConnectionTag | null;
 }
 
 export interface SpeedTestOptions {
