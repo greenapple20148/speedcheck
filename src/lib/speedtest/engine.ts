@@ -5,6 +5,8 @@ import type {
   TestMode,
   TestPhase,
 } from "@/types/speedtest";
+import { resolveSpeedtestBaseUrl } from "@/lib/speedtest/base-url";
+import { normalizeSpeedtestError } from "@/lib/speedtest/fetch-errors";
 import { withTimeout } from "@/lib/speedtest/fetch-timeout";
 
 const DEFAULT_BASE =
@@ -247,12 +249,20 @@ export async function runSpeedTest(
   options: SpeedTestOptions = {},
 ): Promise<{ metrics: SpeedMetrics; session: SessionConfig }> {
   const mode = options.mode ?? "standard";
-  const baseUrl = (options.baseUrl || DEFAULT_BASE).replace(/\/$/, "");
+  const resolved =
+    options.baseUrl?.replace(/\/$/, "") ||
+    (typeof window !== "undefined" ? resolveSpeedtestBaseUrl() : DEFAULT_BASE);
+  const baseUrl = resolved.replace(/\/$/, "");
   const signal = options.signal;
   const metrics = emptyMetrics();
   const started = nowMs();
 
-  const emit = (phase: TestPhase, progress: number, currentMbps: number | null = null, error?: string) => {
+  const emit = (
+    phase: TestPhase,
+    progress: number,
+    currentMbps: number | null = null,
+    error?: string,
+  ) => {
     options.onProgress?.({
       phase,
       progress,
@@ -262,56 +272,75 @@ export async function runSpeedTest(
     });
   };
 
-  emit("preparing", 0.02);
-  const session = await createSession(baseUrl, mode, signal);
+  if (!baseUrl) {
+    throw normalizeSpeedtestError(new Error("Failed to fetch"), baseUrl);
+  }
 
-  emit("ping", 0.08);
-  const { pingMs, jitterMs } = await measurePing(baseUrl, 8, signal);
-  metrics.pingMs = pingMs;
-  metrics.jitterMs = jitterMs;
-  emit("ping", 0.15);
+  try {
+    emit("preparing", 0.02);
+    const session = await createSession(baseUrl, mode, signal);
 
-  emit("download", 0.2);
-  const download = await measureThroughput(
-    "download",
-    session,
-    baseUrl,
-    signal,
-    (mbps, bytes, p) => {
-      metrics.downloadedBytes = bytes;
-      metrics.downloadMbps = mbps;
-      emit("download", 0.2 + p * 0.4, mbps);
-    },
-  );
-  metrics.downloadMbps = download.mbps;
-  metrics.downloadedBytes = download.bytes;
+    emit("ping", 0.08);
+    const { pingMs, jitterMs } = await measurePing(baseUrl, 8, signal);
+    metrics.pingMs = pingMs;
+    metrics.jitterMs = jitterMs;
+    emit("ping", 0.15);
 
-  emit("upload", 0.65);
-  const upload = await measureThroughput(
-    "upload",
-    session,
-    baseUrl,
-    signal,
-    (mbps, bytes, p) => {
-      metrics.uploadedBytes = bytes;
-      metrics.uploadMbps = mbps;
-      emit("upload", 0.65 + p * 0.3, mbps);
-    },
-  );
-  metrics.uploadMbps = upload.mbps;
-  metrics.uploadedBytes = upload.bytes;
-  metrics.durationMs = nowMs() - started;
+    emit("download", 0.2);
+    const download = await measureThroughput(
+      "download",
+      session,
+      baseUrl,
+      signal,
+      (mbps, bytes, p) => {
+        metrics.downloadedBytes = bytes;
+        metrics.downloadMbps = mbps;
+        emit("download", 0.2 + p * 0.4, mbps);
+      },
+    );
+    metrics.downloadMbps = download.mbps;
+    metrics.downloadedBytes = download.bytes;
 
-  emit("complete", 1, metrics.downloadMbps);
-  return { metrics, session };
+    emit("upload", 0.65);
+    const upload = await measureThroughput(
+      "upload",
+      session,
+      baseUrl,
+      signal,
+      (mbps, bytes, p) => {
+        metrics.uploadedBytes = bytes;
+        metrics.uploadMbps = mbps;
+        emit("upload", 0.65 + p * 0.3, mbps);
+      },
+    );
+    metrics.uploadMbps = upload.mbps;
+    metrics.uploadedBytes = upload.bytes;
+    metrics.durationMs = nowMs() - started;
+
+    emit("complete", 1, metrics.downloadMbps);
+    return { metrics, session };
+  } catch (err) {
+    throw normalizeSpeedtestError(err, baseUrl);
+  }
+}
+
+export { resolveSpeedtestBaseUrl } from "@/lib/speedtest/base-url";
+
+function clientBaseUrl(override?: string): string {
+  const base =
+    override?.replace(/\/$/, "") ||
+    (typeof window !== "undefined" ? resolveSpeedtestBaseUrl() : DEFAULT_BASE);
+  return base.replace(/\/$/, "");
 }
 
 export async function cancelSession(
   token: string,
-  baseUrl = DEFAULT_BASE,
+  baseUrl?: string,
 ): Promise<void> {
+  const resolved = clientBaseUrl(baseUrl);
+  if (!resolved) return;
   try {
-    await fetch(`${baseUrl.replace(/\/$/, "")}/sessions/cancel`, {
+    await fetch(`${resolved}/sessions/cancel`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
