@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Award, Gauge } from "lucide-react";
 import {
   BUFFERBLOAT_GRADE_LABEL,
-  BUFFERBLOAT_SUMMARY,
+  BUFFERBLOAT_GRADE_SUMMARY,
 } from "@/lib/speedtest/bufferbloat-config";
 import type { BufferbloatGrade, TestMode } from "@/types/speedtest";
 import { cn, formatMs } from "@/lib/utils";
@@ -67,10 +67,10 @@ export function BufferbloatCard({
 
   const detailParts: string[] = [`Idle ${formatMs(idleMs, 1)} ms`];
   if (loadedDownMs != null) {
-    detailParts.push(`down load ${formatMs(loadedDownMs, 1)} ms`);
+    detailParts.push(`download ${formatMs(loadedDownMs, 1)} ms`);
   }
   if (loadedUpMs != null) {
-    detailParts.push(`up load ${formatMs(loadedUpMs, 1)} ms`);
+    detailParts.push(`upload ${formatMs(loadedUpMs, 1)} ms`);
   }
 
   return (
@@ -92,7 +92,9 @@ export function BufferbloatCard({
         </span>
         <Gauge className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
       </div>
-      <p className="mt-1 text-[13px] font-medium text-foreground">{BUFFERBLOAT_SUMMARY}</p>
+      <p className="mt-1 text-[13px] font-medium text-foreground">
+        {BUFFERBLOAT_GRADE_SUMMARY[grade]}
+      </p>
       <p className="mt-0.5 text-[12px] text-muted-foreground">
         {BUFFERBLOAT_GRADE_LABEL[grade]} · {detailParts.join(" · ")}
       </p>
