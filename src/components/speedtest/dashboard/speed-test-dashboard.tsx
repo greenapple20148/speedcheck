@@ -341,7 +341,7 @@ export function SpeedTestDashboard({
         setState({
           phase: "complete",
           progress: 1,
-          currentMbps: metrics.downloadMbps,
+          currentMbps: null,
           metrics,
         });
         trackEvent("speed_test_completed", {

@@ -153,7 +153,7 @@ export function CloudflareSpeedLayout({
             <MetricBlock
               label="Download"
               valueMbps={
-                phase === "download" || complete
+                phase === "download"
                   ? (state.currentMbps ?? m.downloadMbps)
                   : m.downloadMbps
               }
@@ -165,7 +165,7 @@ export function CloudflareSpeedLayout({
             <MetricBlock
               label="Upload"
               valueMbps={
-                phase === "upload" || complete
+                phase === "upload"
                   ? (state.currentMbps ?? m.uploadMbps)
                   : m.uploadMbps
               }
