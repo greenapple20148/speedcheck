@@ -1,3 +1,8 @@
+import {
+  CONNECTION_QUALITY_THRESHOLDS,
+  rateFromThresholds,
+} from "@/lib/speedtest/ui-config";
+
 export type Suitability = "excellent" | "good" | "fair" | "poor" | "unknown";
 
 export interface InsightItem {
@@ -20,16 +25,9 @@ function tier(
   okGood: boolean,
   okFair: boolean,
 ): Suitability {
-  if (okExcellent) return "excellent";
-  if (okGood) return "good";
-  if (okFair) return "fair";
-  return "poor";
+  return rateFromThresholds({ excellent: okExcellent, good: okGood, fair: okFair });
 }
 
-/**
- * Heuristic suitability from this test's download/upload/ping/jitter.
- * Does not measure packet loss; not a guarantee of real-world performance.
- */
 export function buildConnectionInsights(metrics: InsightInput): InsightItem[] {
   const { downloadMbps: dl, uploadMbps: ul, pingMs: ping, jitterMs: jitter } =
     metrics;
@@ -38,17 +36,26 @@ export function buildConnectionInsights(metrics: InsightInput): InsightItem[] {
     return [];
   }
 
-  const browsing = tier(dl >= 25, dl >= 10, dl >= 3);
-  const streaming = tier(dl >= 100, dl >= 50, dl >= 25);
+  const t = CONNECTION_QUALITY_THRESHOLDS;
+  const browsing = tier(
+    t.browsing.excellent(dl),
+    t.browsing.good(dl),
+    t.browsing.fair(dl),
+  );
+  const streaming = tier(
+    t.streaming.excellent(dl),
+    t.streaming.good(dl),
+    t.streaming.fair(dl),
+  );
   const video = tier(
-    ul >= 10 && ping <= 80,
-    ul >= 5 && ping <= 120,
-    ul >= 3 && ping <= 180,
+    t.videoCalls.excellent(ul, ping),
+    t.videoCalls.good(ul, ping),
+    t.videoCalls.fair(ul, ping),
   );
   const gaming = tier(
-    ping <= 30 && jitter <= 10 && dl >= 25,
-    ping <= 50 && jitter <= 20 && dl >= 15,
-    ping <= 90 && jitter <= 35,
+    t.gaming.excellent(ping, jitter, dl),
+    t.gaming.good(ping, jitter, dl),
+    t.gaming.fair(ping, jitter, dl),
   );
 
   return [
@@ -66,7 +73,7 @@ export function buildConnectionInsights(metrics: InsightInput): InsightItem[] {
     },
     {
       id: "streaming",
-      label: "HD / 4K Streaming",
+      label: "4K streaming",
       detail: "Video on one or more screens",
       suitability: streaming,
       explanation:
@@ -78,7 +85,7 @@ export function buildConnectionInsights(metrics: InsightInput): InsightItem[] {
     },
     {
       id: "video-calls",
-      label: "Video Calls",
+      label: "Video calls",
       detail: "Two-way audio and video",
       suitability: video,
       explanation:
@@ -90,7 +97,7 @@ export function buildConnectionInsights(metrics: InsightInput): InsightItem[] {
     },
     {
       id: "gaming",
-      label: "Online Gaming",
+      label: "Gaming",
       detail: "Latency-sensitive play",
       suitability: gaming,
       explanation:

@@ -31,7 +31,7 @@ export function StartTestButton({
         <Button
           type="button"
           disabled
-          className="h-[50px] w-[220px] rounded-full bg-[#218C77] text-[15px] font-semibold text-white shadow-[0_4px_14px_-4px_rgba(33,140,119,0.55)] focus-visible:ring-2 focus-visible:ring-[#218C77] focus-visible:ring-offset-2"
+          className="min-h-[44px] h-[50px] w-[220px] rounded-full bg-primary text-[15px] font-semibold text-primary-foreground shadow-[0_4px_14px_-4px_rgba(11,125,105,0.45)] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" aria-hidden />
           {statusLine}
@@ -51,7 +51,7 @@ export function StartTestButton({
     <Button
       type="button"
       onClick={onStart}
-      className="h-[50px] w-[220px] rounded-full bg-[#218C77] text-[15px] font-semibold text-white shadow-[0_4px_14px_-4px_rgba(33,140,119,0.55)] hover:bg-[#176B5B] focus-visible:ring-2 focus-visible:ring-[#218C77] focus-visible:ring-offset-2"
+      className="min-h-[44px] h-[50px] w-[220px] rounded-full bg-primary text-[15px] font-semibold text-primary-foreground shadow-[0_4px_14px_-4px_rgba(11,125,105,0.45)] hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       {idleLabel(phase)}
     </Button>

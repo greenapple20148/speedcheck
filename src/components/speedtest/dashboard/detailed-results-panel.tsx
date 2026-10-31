@@ -17,7 +17,6 @@ import type {
   SpeedSample,
   TestMode,
 } from "@/types/speedtest";
-import { ConnectionInsights } from "./connection-insights";
 import { format } from "date-fns";
 
 const LiveSpeedChart = dynamic(
@@ -28,6 +27,7 @@ const LiveSpeedChart = dynamic(
 interface DetailedResultsPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  panelId: string;
   network: ClientNetworkInfo | null;
   server: ServerInfo | null;
   browserLinkEstimate: string | null;
@@ -35,7 +35,6 @@ interface DetailedResultsPanelProps {
   samples: SpeedSample[];
   metrics: SpeedMetrics;
   mode: TestMode;
-  showInsights: boolean;
   showChart: boolean;
 }
 
@@ -51,35 +50,41 @@ function GridItem({ label, value }: { label: string; value: string }) {
 export function DetailedResultsPanel({
   open,
   onOpenChange,
+  panelId,
   network,
   server,
   browserLinkEstimate,
   testedAt,
   samples,
-  metrics,
   mode,
-  showInsights,
   showChart,
 }: DetailedResultsPanelProps) {
   return (
-    <div className="mx-auto mt-3 max-w-[960px] border-t border-[#E3EBE8] px-4 pt-3">
+    <div className="mt-4 border-t border-[var(--card-border)] pt-0">
       <button
         type="button"
-        onClick={() => onOpenChange(!open)}
-        className="flex w-full items-center justify-between gap-2 rounded-md py-1.5 text-left text-[14px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#218C77]"
+        id={`${panelId}-trigger`}
         aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => onOpenChange(!open)}
+        className="flex min-h-[56px] w-full items-center justify-between gap-2 rounded-xl border border-[var(--card-border)] bg-[var(--surface-subtle)] px-4 text-left text-[15px] font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-teal)] focus-visible:ring-offset-2"
       >
         View detailed results
         <ChevronDown
           className={cn(
-            "h-4 w-4 text-muted-foreground motion-safe:transition-transform",
+            "h-5 w-5 shrink-0 text-muted-foreground motion-safe:transition-transform",
             open && "rotate-180",
           )}
           aria-hidden
         />
       </button>
       {open && (
-        <div className="mt-4 space-y-5 pb-1">
+        <div
+          id={panelId}
+          role="region"
+          aria-labelledby={`${panelId}-trigger`}
+          className="mt-3 space-y-5 pb-1"
+        >
           <dl className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
             <GridItem label="ISP" value={formatIspDisplay(network)} />
             <GridItem label="Public IP" value={formatPublicIpDisplay(network)} />
@@ -96,7 +101,6 @@ export function DetailedResultsPanel({
             <GridItem label="Test mode" value={mode} />
           </dl>
           {showChart && samples.length > 0 && <LiveSpeedChart samples={samples} />}
-          {showInsights && <ConnectionInsights metrics={metrics} visible />}
         </div>
       )}
     </div>

@@ -46,7 +46,7 @@ export default function HomePage() {
         }}
       />
 
-      <section className="mx-auto max-w-[960px] px-4 pb-1 pt-3 text-center">
+      <section className="mx-auto max-w-[1120px] px-4 pb-0 pt-3 text-center">
         <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground sm:text-[2rem]">
           How fast is your internet?
         </h1>

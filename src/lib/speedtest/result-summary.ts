@@ -1,35 +1,46 @@
-import type { SpeedMetrics } from "@/types/speedtest";
+export interface ResultSummaryTier {
+  headline: string;
+  supporting: string;
+}
 
-/** Short neutral summary from measured values only. */
-export function buildResultSummary(metrics: SpeedMetrics): string | null {
-  const dl = metrics.downloadMbps;
-  const ul = metrics.uploadMbps;
-  const ping = metrics.pingMs;
-  const jitter = metrics.jitterMs;
+/** Tiered headline + supporting copy from download speed (Mbps) only. */
+export function buildResultSummaryTier(
+  downloadMbps: number | null,
+): ResultSummaryTier | null {
+  if (downloadMbps == null || Number.isNaN(downloadMbps)) return null;
 
-  if (dl == null || ul == null || ping == null || jitter == null) {
-    return null;
+  if (downloadMbps >= 1000) {
+    return {
+      headline: "Gigabit-class connection",
+      supporting:
+        "Plenty for several 4K streams, large downloads, and cloud backups at the same time.",
+    };
   }
-
-  if (dl < 3 || ping > 200) {
-    return "Your connection may struggle with most online activities.";
+  if (downloadMbps >= 100) {
+    return {
+      headline: "Fast connection",
+      supporting:
+        "Strong for HD and 4K streaming, video calls, and quick file transfers on multiple devices.",
+    };
   }
-
-  if (ping > 120 || jitter > 40) {
-    return "Your connection may struggle with video calls and real-time apps.";
+  if (downloadMbps >= 25) {
+    return {
+      headline: "Good for everyday use",
+      supporting:
+        "Fine for browsing, HD streaming on one screen, and typical video calls.",
+    };
   }
+  return {
+    headline: "Limited speed",
+    supporting:
+      "May struggle with HD video, large downloads, or several users online at once.",
+  };
+}
 
-  if (dl < 10 || ul < 2) {
-    return "Your connection is usable for light browsing but may feel slow.";
-  }
-
-  if (dl >= 100 && ul >= 20 && ping <= 50) {
-    return "Great speeds for streaming, calls, and everyday use.";
-  }
-
-  if (dl >= 25 && ping <= 80) {
-    return "Your connection is performing well for typical household use.";
-  }
-
-  return "Results look moderate — performance varies by Wi‑Fi and server load.";
+/** @deprecated Use buildResultSummaryTier for UI */
+export function buildResultSummary(metrics: {
+  downloadMbps: number | null;
+}): string | null {
+  const tier = buildResultSummaryTier(metrics.downloadMbps);
+  return tier ? `${tier.headline}. ${tier.supporting}` : null;
 }
