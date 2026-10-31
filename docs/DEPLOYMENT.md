@@ -48,11 +48,15 @@ Restart the speedtest container after changing env. The session API returns thes
 
 ```bash
 cd /opt/speedcheck
+# Compose must include `env_file: - .env` under services.speedtest (see repo docker-compose.yml).
+bash deploy/verify-measurement-env.sh
 docker compose up -d --force-recreate speedtest
-curl -sS http://127.0.0.1:18443/servers | jq .
+bash deploy/verify-measurement-env.sh
 ```
 
-You should see your `SPEEDTEST_SERVER_NAME` and `SPEEDTEST_SERVER_LOCATION`, not `Local Dev` / `Development`.
+You should see your `SPEEDTEST_SERVER_NAME` and `SPEEDTEST_SERVER_LOCATION` in **both** `printenv` and `/servers`, not `Local Dev` / `Development`.
+
+If `/servers` still shows `Local Dev` but `.env` is correct, the container is not loading `.env`—update `docker-compose.yml` on the VPS (add `env_file: - .env`) or pull the latest repo, then recreate again.
 
 Point `NEXT_PUBLIC_SPEEDTEST_URL` at the VPS HTTPS origin. Do **not** proxy measurement payloads through Vercel.
 

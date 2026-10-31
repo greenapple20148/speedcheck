@@ -1,0 +1,12 @@
+# Paste under services.speedtest on the VPS if git pull is not available yet.
+#
+#   env_file:
+#     - .env
+#
+# Ensure /opt/speedcheck/.env contains:
+#   SPEEDTEST_SERVER_ID=do-mkc1-1
+#   SPEEDTEST_SERVER_NAME=MySpeedGauge US
+#   SPEEDTEST_SERVER_REGION=us
+#   SPEEDTEST_SERVER_LOCATION=Kansas City
+#
+# Then: docker compose up -d --force-recreate speedtest
