@@ -49,19 +49,19 @@ function MetricBlock({
   return (
     <div className={cn("min-w-0 flex-1", active && "opacity-100")}>
       <div className="flex items-baseline gap-2">
-        <h3 className="text-[13px] font-medium text-white/50">{label}</h3>
+        <h3 className="text-[13px] font-medium text-muted-foreground">{label}</h3>
       </div>
       <p
-        className="mt-1 text-[2rem] font-light tabular-nums leading-none text-white sm:text-[2.25rem]"
+        className="mt-1 text-[2rem] font-light tabular-nums leading-none text-foreground sm:text-[2.25rem]"
         style={{ color: active ? color : undefined }}
       >
         {parts ? (
           <>
             {parts.amount}
-            <span className="ml-1.5 text-lg text-white/45">{parts.unit}</span>
+            <span className="ml-1.5 text-lg text-muted-foreground">{parts.unit}</span>
           </>
         ) : (
-          <span className="text-white/30">—</span>
+          <span className="text-muted-foreground/50">—</span>
         )}
       </p>
       <div className="mt-2">
@@ -119,9 +119,9 @@ export function CloudflareSpeedLayout({
   const showQuality = complete && qualityRows.length > 0;
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#1b1b1b] text-white shadow-lg ring-1 ring-white/10">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-3 sm:px-5">
-        <h2 className="text-[15px] font-semibold tracking-tight text-white/95">
+    <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-card">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
+        <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
           Your internet speed
         </h2>
         <div className="flex items-center gap-1">
@@ -129,7 +129,7 @@ export function CloudflareSpeedLayout({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Cancel test"
             >
               <Pause className="h-4 w-4" />
@@ -138,7 +138,7 @@ export function CloudflareSpeedLayout({
             <button
               type="button"
               onClick={onStart}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-white"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label={complete ? "Test again" : "Start test"}
             >
               <RotateCcw className="h-4 w-4" />
@@ -176,39 +176,39 @@ export function CloudflareSpeedLayout({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center sm:text-left">
+          <div className="grid grid-cols-3 gap-2 border-t border-border pt-4 text-center sm:text-left">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-white/40">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Latency
               </p>
-              <p className="mt-0.5 text-lg font-medium tabular-nums text-white/90">
+              <p className="mt-0.5 text-lg font-medium tabular-nums text-foreground">
                 {formatMs(m.pingMs) ?? "—"}
               </p>
               {m.pingMs != null && (
-                <p className="text-[10px] text-white/35">
+                <p className="text-[10px] text-muted-foreground">
                   {pingDescriptor(m.pingMs)}
                 </p>
               )}
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-white/40">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Jitter
               </p>
-              <p className="mt-0.5 text-lg font-medium tabular-nums text-white/90">
+              <p className="mt-0.5 text-lg font-medium tabular-nums text-foreground">
                 {formatMs(m.jitterMs) ?? "—"}
               </p>
               {m.jitterMs != null && (
-                <p className="text-[10px] text-white/35">
+                <p className="text-[10px] text-muted-foreground">
                   {jitterDescriptor(m.jitterMs)}
                 </p>
               )}
             </div>
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-white/40">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Packet loss
               </p>
-              <p className="mt-0.5 text-lg font-medium text-white/90">—</p>
-              <p className="text-[10px] text-white/35">Not measured</p>
+              <p className="mt-0.5 text-lg font-medium text-foreground">—</p>
+              <p className="text-[10px] text-muted-foreground">Not measured</p>
             </div>
           </div>
 
@@ -224,7 +224,7 @@ export function CloudflareSpeedLayout({
           )}
 
           {running && phase !== "idle" && (
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
                 className="h-full rounded-full transition-[width] duration-300 ease-out"
                 style={{
@@ -237,8 +237,8 @@ export function CloudflareSpeedLayout({
           )}
 
           {showQuality && (
-            <div className="border-t border-white/10 pt-4">
-              <p className="mb-3 text-[13px] font-semibold text-white/80">
+            <div className="border-t border-border pt-4">
+              <p className="mb-3 text-[13px] font-semibold text-foreground">
                 Network quality score
               </p>
               <NetworkQualityStars rows={qualityRows} />
@@ -246,24 +246,24 @@ export function CloudflareSpeedLayout({
           )}
 
           {complete && assessment && (
-            <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2.5">
-              <p className="text-[14px] font-semibold text-white/90">
+            <div className="rounded-lg border border-border bg-muted/80 px-3 py-2.5">
+              <p className="text-[14px] font-semibold text-foreground">
                 {assessment.overallHeadline}
               </p>
-              <p className="mt-1 text-[12px] leading-snug text-white/55">
+              <p className="mt-1 text-[12px] leading-snug text-muted-foreground">
                 {assessment.overallDescription}
               </p>
             </div>
           )}
         </div>
 
-        <aside className="lg:border-l lg:border-white/10 lg:pl-5">
+        <aside className="lg:border-l lg:border-border lg:pl-5">
           <CloudflareServerPanel server={server} network={network} />
         </aside>
       </div>
 
       {!running && phase === "idle" && (
-        <p className="border-t border-white/10 px-4 py-2 text-center text-[12px] text-white/40 sm:px-5">
+        <p className="border-t border-border px-4 py-2 text-center text-[12px] text-muted-foreground sm:px-5">
           {statusLine === "Testing…" ? "Press refresh to start" : statusLine}
         </p>
       )}

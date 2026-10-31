@@ -27,7 +27,7 @@ export function TestModeSelector({ mode, disabled, onChange }: TestModeSelectorP
     <div
       role="group"
       aria-label="Test mode"
-      className="inline-flex rounded-full bg-[#F7FAF9] p-0.5"
+      className="inline-flex rounded-full bg-[var(--surface-subtle)] p-0.5"
     >
       {MODES.map((m) => (
         <button
@@ -39,7 +39,7 @@ export function TestModeSelector({ mode, disabled, onChange }: TestModeSelectorP
           className={cn(
             "h-9 rounded-full px-3.5 text-[12px] font-medium motion-safe:transition-colors",
             mode === m.id
-              ? "bg-white text-foreground shadow-sm"
+              ? "bg-card text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground",
             disabled && "cursor-not-allowed opacity-50",
           )}

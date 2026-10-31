@@ -39,7 +39,7 @@ export function StartTestButton({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md px-2 py-1 text-[14px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#218C77]"
+          className="rounded-md px-2 py-1 text-[14px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           Cancel
         </button>

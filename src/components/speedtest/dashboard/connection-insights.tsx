@@ -18,7 +18,7 @@ const icons = {
 
 const tone: Record<Suitability, string> = {
   excellent: "text-success",
-  good: "text-[#218C77]",
+  good: "text-primary",
   fair: "text-warning",
   poor: "text-destructive",
   unknown: "text-muted-foreground",
@@ -50,10 +50,10 @@ export function ConnectionInsights({ metrics, visible }: ConnectionInsightsProps
           return (
             <li
               key={item.id}
-              className="rounded-xl bg-[#F5F8F7] px-3 py-3"
+              className="rounded-xl bg-muted px-3 py-3"
             >
               <div className="flex gap-2">
-                <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[#218C77]" aria-hidden />
+                <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
                 <div className="min-w-0">
                   <p className="text-[14px] font-semibold text-foreground">
                     {item.label}

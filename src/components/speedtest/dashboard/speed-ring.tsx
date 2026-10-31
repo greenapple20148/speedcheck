@@ -32,7 +32,7 @@ export function SpeedRing({ valueMbps, phase, showSpeed, compact }: SpeedRingPro
   const speedProgress = liveSpeed ? speedToRingProgress(valueMbps, scaleMax) : 0;
   const activeOffset = C - C * speedProgress;
   const ringOffset = complete ? 0 : activeOffset;
-  const ringStroke = complete ? "#C5D5D0" : "#218C77";
+  const ringStroke = complete ? "var(--gauge-track)" : "var(--accent-teal)";
   const parts = showSpeed ? formatSpeedParts(valueMbps) : null;
   const label = phaseLabel(phase);
 
@@ -61,7 +61,7 @@ export function SpeedRing({ valueMbps, phase, showSpeed, compact }: SpeedRingPro
             cy={VIEW / 2}
             r={R}
             fill="none"
-            stroke="#E6EEEB"
+            stroke="var(--gauge-track)"
             strokeWidth={STROKE}
           />
           <circle
@@ -111,7 +111,7 @@ export function SpeedRing({ valueMbps, phase, showSpeed, compact }: SpeedRingPro
           className="mt-1 flex items-center gap-1 text-[11px] font-medium text-muted-foreground"
           aria-label="Test finished. Neutral ring marks completion; center shows download speed."
         >
-          <Check className="h-3.5 w-3.5 text-[#218C77]" aria-hidden />
+          <Check className="h-3.5 w-3.5 text-primary" aria-hidden />
           Test complete
         </div>
       )}

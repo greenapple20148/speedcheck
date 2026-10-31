@@ -59,7 +59,7 @@ export default function HomePage() {
         <SpeedTestDashboard />
       </div>
 
-      <div className="mx-auto mt-8 max-w-[960px] border-t border-[#E3EBE8] bg-[#F7FAF9] px-4 py-8 sm:py-10">
+      <div className="mx-auto mt-8 max-w-[960px] border-t border-border bg-muted px-4 py-8 sm:py-10">
         <TroubleshootingSection />
       </div>
 
