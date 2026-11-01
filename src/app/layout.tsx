@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { AnalyticsScripts } from "@/components/ads/analytics-scripts";
 import { ConsentBanner } from "@/components/ads/consent-banner";
 import { JsonLd } from "@/components/seo/json-ld";
+import { ThemeBootScript } from "@/components/layout/theme-boot-script";
 import { ThemeProvider } from "@/context/theme-context";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { organizationJsonLd, webSiteJsonLd } from "@/lib/seo/structured-data";
@@ -50,11 +51,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('cm-theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`,
-          }}
-        />
+        <ThemeBootScript />
       </head>
       <body className="font-sans antialiased">
         <ThemeProvider>

@@ -11,6 +11,7 @@ import {
   readPrefs,
   writeHistory,
   type PlanSettings,
+  type StoredHistoryEntry,
 } from "@/lib/speedtest/history-store";
 import { buildConnectionAssessment } from "@/lib/speedtest/connection-assessment";
 import { uploadDeltaCaption } from "@/lib/speedtest/ui-config";
@@ -117,7 +118,7 @@ export function SpeedTestDashboard({
   const [connectionTag, setConnectionTag] = useState<ConnectionTag>("wifi");
   const [lastHistoryId, setLastHistoryId] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanSettings | null>(null);
-  const [historySnapshot, setHistorySnapshot] = useState(readHistory);
+  const [historySnapshot, setHistorySnapshot] = useState<StoredHistoryEntry[]>([]);
   const [savedOnDevice, setSavedOnDevice] = useState(false);
   const [summaryCopied, setSummaryCopied] = useState(false);
   const [isPending, startTransition] = useTransition();

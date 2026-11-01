@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { historyDeltaPercent } from "@/lib/speedtest/run-state";
 import type { StoredHistoryEntry } from "@/lib/speedtest/history-store";
 import { formatMbps, formatMs } from "@/lib/utils";
@@ -18,8 +19,14 @@ interface LocalHistoryProps {
 }
 
 export function LocalHistory({ entries, onClear }: LocalHistoryProps) {
-  const latest = entries[0];
-  const previous = entries[1];
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const shown = mounted ? entries : [];
+  const latest = shown[0];
+  const previous = shown[1];
   const comparison = latest
     ? [
         deltaText(latest.downloadMbps, previous?.downloadMbps ?? null, "Download"),
@@ -38,7 +45,7 @@ export function LocalHistory({ entries, onClear }: LocalHistoryProps) {
             Local browser history. Not synced to an account.
           </p>
         </div>
-        {entries.length > 0 && (
+        {shown.length > 0 && (
           <button
             type="button"
             onClick={onClear}
@@ -48,11 +55,11 @@ export function LocalHistory({ entries, onClear }: LocalHistoryProps) {
           </button>
         )}
       </div>
-      {entries.length === 0 ? (
+      {shown.length === 0 ? (
         <p className="mt-2 text-[13px] text-[var(--sd-muted)]">No saved tests on this device yet.</p>
       ) : (
         <ul className="mt-2 divide-y divide-[var(--sd-border)]">
-          {entries.slice(0, 5).map((entry) => (
+          {shown.slice(0, 5).map((entry) => (
             <li key={entry.id} className="py-2 text-[12px] text-[var(--sd-muted)]">
               <p className="font-medium text-[var(--sd-text)]">
                 {new Date(entry.createdAt).toLocaleString(undefined, {
