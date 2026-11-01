@@ -3,10 +3,9 @@
 @tailwind utilities;
 
 /*
-  Instrument-panel palette.
-  Electric teal (#14C8B4) is the button, gauge, and highlight fill.
-  Small text and focus rings use --accent-text / --ring so they stay WCAG AA
-  on the light background, where the bright teal is too light for body copy.
+  Light theme uses forest green (#086B50) for buttons and highlights.
+  Small text and focus rings use --accent-text / --ring so they stay WCAG AA.
+  Dark theme keeps the brighter teal fills, with dark text on those fills.
 */
 html[data-theme="dark"] {
   --bg-primary: #0b1020;
@@ -88,7 +87,7 @@ html[data-theme="dark"] {
   --gauge-track: var(--donut-track);
   --surface-subtle: var(--bg-tertiary);
   --page-bg: var(--bg-primary);
-  --radius: 1.125rem;
+  --radius: 1.25rem;
   --chart-1: #14c8b4;
   --chart-2: #5b6cff;
   --chart-3: #22c55e;
@@ -100,26 +99,26 @@ html[data-theme="dark"] {
 
 :root,
 [data-theme="light"] {
-  --bg-primary: #f6f8fb;
+  --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #eef2f8;
+  --bg-tertiary: #f1f5f9;
   --bg-surface: #ffffff;
-  --bg-surface-hover: #f3f6fb;
+  --bg-surface-hover: #f8fafc;
 
-  --border-primary: #e3e8f0;
-  --border-subtle: #e3e8f0;
+  --border-primary: #e2e8f0;
+  --border-subtle: #e2e8f0;
 
   --text-primary: #0f172a;
   --text-secondary: #0f172a;
-  --text-tertiary: #3e4a63;
-  --text-muted: #5b6478;
-  --text-faint: #6b7590;
-  --text-ghost: #8d97b2;
+  --text-tertiary: #334155;
+  --text-muted: #64748b;
+  --text-faint: #64748b;
+  --text-ghost: #94a3b8;
 
-  --gold-primary: #14c8b4;
-  --gold-light: #14c8b4;
-  --gold-dark: #0e9e8e;
-  --gold-gradient: linear-gradient(90deg, #14c8b4, #5b6cff);
+  --gold-primary: #086b50;
+  --gold-light: #16a34a;
+  --gold-dark: #064e3b;
+  --gold-gradient: linear-gradient(90deg, #086b50, #16a34a);
 
   /* Darkened teal so links and focus rings clear WCAG AA on #F6F8FB. */
   --accent-text: #0c6b62;
@@ -132,18 +131,18 @@ html[data-theme="dark"] {
   --spark-latency: #15803d;
   --spark-jitter: #a16207;
 
-  --selection-bg: rgba(20, 200, 180, 0.22);
+  --selection-bg: rgba(8, 107, 80, 0.18);
   --selection-fg: #0f172a;
 
-  --header-bg: rgba(246, 248, 251, 0.88);
+  --header-bg: rgba(248, 250, 252, 0.9);
 
   --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05);
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.06);
-  --shadow-glow: 0 8px 24px rgba(20, 200, 180, 0.32);
+  --shadow-glow: 0 8px 24px rgba(8, 107, 80, 0.28);
 
   --input-bg: #ffffff;
-  --input-border: #e3e8f0;
-  --input-focus-ring: rgba(12, 107, 98, 0.4);
+  --input-border: #e2e8f0;
+  --input-focus-ring: rgba(8, 107, 80, 0.4);
 
   --donut-track: rgba(15, 23, 42, 0.08);
   --grid-dot: rgba(15, 23, 42, 0.05);
@@ -160,7 +159,7 @@ html[data-theme="dark"] {
   --popover-foreground: var(--text-primary);
   --primary: var(--gold-primary);
   --primary-hover: var(--gold-dark);
-  --primary-foreground: #06231f;
+  --primary-foreground: #ffffff;
   --secondary: var(--bg-tertiary);
   --secondary-foreground: #0c6b62;
   --muted: var(--bg-tertiary);
@@ -180,7 +179,7 @@ html[data-theme="dark"] {
   --gauge-track: var(--donut-track);
   --surface-subtle: var(--bg-tertiary);
   --page-bg: var(--bg-primary);
-  --radius: 1.125rem;
+  --radius: 1.25rem;
   --chart-1: #0c6b62;
   --chart-2: #3d4fe0;
   --chart-3: #15803d;
@@ -330,11 +329,23 @@ html[data-theme="dark"] {
   }
 
   .panel {
-    border-radius: 18px;
+    border-radius: 20px;
     border: 1px solid var(--border);
     background: var(--card);
     box-shadow: var(--shadow-card);
   }
+}
+
+.prose {
+  color: var(--text-muted);
+}
+
+.prose :where(h1, h2, h3, h4, strong) {
+  color: var(--text-primary);
+}
+
+.prose :where(a) {
+  color: var(--accent-text);
 }
 
 @keyframes pulse-ring {
@@ -372,8 +383,8 @@ html[data-theme="dark"] {
 }
 
 .speed-dashboard {
-  --sd-primary: #14b8a6;
-  --sd-deep: #00866a;
+  --sd-primary: #086b50;
+  --sd-deep: #064e3b;
   --sd-blue: #4f7cf3;
   --sd-bg: #f8fafc;
   --sd-text: #0f172a;
@@ -446,7 +457,7 @@ html[data-theme="dark"] .site-nav-link:hover {
 }
 
 .site-nav-link[data-active="true"] {
-  background: rgba(0, 134, 106, 0.1);
+  background: rgba(8, 107, 80, 0.1);
   color: #0c6b62;
   font-weight: 600;
   text-decoration: underline;
@@ -473,12 +484,12 @@ html[data-theme="dark"] .site-nav-panel {
 }
 
 .site-test-speed {
-  background: #00866a;
+  background: #086b50;
   color: #fff;
 }
 
 .site-test-speed:hover {
-  background: #007858;
+  background: #064e3b;
   color: #fff;
 }
 

@@ -1,7 +1,8 @@
-import Link from "next/link";
 import { Breadcrumbs, type Crumb } from "@/components/layout/breadcrumbs";
 import { FaqSection, type FaqItem } from "@/components/seo/faq-section";
 import { JsonLd } from "@/components/seo/json-ld";
+import { PageHeader } from "@/components/ui/page-header";
+import { RelatedActions } from "@/components/ui/related-actions";
 import { articleJsonLd, faqPageJsonLd, webApplicationJsonLd } from "@/lib/seo/structured-data";
 
 interface ToolShellProps {
@@ -51,16 +52,11 @@ export function ToolShell({
   return (
     <div className={`mx-auto px-4 py-6 sm:py-8 ${wide ? "max-w-[1440px]" : "max-w-6xl"}`}>
       <JsonLd data={structured} />
-      <Breadcrumbs items={trail} currentPath={path} className="justify-center" />
-      {!hideHeader && (
-        <header className="mx-auto mb-4 max-w-3xl text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h1>
-          <p className="mt-2 text-muted-foreground">{intro}</p>
-        </header>
-      )}
+      <Breadcrumbs items={trail} currentPath={path} />
+      {!hideHeader && <PageHeader title={title} description={intro} />}
       {children}
       {methodology && (
-        <section className="mt-10 max-w-3xl" aria-labelledby="method-heading">
+        <section className="mt-10 max-w-3xl rounded-[20px] border border-border bg-card p-5" aria-labelledby="method-heading">
           <h2 id="method-heading" className="text-lg font-semibold text-foreground">
             {methodologyHeading}
           </h2>
@@ -68,24 +64,11 @@ export function ToolShell({
         </section>
       )}
       {faqs.length > 0 && (
-        <div className="mt-10">
+        <div className="mt-10 max-w-3xl">
           <FaqSection items={faqs} />
         </div>
       )}
-      {related.length > 0 && (
-        <nav className="mt-10" aria-label="Related pages">
-          <h2 className="text-lg font-semibold text-foreground">Related</h2>
-          <ul className="mt-3 flex flex-wrap gap-3">
-            {related.map((item) => (
-              <li key={item.href}>
-                <Link href={item.href} className="text-sm font-medium text-primary hover:underline">
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+      <RelatedActions items={related} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Home } from "lucide-react";
 import { JsonLd } from "@/components/seo/json-ld";
 import { breadcrumbListJsonLd } from "@/lib/seo/structured-data";
 import { cn } from "@/lib/utils";
@@ -24,10 +24,11 @@ export function Breadcrumbs({
   return (
     <>
       <JsonLd data={breadcrumbListJsonLd(schemaItems)} />
-      <nav aria-label="Breadcrumb" className="mb-6 text-sm text-muted-foreground">
+      <nav aria-label="Breadcrumb" className="mb-4 text-[13px] text-muted-foreground">
       <ol className={cn("flex flex-wrap items-center gap-1", className)}>
         <li>
-          <Link href="/" className="hover:text-primary">
+          <Link href="/" className="inline-flex min-h-8 items-center gap-1 rounded-md hover:text-primary">
+            <Home className="h-3.5 w-3.5" aria-hidden />
             Home
           </Link>
         </li>
