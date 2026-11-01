@@ -10,6 +10,7 @@ import {
 import { latencyIncreaseMs } from "@/lib/network/loaded-latency";
 import { readHistory } from "@/lib/speedtest/history-store";
 import { trackEvent } from "@/lib/analytics/events";
+import { selectControlClass } from "@/components/ui/field";
 
 const SYMPTOMS: { id: Symptom; label: string }[] = [
   { id: "slow", label: "Internet is slow" },
@@ -105,7 +106,7 @@ export function SymptomTroubleshooter({
         <label className="text-sm">
           Connection
           <select
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2"
+            className={selectControlClass}
             value={link}
             onChange={(event) => setLink(event.target.value as typeof link)}
           >
@@ -117,7 +118,7 @@ export function SymptomTroubleshooter({
         <label className="text-sm">
           Device
           <select
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2"
+            className={selectControlClass}
             value={device}
             onChange={(event) => setDevice(event.target.value as typeof device)}
           >
@@ -149,7 +150,7 @@ export function SymptomTroubleshooter({
         <label className="text-sm">
           More than one device affected?
           <select
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2"
+            className={selectControlClass}
             value={multi}
             onChange={(event) => setMulti(event.target.value as typeof multi)}
           >
@@ -161,7 +162,7 @@ export function SymptomTroubleshooter({
         <label className="text-sm">
           Pattern
           <select
-            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2"
+            className={selectControlClass}
             value={pattern}
             onChange={(event) => setPattern(event.target.value as typeof pattern)}
           >

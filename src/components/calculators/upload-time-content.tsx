@@ -42,27 +42,46 @@ const EXAMPLES: Array<{ label: string; size: number; unit: UploadSizeUnit; speed
   { label: "1 GiB file", size: 1, unit: "GiB", speed: 100 },
 ];
 
-export function UploadTimeDetails() {
+export function UploadTimeExamples() {
   return (
-    <details className="mt-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-soft">
-      <summary className="cursor-pointer text-sm font-semibold text-foreground">How calculations work</summary>
-      <div className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-        <p>Ideal seconds = (file size in bytes × 8) ÷ (upload Mbps × 1,000,000).</p>
-        <p>Estimated seconds = ideal seconds ÷ efficiency. Efficiency is the slider percent divided by 100, from 50% to 100%.</p>
-        <p>Effective upload speed = upload Mbps × efficiency.</p>
-        <p>
-          KB, MB, GB, and TB are powers of 1,000. KiB, MiB, GiB, and TiB are powers of 1,024. A megabit per second is
-          1,000,000 bits per second in both cases.
-        </p>
-        <p>The result is an estimate for a steady rate. It is not a live upload.</p>
-      </div>
-    </details>
+    <section className="rounded-[20px] border border-[#E2E8E5] bg-white p-4 sm:p-5 [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card" aria-labelledby="examples-heading">
+      <h2 id="examples-heading" className="text-lg font-semibold text-[#10231F] [[data-theme=dark]_&]:text-foreground">
+        Examples for common file sizes
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-[#64748B] [[data-theme=dark]_&]:text-muted-foreground">
+        These rows use the same formula as the calculator at 90% efficiency. They are examples, not measurements, and
+        the preset buttons use the same sizes only as starting points.
+      </p>
+      <ul className="mt-3 divide-y divide-[#E2E8E5] overflow-hidden rounded-2xl border border-[#E2E8E5] [[data-theme=dark]_&]:divide-border [[data-theme=dark]_&]:border-border">
+        {EXAMPLES.map((example) => {
+          const estimate = computeUploadEstimate({
+            size: example.size,
+            unit: example.unit,
+            speedMbps: example.speed,
+            efficiencyPercent: 90,
+          });
+          return (
+            <li key={example.label} className="grid gap-1 px-3 py-2 text-sm sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]">
+              <span className="font-medium text-[#10231F] [[data-theme=dark]_&]:text-foreground">
+                {example.label} at {example.speed} Mbps
+              </span>
+              <span className="text-[#64748B] [[data-theme=dark]_&]:text-muted-foreground">
+                Ideal {estimate ? formatUploadDuration(estimate.idealSeconds) : "—"}
+              </span>
+              <span className="text-[#64748B] [[data-theme=dark]_&]:text-muted-foreground">
+                Estimated {estimate ? formatUploadDuration(estimate.realisticSeconds) : "—"}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
-export function UploadTimeGuide() {
+export function UploadTimeLearn() {
   return (
-    <div className="mt-8 space-y-8">
+    <div className="space-y-8 rounded-[20px] border border-[#E2E8E5] bg-white p-4 sm:p-5 [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card">
       <section className="max-w-3xl" aria-labelledby="how-upload-time-heading">
         <h2 id="how-upload-time-heading" className="text-lg font-semibold text-foreground">
           How upload time is calculated
@@ -129,37 +148,20 @@ export function UploadTimeGuide() {
         </p>
       </section>
 
-      <section aria-labelledby="examples-heading">
-        <h2 id="examples-heading" className="text-lg font-semibold text-foreground">
-          Examples for common file sizes
+      <section aria-labelledby="formula-heading">
+        <h2 id="formula-heading" className="text-lg font-semibold text-foreground">
+          How calculations work
         </h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-          These rows use the same formula as the calculator at 90% efficiency. They are examples, not measurements, and
-          the preset buttons above use the same sizes only as starting points.
-        </p>
-        <ul className="mt-3 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
-          {EXAMPLES.map((example) => {
-            const estimate = computeUploadEstimate({
-              size: example.size,
-              unit: example.unit,
-              speedMbps: example.speed,
-              efficiencyPercent: 90,
-            });
-            return (
-              <li key={example.label} className="grid gap-1 px-3 py-2 text-sm sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)]">
-                <span className="font-medium text-foreground">
-                  {example.label} at {example.speed} Mbps
-                </span>
-                <span className="text-muted-foreground">
-                  Ideal {estimate ? formatUploadDuration(estimate.idealSeconds) : "—"}
-                </span>
-                <span className="text-muted-foreground">
-                  Estimated {estimate ? formatUploadDuration(estimate.realisticSeconds) : "—"}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mt-2 space-y-2 text-sm leading-6 text-muted-foreground">
+          <p>Ideal seconds = (file size in bytes × 8) ÷ (upload Mbps × 1,000,000).</p>
+          <p>Estimated seconds = ideal seconds ÷ efficiency. Efficiency is the percent you set divided by 100, from 50% to 100%.</p>
+          <p>Effective upload speed = upload Mbps × efficiency.</p>
+          <p>
+            KB, MB, GB, and TB are powers of 1,000. KiB, MiB, GiB, and TiB are powers of 1,024. A megabit per second is
+            1,000,000 bits per second in both cases.
+          </p>
+          <p>The result is an estimate for a steady rate. It is not a live upload.</p>
+        </div>
       </section>
 
       <FaqSection items={uploadTimeFaqs} />

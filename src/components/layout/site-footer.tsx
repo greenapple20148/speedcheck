@@ -15,6 +15,7 @@ const columns = [
   {
     title: "Tools",
     links: [
+      { href: "/developer-tools", label: "Developer tools" },
       { href: "/gaming-speed-test", label: "Gaming test" },
       { href: "/streaming-speed-test", label: "Streaming test" },
       { href: "/video-call-test", label: "Video call test" },

@@ -1,6 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  Cable,
+  Calculator,
+  Gauge,
+  LayoutGrid,
+  LogIn,
+  Map,
+  Router,
+  Sparkles,
+  Wrench,
+  Wifi,
+} from "lucide-react";
 import { ToolShell } from "@/components/seo/tool-shell";
+import { MeshHeroArt } from "@/components/ui/tool-art";
+import { ToolCard } from "@/components/ui/tool-card";
+import { ToolPageHero } from "@/components/ui/tool-page-hero";
 import { MESH_GUIDES } from "@/lib/mesh/catalog";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -10,22 +25,97 @@ export const metadata: Metadata = buildMetadata({
   path: "/mesh-wifi",
 });
 
-const CARDS = [
-  { href: "/mesh-wifi/planner", title: "Mesh Planner", body: "Draw rooms, drag nodes, and see an estimated coverage map you can correct with measurements." },
-  { href: "/router-setup", title: "Router Setup", body: "Brand, login page, placement checklist, and a speed test you start yourself. The password stays on the vendor page." },
-  { href: "/mesh-wifi/setup", title: "Mesh Setup Assistant", body: "A model-aware checklist for eero, Nest, Deco, Orbi, ZenWiFi, Velop, or another kit." },
-  { href: "/mesh-wifi/placement-optimizer", title: "Node Placement", body: "Four layouts you can apply and then edit. Not a claim of a perfect plan." },
-  { href: "/mesh-wifi/dead-zone-test", title: "Room Testing", body: "Run the speed test in a room you choose and keep that result with the room." },
-  { href: "/mesh-wifi/planner", title: "Router Login Assistant", body: "Open Connect to router in the floor planner. The gateway stays in this browser." },
-  { href: "/mesh-wifi/troubleshooter", title: "Wi-Fi Troubleshooting", body: "Rules from your symptoms and any room tests you saved." },
-  { href: "/mesh-wifi/node-calculator", title: "Node calculator", body: "A starting count from size and construction, including when one router is enough." },
-  { href: "/mesh-wifi/backhaul-advisor", title: "Backhaul", body: "Ethernet, wireless, coax, and powerline, with the limits called out." },
-  { href: "/mesh-wifi/wifi-6-vs-wifi-7", title: "Wi-Fi 6, 6E, and 7", body: "What changes in a house, and when the newest kit does not help." },
+function groupId(title: string) {
+  return `mesh-group-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+}
+
+const GROUPS = [
+  {
+    title: "Plan & Design",
+    tools: [
+      {
+        href: "/mesh-wifi/planner",
+        name: "Mesh Planner",
+        benefit: "Draw rooms, drag nodes, and see an estimated coverage map you can correct with measurements.",
+        icon: Map,
+      },
+      {
+        href: "/mesh-wifi/placement-optimizer",
+        name: "Node Placement",
+        benefit: "Four layouts you can apply and then edit. Not a claim of a perfect plan.",
+        icon: LayoutGrid,
+      },
+      {
+        href: "/mesh-wifi/node-calculator",
+        name: "Node Calculator",
+        benefit: "A starting count from size and construction, including when one router is enough.",
+        icon: Calculator,
+      },
+    ],
+  },
+  {
+    title: "Setup & Configuration",
+    tools: [
+      {
+        href: "/router-setup",
+        name: "Router Setup",
+        benefit: "Brand, login page, placement checklist, and a speed test you start yourself. The password stays on the vendor page.",
+        icon: Router,
+      },
+      {
+        href: "/mesh-wifi/setup",
+        name: "Mesh Setup Assistant",
+        benefit: "A model-aware checklist for eero, Nest, Deco, Orbi, ZenWiFi, Velop, or another kit.",
+        icon: Wifi,
+      },
+      {
+        href: "/mesh-wifi/planner",
+        name: "Router Login Assistant",
+        benefit: "Open Connect to router in the floor planner. The gateway stays in this browser.",
+        icon: LogIn,
+      },
+    ],
+  },
+  {
+    title: "Test & Troubleshoot",
+    tools: [
+      {
+        href: "/mesh-wifi/dead-zone-test",
+        name: "Room Testing",
+        benefit: "Run the speed test in a room you choose and keep that result with the room.",
+        icon: Gauge,
+      },
+      {
+        href: "/mesh-wifi/troubleshooter",
+        name: "Wi-Fi Troubleshooting",
+        benefit: "Rules from your symptoms and any room tests you saved.",
+        icon: Wrench,
+      },
+      {
+        href: "/mesh-wifi/backhaul-advisor",
+        name: "Backhaul",
+        benefit: "Ethernet, wireless, coax, and powerline, with the limits called out.",
+        icon: Cable,
+      },
+    ],
+  },
+  {
+    title: "Learn & Optimize",
+    tools: [
+      {
+        href: "/mesh-wifi/wifi-6-vs-wifi-7",
+        name: "Wi-Fi 6, 6E, and 7",
+        benefit: "What changes in a house, and when the newest kit does not help.",
+        icon: Sparkles,
+      },
+    ],
+  },
 ];
 
 export default function MeshHomePage() {
   return (
     <ToolShell
+      hideHeader
       title="Mesh Wi-Fi setup and placement"
       description="Plan, set up, test, and adjust a mesh network"
       path="/mesh-wifi"
@@ -41,23 +131,43 @@ export default function MeshHomePage() {
         { href: "/wifi-vs-ethernet", label: "Wi-Fi vs Ethernet" },
       ]}
     >
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {CARDS.map((card) => (
-          <li key={card.title}>
-            <Link href={card.href} className="block h-full rounded-[20px] border border-border bg-card p-4 hover:border-[var(--accent-text)]">
-              <h2 className="text-base font-semibold text-foreground">{card.title}</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">{card.body}</p>
-            </Link>
-          </li>
+      <ToolPageHero
+        title="Wi-Fi & Mesh Tools"
+        description="Plan, set up, and troubleshoot a home Wi-Fi or mesh network. Node counts and coverage colors are estimates you can check with a speed test."
+        chips={[
+          { label: "Plan & set up", icon: Wifi },
+          { label: "Optimize coverage", icon: LayoutGrid },
+          { label: "Troubleshoot & fix", icon: Wrench },
+        ]}
+        illustration={<MeshHeroArt />}
+      />
+      <div className="grid gap-6 lg:grid-cols-2">
+        {GROUPS.map((group) => (
+          <section key={group.title} aria-labelledby={groupId(group.title)}>
+            <h2 id={groupId(group.title)} className="text-sm font-semibold uppercase tracking-wide text-[#64748B] [[data-theme=dark]_&]:text-muted-foreground">
+              {group.title}
+            </h2>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+              {group.tools.map((tool) => (
+                <li key={tool.name}>
+                  <ToolCard href={tool.href} name={tool.name} benefit={tool.benefit} icon={tool.icon} />
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
-      </ul>
+      </div>
       <section className="mt-8" aria-labelledby="mesh-guides-heading">
-        <h2 id="mesh-guides-heading" className="text-lg font-semibold">Guides</h2>
-        <ul className="mt-3 space-y-2">
+        <h2 id="mesh-guides-heading" className="text-lg font-semibold text-[#10231F] [[data-theme=dark]_&]:text-foreground">
+          Guides
+        </h2>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
           {MESH_GUIDES.map((guide) => (
-            <li key={guide.slug}>
-              <Link href={`/mesh-wifi/guides/${guide.slug}`} className="font-medium text-primary hover:underline">{guide.title}</Link>
-              <p className="text-sm text-muted-foreground">{guide.description}</p>
+            <li key={guide.slug} className="rounded-[20px] border border-[#E2E8E5] bg-white p-4 [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card">
+              <Link href={`/mesh-wifi/guides/${guide.slug}`} className="font-semibold text-[#006B53] hover:underline [[data-theme=dark]_&]:text-[var(--accent-text)]">
+                {guide.title}
+              </Link>
+              <p className="mt-1 text-sm leading-6 text-[#64748B] [[data-theme=dark]_&]:text-muted-foreground">{guide.description}</p>
             </li>
           ))}
         </ul>

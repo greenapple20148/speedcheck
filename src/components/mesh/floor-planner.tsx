@@ -820,7 +820,7 @@ export function FloorPlanner() {
             </label>
             <label className="ml-auto">
               <span className="sr-only">Coverage view</span>
-              <select className="rounded-md border border-[#E2E8F0] bg-white px-1 py-0.5 text-[11px] text-[#0F172A]" value={overlay} aria-label="Coverage view" onChange={(event) => setOverlay(event.target.value as PlannerOverlay)}>
+              <select className="select-chevron-on-light rounded-md border border-[#E2E8F0] bg-white py-0.5 pl-2 text-[11px] text-[#0F172A] outline-none focus-visible:ring-2 focus-visible:ring-ring" value={overlay} aria-label="Coverage view" onChange={(event) => setOverlay(event.target.value as PlannerOverlay)}>
                 <option value="estimate">Estimate</option>
                 <option value="download">Measured download</option>
                 <option value="latency">Measured latency</option>

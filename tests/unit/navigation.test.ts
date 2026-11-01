@@ -40,6 +40,10 @@ describe("navigation route matching", () => {
     expect(isNavItemActive("/mesh-wifi/planner", tools!)).toBe(false);
     expect(isNavItemActive("/guides/what-is-latency", guides!)).toBe(true);
     expect(isNavItemActive("/guides/what-is-latency", health!)).toBe(false);
+    expect(isNavItemActive("/developer-tools/json-formatter", tools!)).toBe(true);
+    expect(isNavItemActive("/developer-tools/base64", wifi!)).toBe(false);
+    expect(isCurrentPage("/developer-tools/json-formatter", "/developer-tools")).toBe(false);
+    expect(isCurrentPage("/developer-tools/json-formatter", "/developer-tools/json-formatter")).toBe(true);
   });
 
   it("treats the homepage as the speed test and keeps the test-speed call to action off those routes", () => {

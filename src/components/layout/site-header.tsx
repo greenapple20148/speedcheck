@@ -34,7 +34,7 @@ export function SiteHeader() {
 
   return (
     <header data-scrolled={scrolled ? "true" : "false"} className="site-header sticky top-0 z-50">
-      <div className="mx-auto flex h-[70px] max-w-6xl items-center gap-3 px-4">
+      <div className="mx-auto flex h-[70px] max-w-6xl items-center gap-2 px-3 min-[380px]:gap-3 min-[380px]:px-4">
         <Link
           href="/"
           className="flex shrink-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -42,7 +42,7 @@ export function SiteHeader() {
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <GaugeLogo />
           </span>
-          <span className="whitespace-nowrap font-heading text-[22px] font-semibold leading-none tracking-tight text-foreground">
+          <span className="whitespace-nowrap font-heading text-[18px] font-semibold leading-none tracking-tight text-foreground min-[380px]:text-[22px]">
             MySpeedGauge
           </span>
         </Link>

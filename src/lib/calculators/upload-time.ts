@@ -134,6 +134,31 @@ export function speedLabel(mbps: number): string {
   return `${formatMbpsValue(mbps)} Mbps`;
 }
 
+/** Display units for the upload field. The estimator and saved query always use Mbps. */
+export const UPLOAD_RATE_UNITS = ["Kbps", "Mbps", "Gbps"] as const;
+
+export type UploadRateUnit = (typeof UPLOAD_RATE_UNITS)[number];
+
+export function isUploadRateUnit(value: string): value is UploadRateUnit {
+  return (UPLOAD_RATE_UNITS as readonly string[]).includes(value);
+}
+
+/** Convert a typed rate into the Mbps value `computeUploadEstimate` stores. */
+export function rateToMbps(value: number, unit: UploadRateUnit): number {
+  if (!Number.isFinite(value)) return Number.NaN;
+  if (unit === "Kbps") return value / 1_000;
+  if (unit === "Gbps") return value * 1_000;
+  return value;
+}
+
+/** Convert a stored Mbps value into the unit shown in the speed field. */
+export function mbpsToRate(mbps: number, unit: UploadRateUnit): number {
+  if (!Number.isFinite(mbps)) return Number.NaN;
+  if (unit === "Kbps") return mbps * 1_000;
+  if (unit === "Gbps") return mbps / 1_000;
+  return mbps;
+}
+
 export function uploadContextLine(inputs: UploadInputs): string {
   return `At ${formatMbpsValue(inputs.speedMbps)} Mbps upload speed with ${formatEfficiencyPercent(inputs.efficiencyPercent)} efficiency.`;
 }

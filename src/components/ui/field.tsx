@@ -4,6 +4,9 @@ import { cn } from "@/lib/utils";
 export const fieldControlClass =
   "mt-1.5 h-11 w-full min-w-0 rounded-xl border border-border bg-[var(--input-bg)] px-3 text-sm text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
+/** Same closed-control chrome as text fields. The chevron comes from the global select rule. */
+export const selectControlClass = cn(fieldControlClass, "cursor-pointer");
+
 export function Field({
   label,
   hint,

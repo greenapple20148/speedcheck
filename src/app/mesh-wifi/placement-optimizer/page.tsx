@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PlacementPanel } from "@/components/mesh/placement-panel";
 import { ToolShell } from "@/components/seo/tool-shell";
+import { ToolPageHero } from "@/components/ui/tool-page-hero";
 import { meshCrumbs } from "@/lib/mesh/crumbs";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = buildMetadata({
 export default function PlacementPage() {
   return (
     <ToolShell
+      hideHeader
       title="Best placement for mesh nodes"
       description="Candidate mesh layouts"
       path="/mesh-wifi/placement-optimizer"
@@ -27,6 +29,10 @@ export default function PlacementPage() {
         { href: "/mesh-wifi/node-calculator", label: "Node calculator" },
       ]}
     >
+      <ToolPageHero
+        title="Best placement for mesh nodes"
+        description="Apply one layout, then drag the nodes. These options follow simple spacing rules. They are not a mathematical optimum."
+      />
       <PlacementPanel />
     </ToolShell>
   );

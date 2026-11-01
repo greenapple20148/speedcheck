@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo/metadata";
 import { ISPS } from "@/content/isps";
 import { LOCATIONS } from "@/content/locations";
+import { DEVELOPER_TOOL_PATHS } from "@/lib/dev-tools/catalog";
 import { MESH_SITEMAP_PATHS } from "@/lib/mesh/catalog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -29,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/upload-time-calculator",
     "/mbps-to-mbs",
     "/internet-speed-calculator",
+    ...DEVELOPER_TOOL_PATHS,
     "/history",
     "/diagnostics",
     "/router-setup",
