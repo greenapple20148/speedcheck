@@ -24,6 +24,7 @@ type Config struct {
 	MaxDuration          time.Duration
 	SessionTTL           time.Duration
 	RateLimitPerIP       int
+	PingRateLimitPerIP   int
 	EnabledRegions       []string
 }
 
@@ -45,6 +46,7 @@ func Load() Config {
 		MaxDuration:         time.Duration(getenvInt("SPEEDTEST_MAX_DURATION_SEC", 20)) * time.Second,
 		SessionTTL:          time.Duration(getenvInt("SPEEDTEST_SESSION_TTL_SEC", 120)) * time.Second,
 		RateLimitPerIP:      getenvInt("SPEEDTEST_RATE_LIMIT_PER_IP", 30),
+		PingRateLimitPerIP:  getenvInt("SPEEDTEST_PING_RATE_LIMIT_PER_IP", 1200),
 		EnabledRegions:      splitCSV(getenv("SPEEDTEST_ENABLED_REGIONS", "local,us-east,us-west,eu-west")),
 	}
 }

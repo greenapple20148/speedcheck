@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { adsActive } from "@/lib/ads/config";
 
 interface AdSlotProps {
   slot?: string;
@@ -19,42 +20,23 @@ export function AdSlot({
   className,
   label = "Advertisement",
 }: AdSlotProps) {
-  const enabled =
-    process.env.NEXT_PUBLIC_ENABLE_ADS === "true" &&
-    Boolean(process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID);
+  if (!adsActive()) return null;
 
-  // Always reserve space to avoid CLS when ads are enabled later
   return (
     <aside
       aria-label={label}
-      className={cn(
-        "my-8 overflow-hidden rounded-xl border border-dashed border-border bg-muted/30",
-        dims[format],
-        className,
-      )}
+      className={cn("my-8 overflow-hidden", dims[format], className)}
       data-ad-slot={slot || "unassigned"}
-      data-ad-enabled={enabled ? "true" : "false"}
+      data-ad-enabled="true"
     >
-      <div className="flex h-full min-h-[inherit] flex-col items-center justify-center gap-1 px-4 py-6 text-center">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {label}
-        </span>
-        {!enabled && (
-          <p className="max-w-sm text-xs text-muted-foreground">
-            Ad placeholder — enable with NEXT_PUBLIC_ENABLE_ADS and AdSense client ID.
-          </p>
-        )}
-        {enabled && (
-          <ins
-            className="adsbygoogle"
-            style={{ display: "block", width: "100%" }}
-            data-ad-client={process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}
-            data-ad-slot={slot}
-            data-ad-format="auto"
-            data-full-width-responsive="true"
-          />
-        )}
-      </div>
+      <ins
+        className="adsbygoogle"
+        style={{ display: "block", width: "100%" }}
+        data-ad-client={process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID}
+        data-ad-slot={slot}
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
     </aside>
   );
 }

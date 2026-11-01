@@ -27,6 +27,16 @@ export function measurementProxyBaseUrl(siteOrigin: string): string {
  * Called on the server (e.g. /api/speedtest/config) with the public site origin.
  */
 export function resolveMeasurementConfig(siteOrigin: string): MeasurementConfig {
+  if (process.env.MEASUREMENT_TESTS_ENABLED === "false") {
+    return {
+      baseUrl: null,
+      mode: "none",
+      ready: false,
+      message:
+        "Bandwidth-intensive tests are temporarily disabled. Other pages stay available.",
+    };
+  }
+
   const publicUrl = process.env.NEXT_PUBLIC_SPEEDTEST_URL?.replace(/\/$/, "");
   const internal = process.env.SPEEDTEST_INTERNAL_URL?.replace(/\/$/, "");
   const pageIsLocal = isLoopbackUrl(siteOrigin);

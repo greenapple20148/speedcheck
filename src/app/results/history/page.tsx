@@ -11,6 +11,7 @@ import {
   type HistoryRange,
 } from "@/lib/speedtest/history-analytics";
 import {
+  clearHistory,
   deleteHistoryEntry,
   readHistory,
   readPlan,
@@ -39,8 +40,16 @@ export default function ResultsHistoryPage() {
     return list;
   }, [entries, range, tagFilter]);
 
+  const forgetRemote = (ids: string[]) => {
+    for (const id of ids) {
+      void fetch(`/api/results/${id}`, { method: "DELETE" }).catch(() => undefined);
+    }
+  };
+
   const onDelete = (id: string) => {
+    const entry = entries.find((item) => item.id === id);
     deleteHistoryEntry(id);
+    if (entry?.persisted) forgetRemote([id]);
     refresh();
   };
 
@@ -53,7 +62,7 @@ export default function ResultsHistoryPage() {
         Tests saved in this browser. Compare trends with the speed you pay for.
       </p>
       <Link
-        href="/#speed-test"
+        href="/speed-test"
         className="mt-4 inline-flex min-h-[44px] items-center text-sm font-semibold text-[var(--accent-teal)] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-teal)]"
       >
         ← Run a new test
@@ -64,7 +73,7 @@ export default function ResultsHistoryPage() {
 
         {entries.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--surface-subtle)] p-6 text-sm text-muted-foreground">
-            No saved tests yet. Complete a speed test on the homepage to populate history.
+            No saved tests yet. After a speed test, choose “Save result on this device,” or turn on automatic saving in Settings.
           </p>
         ) : (
           <>
@@ -106,6 +115,29 @@ export default function ResultsHistoryPage() {
                   {t === "all" ? "All" : t}
                 </button>
               ))}
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Delete all tests saved in this browser? This does not affect other devices.",
+                    )
+                  ) {
+                    const remoteIds = readHistory()
+                      .filter((entry) => entry.persisted)
+                      .map((entry) => entry.id);
+                    clearHistory();
+                    forgetRemote(remoteIds);
+                    refresh();
+                  }
+                }}
+                className="min-h-[44px] rounded-full border border-[var(--card-border)] px-4 text-sm font-medium text-foreground hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-teal)]"
+              >
+                Delete all saved tests
+              </button>
             </div>
 
             <HistoryChart entries={filtered} plan={plan} range={range} />

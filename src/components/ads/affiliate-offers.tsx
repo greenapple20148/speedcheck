@@ -13,6 +13,15 @@ export function AffiliateOffers({
 }) {
   if (process.env.NEXT_PUBLIC_ENABLE_AFFILIATES === "false") return null;
   if (!offers.length) return null;
+  const live = offers.filter((offer) => {
+    try {
+      const host = new URL(offer.url).hostname;
+      return host !== "example.com" && !host.endsWith(".example");
+    } catch {
+      return false;
+    }
+  });
+  if (!live.length) return null;
 
   return (
     <section className="w-full" aria-labelledby="affiliate-heading">
@@ -27,7 +36,7 @@ export function AffiliateOffers({
         .
       </p>
       <ul className="space-y-3">
-        {offers.map((offer) => (
+        {live.map((offer) => (
           <li
             key={offer.id}
             className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 md:flex-row md:items-center md:justify-between"
@@ -46,7 +55,7 @@ export function AffiliateOffers({
               target="_blank"
               rel="sponsored noopener noreferrer"
               onClick={() =>
-                trackEvent("affiliate_clicked", {
+                trackEvent("affiliate_link_clicked", {
                   offerId: offer.id,
                   provider: offer.provider,
                 })

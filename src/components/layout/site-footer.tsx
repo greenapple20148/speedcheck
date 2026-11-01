@@ -4,29 +4,40 @@ const columns = [
   {
     title: "Tests",
     links: [
-      { href: "/internet-speed-test", label: "Internet speed test" },
-      { href: "/wifi-speed-test", label: "Wi‑Fi speed test" },
-      { href: "/upload-speed-test", label: "Upload speed test" },
+      { href: "/speed-test", label: "Speed test" },
       { href: "/ping-test", label: "Ping test" },
       { href: "/jitter-test", label: "Jitter test" },
-      { href: "/results/history", label: "Results history" },
+      { href: "/bufferbloat-test", label: "Bufferbloat test" },
+      { href: "/connection-stability-test", label: "Stability test" },
+      { href: "/history", label: "History" },
     ],
   },
   {
     title: "Tools",
-    links: [{ href: "/tools/mbps-to-mbs", label: "Mbps to MB/s converter" }],
+    links: [
+      { href: "/gaming-speed-test", label: "Gaming test" },
+      { href: "/streaming-speed-test", label: "Streaming test" },
+      { href: "/video-call-test", label: "Video call test" },
+      { href: "/download-time-calculator", label: "Download time" },
+      { href: "/mbps-to-mbs", label: "Mbps to MB/s" },
+      { href: "/internet-troubleshooter", label: "Troubleshooter" },
+    ],
   },
   {
     title: "Guides",
     links: [
+      { href: "/guides", label: "All guides" },
       { href: "/guides/why-is-my-internet-slow", label: "Why is my internet slow?" },
-      { href: "/guides/what-is-good-internet-speed", label: "What is a good speed?" },
-      { href: "/guides/how-to-improve-wifi-speed", label: "Improve Wi‑Fi speed" },
+      { href: "/guides/what-is-bufferbloat", label: "What is bufferbloat?" },
+      { href: "/methodology", label: "Methodology" },
     ],
   },
   {
     title: "Company",
     links: [
+      { href: "/about", label: "About" },
+      { href: "/contact", label: "Contact" },
+      { href: "/settings", label: "Settings" },
       { href: "/privacy", label: "Privacy" },
       { href: "/terms", label: "Terms" },
       { href: "/affiliate-disclosure", label: "Affiliate disclosure" },
@@ -36,12 +47,12 @@ const columns = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-20 border-t border-border bg-card">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
+    <footer className="mt-16 border-t border-border bg-card">
+      <div className="mx-auto grid max-w-[960px] gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
         <div>
-          <div className="text-lg font-bold text-foreground">MySpeedGauge</div>
+          <div className="font-heading text-lg font-semibold text-foreground">MySpeedGauge</div>
           <p className="mt-2 text-sm text-muted-foreground">
-            Fast, privacy-conscious internet speed testing with real measurements—not estimates.
+            Real transfers and HTTP latency. No account required.
           </p>
         </div>
         {columns.map((col) => (
@@ -50,7 +61,7 @@ export function SiteFooter() {
             <ul className="mt-3 space-y-2">
               {col.links.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-muted-foreground hover:text-primary">
+                  <Link href={l.href} className="rounded-sm text-sm text-muted-foreground hover:text-[var(--accent-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     {l.label}
                   </Link>
                 </li>

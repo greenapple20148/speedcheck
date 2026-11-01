@@ -3,6 +3,8 @@ package handlers
 import (
 	"net"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -61,8 +63,16 @@ func (rl *RateLimiter) cleanup() {
 }
 
 func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
+	// Only a proxy we operate may supply the client address. Use the last hop,
+	// which that proxy appends, so a caller cannot mint a new bucket by spoofing the header.
+	if os.Getenv("SPEEDTEST_TRUST_PROXY") == "true" {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			ip := strings.TrimSpace(parts[len(parts)-1])
+			if ip != "" {
+				return ip
+			}
+		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {

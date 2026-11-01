@@ -2,50 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CollegeFind theme tokens (shared with college-find.com) */
-:root,
-[data-theme="dark"] {
-  --bg-primary: #0c0a09;
-  --bg-secondary: #171412;
-  --bg-tertiary: #1e1b18;
-  --bg-surface: #171412;
-  --bg-surface-hover: #1e1b18;
+/*
+  Instrument-panel palette.
+  Electric teal (#14C8B4) is the button, gauge, and highlight fill.
+  Small text and focus rings use --accent-text / --ring so they stay WCAG AA
+  on the light background, where the bright teal is too light for body copy.
+*/
+html[data-theme="dark"] {
+  --bg-primary: #0b1020;
+  --bg-secondary: #131a2e;
+  --bg-tertiary: #1a2340;
+  --bg-surface: #131a2e;
+  --bg-surface-hover: #1c2644;
 
-  --border-primary: #2a2520;
-  --border-subtle: #221f1b;
+  --border-primary: #222b45;
+  --border-subtle: #222b45;
 
-  --text-primary: #faf9f6;
-  --text-secondary: #e8e4dd;
-  --text-tertiary: #c8c3ba;
-  --text-muted: rgba(232, 228, 221, 0.7);
-  --text-faint: rgba(200, 195, 186, 0.6);
-  --text-ghost: rgba(200, 195, 186, 0.35);
+  --text-primary: #e8ecf8;
+  --text-secondary: #e8ecf8;
+  --text-tertiary: #b7c0d6;
+  --text-muted: #8d97b2;
+  --text-faint: #8d97b2;
+  --text-ghost: rgba(141, 151, 178, 0.45);
 
-  --gold-primary: #c9923c;
-  --gold-light: #d4ad6a;
-  --gold-dark: #a07228;
-  --gold-gradient: linear-gradient(135deg, #c9923c, #d4ad6a);
+  --gold-primary: #14c8b4;
+  --gold-light: #5eead4;
+  --gold-dark: #0e9e8e;
+  --gold-gradient: linear-gradient(90deg, #14c8b4, #5b6cff);
 
-  --selection-bg: rgba(201, 146, 60, 0.3);
-  --selection-fg: #faf9f6;
+  --accent-text: #5eead4;
+  --accent-indigo: #5b6cff;
+  --status-good: #22c55e;
+  --status-okay: #f5b301;
+  --status-poor: #ef4444;
+  --spark-download: #14c8b4;
+  --spark-upload: #8b97ff;
+  --spark-latency: #22c55e;
+  --spark-jitter: #f5b301;
 
-  --header-bg: rgba(12, 10, 9, 0.85);
+  --selection-bg: rgba(20, 200, 180, 0.28);
+  --selection-fg: #e8ecf8;
 
-  --shadow-soft: 0 2px 20px rgba(0, 0, 0, 0.15);
-  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.2);
-  --shadow-glow: 0 0 40px rgba(201, 146, 60, 0.12);
+  --header-bg: rgba(11, 16, 32, 0.86);
 
-  --input-bg: #141210;
-  --input-border: #2a2520;
-  --input-focus-ring: rgba(201, 146, 60, 0.5);
+  --shadow-soft: 0 0 0 1px #222b45;
+  --shadow-card: 0 0 0 1px #222b45, 0 0 36px rgba(20, 200, 180, 0.06);
+  --shadow-glow: 0 0 28px rgba(20, 200, 180, 0.38);
 
-  --donut-track: rgba(255, 255, 255, 0.06);
+  --input-bg: #10162a;
+  --input-border: #222b45;
+  --input-focus-ring: rgba(20, 200, 180, 0.55);
 
-  --error-fg: #f87171;
+  --donut-track: rgba(232, 236, 248, 0.1);
+  --grid-dot: rgba(232, 236, 248, 0.055);
+
+  --error-fg: #ef4444;
 
   color-scheme: dark;
 
-  /* App UI mapping (shadcn-style) */
   --background: var(--bg-primary);
   --foreground: var(--text-primary);
   --card: var(--bg-secondary);
@@ -54,7 +68,7 @@
   --popover-foreground: var(--text-primary);
   --primary: var(--gold-primary);
   --primary-hover: var(--gold-dark);
-  --primary-foreground: #0c0a09;
+  --primary-foreground: #06231f;
   --secondary: var(--bg-tertiary);
   --secondary-foreground: var(--gold-light);
   --muted: var(--bg-tertiary);
@@ -63,63 +77,76 @@
   --accent-foreground: var(--gold-primary);
   --accent-teal: var(--gold-primary);
   --success-text: var(--gold-light);
-  --destructive: var(--error-fg);
-  --destructive-foreground: #faf9f6;
-  --success: var(--gold-primary);
-  --warning: #fbbf24;
+  --destructive: var(--status-poor);
+  --destructive-foreground: #fff7f7;
+  --success: var(--status-good);
+  --warning: var(--status-okay);
   --border: var(--border-primary);
   --input: var(--input-border);
-  --ring: var(--gold-primary);
+  --ring: #14c8b4;
   --card-border: var(--border-primary);
   --gauge-track: var(--donut-track);
   --surface-subtle: var(--bg-tertiary);
   --page-bg: var(--bg-primary);
-  --radius: 1rem;
-  --chart-1: var(--gold-primary);
-  --chart-2: #38bdf8;
-  --chart-3: #34d399;
+  --radius: 1.125rem;
+  --chart-1: #14c8b4;
+  --chart-2: #5b6cff;
+  --chart-3: #22c55e;
   --chart-4: var(--text-tertiary);
   --chart-5: var(--text-primary);
   --chart-grid: var(--border-primary);
-  --chart-axis: #8a8580;
+  --chart-axis: #8d97b2;
 }
 
+:root,
 [data-theme="light"] {
-  --bg-primary: #faf8f5;
+  --bg-primary: #f6f8fb;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f5f3ef;
+  --bg-tertiary: #eef2f8;
   --bg-surface: #ffffff;
-  --bg-surface-hover: #f0ede8;
+  --bg-surface-hover: #f3f6fb;
 
-  --border-primary: #e0dcd5;
-  --border-subtle: #e8e4de;
+  --border-primary: #e3e8f0;
+  --border-subtle: #e3e8f0;
 
-  --text-primary: #1a1814;
-  --text-secondary: #2d2a25;
-  --text-tertiary: #4a4640;
-  --text-muted: #5c5750;
-  --text-faint: #8a8580;
-  --text-ghost: #b0aba5;
+  --text-primary: #0f172a;
+  --text-secondary: #0f172a;
+  --text-tertiary: #3e4a63;
+  --text-muted: #5b6478;
+  --text-faint: #6b7590;
+  --text-ghost: #8d97b2;
 
-  --gold-primary: #a07228;
-  --gold-light: #b8832e;
-  --gold-dark: #8a6223;
-  --gold-gradient: linear-gradient(135deg, #a07228, #b8832e);
+  --gold-primary: #14c8b4;
+  --gold-light: #14c8b4;
+  --gold-dark: #0e9e8e;
+  --gold-gradient: linear-gradient(90deg, #14c8b4, #5b6cff);
 
-  --selection-bg: rgba(160, 114, 40, 0.2);
-  --selection-fg: #1a1814;
+  /* Darkened teal so links and focus rings clear WCAG AA on #F6F8FB. */
+  --accent-text: #0c6b62;
+  --accent-indigo: #3d4fe0;
+  --status-good: #15803d;
+  --status-okay: #a16207;
+  --status-poor: #dc2626;
+  --spark-download: #0c6b62;
+  --spark-upload: #3d4fe0;
+  --spark-latency: #15803d;
+  --spark-jitter: #a16207;
 
-  --header-bg: rgba(250, 248, 245, 0.9);
+  --selection-bg: rgba(20, 200, 180, 0.22);
+  --selection-fg: #0f172a;
 
-  --shadow-soft: 0 2px 20px rgba(0, 0, 0, 0.05);
-  --shadow-card: 0 4px 30px rgba(0, 0, 0, 0.07);
-  --shadow-glow: 0 0 30px rgba(160, 114, 40, 0.1);
+  --header-bg: rgba(246, 248, 251, 0.88);
+
+  --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05);
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 14px 36px rgba(15, 23, 42, 0.06);
+  --shadow-glow: 0 8px 24px rgba(20, 200, 180, 0.32);
 
   --input-bg: #ffffff;
-  --input-border: #e0dcd5;
-  --input-focus-ring: rgba(160, 114, 40, 0.35);
+  --input-border: #e3e8f0;
+  --input-focus-ring: rgba(12, 107, 98, 0.4);
 
-  --donut-track: rgba(0, 0, 0, 0.06);
+  --donut-track: rgba(15, 23, 42, 0.08);
+  --grid-dot: rgba(15, 23, 42, 0.05);
 
   --error-fg: #dc2626;
 
@@ -133,29 +160,30 @@
   --popover-foreground: var(--text-primary);
   --primary: var(--gold-primary);
   --primary-hover: var(--gold-dark);
-  --primary-foreground: #faf8f5;
+  --primary-foreground: #06231f;
   --secondary: var(--bg-tertiary);
-  --secondary-foreground: var(--gold-dark);
+  --secondary-foreground: #0c6b62;
   --muted: var(--bg-tertiary);
   --muted-foreground: var(--text-muted);
   --accent: var(--bg-surface-hover);
-  --accent-foreground: var(--gold-primary);
+  --accent-foreground: var(--accent-text);
   --accent-teal: var(--gold-primary);
-  --success-text: var(--gold-dark);
-  --destructive: var(--error-fg);
-  --destructive-foreground: #faf8f5;
-  --success: var(--gold-primary);
-  --warning: #d97706;
+  --success-text: #0c6b62;
+  --destructive: var(--status-poor);
+  --destructive-foreground: #ffffff;
+  --success: var(--status-good);
+  --warning: var(--status-okay);
   --border: var(--border-primary);
   --input: var(--input-border);
-  --ring: var(--gold-primary);
+  --ring: #0c6b62;
   --card-border: var(--border-primary);
   --gauge-track: var(--donut-track);
   --surface-subtle: var(--bg-tertiary);
   --page-bg: var(--bg-primary);
-  --chart-1: var(--gold-primary);
-  --chart-2: #0284c7;
-  --chart-3: #059669;
+  --radius: 1.125rem;
+  --chart-1: #0c6b62;
+  --chart-2: #3d4fe0;
+  --chart-3: #15803d;
   --chart-4: var(--text-tertiary);
   --chart-5: var(--text-primary);
   --chart-grid: var(--border-primary);
@@ -183,8 +211,10 @@
     .motion-safe\:animate-ping,
     .motion-safe\:animate-spin,
     .animate-fade-up,
-    .animate-pulse-ring {
+    .animate-pulse-ring,
+    .gauge-arc {
       animation: none !important;
+      transition: none !important;
     }
 
     .motion-safe\:transition-all,
@@ -203,6 +233,9 @@
     @apply bg-[var(--page-bg)] font-sans antialiased;
     color: var(--text-secondary);
     min-height: 100vh;
+    background-image: radial-gradient(var(--grid-dot) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-attachment: fixed;
     transition:
       background-color 0.3s ease,
       color 0.3s ease;
@@ -217,9 +250,21 @@
   h2,
   h3,
   h4 {
-    letter-spacing: -0.02em;
+    font-family: var(--font-space), system-ui, sans-serif;
+    letter-spacing: -0.03em;
     color: var(--text-primary);
   }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Bright teal fails as small text on the light canvas. Keep fills electric. */
+[data-theme="light"] .text-primary,
+[data-theme="light"] .hover\:text-primary:hover {
+  color: var(--accent-text);
 }
 
 @layer utilities {
@@ -227,25 +272,52 @@
     text-wrap: balance;
   }
 
-  .speed-value {
+  .font-heading {
+    font-family: var(--font-space), system-ui, sans-serif;
+  }
+
+  .speed-value,
+  .tabular {
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  .speed-value {
     letter-spacing: -0.04em;
     line-height: 1;
   }
 
+  .hero-speed {
+    font-family: var(--font-space), system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    font-size: 48px;
+    font-weight: 500;
+    letter-spacing: -0.045em;
+    line-height: 0.9;
+  }
+
+  @media (min-width: 768px) {
+    .hero-speed {
+      font-size: 64px;
+    }
+  }
+
   .heading-1 {
+    font-family: var(--font-space), system-ui, sans-serif;
     font-size: 2.25rem;
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.12;
   }
 
   @media (min-width: 768px) {
     .heading-1 {
-      font-size: 3rem;
+      font-size: 2.75rem;
     }
   }
 
   .heading-2 {
+    font-family: var(--font-space), system-ui, sans-serif;
     font-size: 1.5rem;
     font-weight: 600;
     line-height: 1.2;
@@ -255,6 +327,13 @@
     .heading-2 {
       font-size: 1.75rem;
     }
+  }
+
+  .panel {
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    box-shadow: var(--shadow-card);
   }
 }
 
@@ -276,7 +355,7 @@
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -289,5 +368,13 @@
 }
 
 .animate-fade-up {
-  animation: fade-up 0.5s ease-out both;
+  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gauge-arc {
+  transition: stroke-dashoffset 120ms linear;
+}
+
+.gauge-arc.is-settled {
+  transition: stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }

@@ -7,6 +7,7 @@ import {
   appendHistory,
   readHistory,
   readPlan,
+  readPrefs,
   writeHistory,
   type PlanSettings,
 } from "@/lib/speedtest/history-store";
@@ -92,12 +93,13 @@ export function SpeedTestDashboard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [previousUploadMbps, setPreviousUploadMbps] = useState<number | null>(null);
   const [measurementBaseUrl, setMeasurementBaseUrl] = useState<string | null>(null);
-  const [measurementReady, setMeasurementReady] = useState(true);
+  const [measurementReady, setMeasurementReady] = useState(false);
   const [measurementNotice, setMeasurementNotice] = useState<string | null>(null);
   const [connectionTag, setConnectionTag] = useState<ConnectionTag>("wifi");
   const [lastHistoryId, setLastHistoryId] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanSettings | null>(null);
   const [historySnapshot, setHistorySnapshot] = useState(readHistory);
+  const [savedOnDevice, setSavedOnDevice] = useState(false);
   const [isPending, startTransition] = useTransition();
   const abortRef = useRef<AbortController | null>(null);
   const sessionRef = useRef<SessionConfig | null>(null);
@@ -271,6 +273,52 @@ export function SpeedTestDashboard({
     }
   }, []);
 
+  const persistResult = useCallback(
+    async (metrics: ProgressState["metrics"], session: SessionConfig) => {
+      const saved = await saveResult({
+        downloadMbps: metrics.downloadMbps ?? 0,
+        uploadMbps: metrics.uploadMbps ?? 0,
+        pingMs: metrics.pingMs ?? 0,
+        jitterMs: metrics.jitterMs ?? 0,
+        mode,
+        serverId: session.server.id,
+        serverName: session.server.name,
+        isp: network?.isp,
+        city: network?.city,
+        country: network?.country,
+        isPublic: false,
+        bufferbloatIdleMs: metrics.bufferbloatIdleMs,
+        bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
+        bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
+        bufferbloatGrade: metrics.bufferbloatGrade,
+        connectionTag,
+      });
+      const historyId = saved?.id ?? crypto.randomUUID();
+      if (saved?.id) setShareUrl(`/results/${saved.id}`);
+      setLastHistoryId(historyId);
+      appendHistory({
+        id: historyId,
+        downloadMbps: metrics.downloadMbps,
+        uploadMbps: metrics.uploadMbps,
+        pingMs: metrics.pingMs,
+        jitterMs: metrics.jitterMs,
+        mode,
+        serverName: session.server.name,
+        createdAt: new Date().toISOString(),
+        bufferbloatIdleMs: metrics.bufferbloatIdleMs,
+        bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
+        bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
+        bufferbloatGrade: metrics.bufferbloatGrade,
+        connectionTag,
+        persisted: Boolean(saved?.id),
+      });
+      setHistorySnapshot(readHistory());
+      setSavedOnDevice(true);
+      trackEvent("history_saved", { mode });
+    },
+    [connectionTag, mode, network, saveResult],
+  );
+
   const start = () => {
     if (running || isPending) return;
     if (!measurementReady || !measurementBaseUrl) {
@@ -290,6 +338,7 @@ export function SpeedTestDashboard({
     setPreviousUploadMbps(null);
     setConnectionTag("wifi");
     setLastHistoryId(null);
+    setSavedOnDevice(false);
     lastPhaseRef.current = "idle";
     testStartedRef.current = performance.now();
     phaseStartedRef.current = testStartedRef.current;
@@ -310,33 +359,15 @@ export function SpeedTestDashboard({
         });
         sessionRef.current = session;
         setServer(session.server ?? null);
-        setState({
-          phase: "saving",
-          progress: 0.95,
-          currentMbps: metrics.downloadMbps,
-          metrics,
-        });
-        const saved = await saveResult({
-          downloadMbps: metrics.downloadMbps ?? 0,
-          uploadMbps: metrics.uploadMbps ?? 0,
-          pingMs: metrics.pingMs ?? 0,
-          jitterMs: metrics.jitterMs ?? 0,
-          mode,
-          serverId: session.server.id,
-          serverName: session.server.name,
-          isp: network?.isp,
-          city: network?.city,
-          country: network?.country,
-          isPublic: false,
-          bufferbloatIdleMs: metrics.bufferbloatIdleMs,
-          bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
-          bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
-          bufferbloatGrade: metrics.bufferbloatGrade,
-          connectionTag,
-        });
-        const historyId = saved?.id ?? crypto.randomUUID();
-        if (saved?.id) setShareUrl(`/results/${saved.id}`);
-        setLastHistoryId(historyId);
+        if (readPrefs().saveHistory) {
+          setState({
+            phase: "saving",
+            progress: 0.95,
+            currentMbps: metrics.downloadMbps,
+            metrics,
+          });
+          await persistResult(metrics, session);
+        }
         setTestedAt(new Date());
         setState({
           phase: "complete",
@@ -344,32 +375,7 @@ export function SpeedTestDashboard({
           currentMbps: metrics.downloadMbps,
           metrics,
         });
-        trackEvent("speed_test_completed", {
-          mode,
-          downloadMbps: metrics.downloadMbps,
-          uploadMbps: metrics.uploadMbps,
-          pingMs: metrics.pingMs,
-        });
-        try {
-          appendHistory({
-            id: historyId,
-            downloadMbps: metrics.downloadMbps,
-            uploadMbps: metrics.uploadMbps,
-            pingMs: metrics.pingMs,
-            jitterMs: metrics.jitterMs,
-            mode,
-            serverName: session.server.name,
-            createdAt: new Date().toISOString(),
-            bufferbloatIdleMs: metrics.bufferbloatIdleMs,
-            bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
-            bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
-            bufferbloatGrade: metrics.bufferbloatGrade,
-            connectionTag,
-          });
-          setHistorySnapshot(readHistory());
-        } catch {
-          /* quota */
-        }
+        trackEvent("speed_test_completed", { mode });
       } catch (err) {
         if (controller.signal.aborted) {
           setState((s) => ({ ...s, phase: "cancelled" }));
@@ -426,7 +432,7 @@ export function SpeedTestDashboard({
   return (
     <section
       aria-label="Internet speed test"
-      className={cn("mx-auto w-full max-w-[1100px] px-3 sm:px-4", className)}
+      className={cn("mx-auto w-full max-w-[960px] px-4", className)}
     >
       {!measurementReady && measurementNotice && state.phase === "idle" && (
         <div
@@ -451,8 +457,24 @@ export function SpeedTestDashboard({
           running={running}
           complete={complete}
           statusLine={buttonStatus}
+          canStart={measurementReady && Boolean(measurementBaseUrl)}
           onStart={start}
           onCancel={cancel}
+          controls={
+            <div className="flex flex-col items-center gap-3">
+              {showModeToggle && (
+                <ModeToggle mode={mode} disabled={running} onChange={setMode} compact />
+              )}
+              <StartTestButton
+                phase={state.phase}
+                running={running}
+                statusLine={buttonStatus}
+                disabled={!measurementReady || !measurementBaseUrl}
+                onStart={start}
+                onCancel={cancel}
+              />
+            </div>
+          }
         />
 
         {state.error && (
@@ -478,44 +500,38 @@ export function SpeedTestDashboard({
           />
         )}
 
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-[var(--card-border)] bg-card px-3 py-4 lg:flex-row lg:items-center lg:justify-between sm:px-4">
-          {showModeToggle && (
-            <ModeToggle
-              mode={mode}
-              disabled={running}
-              onChange={setMode}
-              compact
-            />
-          )}
-          <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end lg:ml-auto lg:w-auto">
-            {complete && (
-              <button
-                type="button"
-                id={`${DETAILS_PANEL_ID}-trigger`}
-                aria-expanded={detailsOpen}
-                aria-controls={DETAILS_PANEL_ID}
-                onClick={() => setDetailsOpen(!detailsOpen)}
-                className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-3 text-[14px] font-semibold text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                View detailed diagnostics
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 motion-safe:transition-transform",
-                    detailsOpen && "rotate-180",
-                  )}
-                  aria-hidden
-                />
-              </button>
-            )}
-            <StartTestButton
-              phase={state.phase}
-              running={running}
-              statusLine={buttonStatus}
-              onStart={start}
-              onCancel={cancel}
-            />
+        {complete && (
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                const session = sessionRef.current;
+                if (session) void persistResult(state.metrics, session);
+              }}
+              disabled={savedOnDevice}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border px-3 text-[14px] font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-70"
+            >
+              {savedOnDevice ? "Saved on this device" : "Save result on this device"}
+            </button>
+            <button
+              type="button"
+              id={`${DETAILS_PANEL_ID}-trigger`}
+              aria-expanded={detailsOpen}
+              aria-controls={DETAILS_PANEL_ID}
+              onClick={() => setDetailsOpen(!detailsOpen)}
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-3 text-[14px] font-semibold text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              View detailed diagnostics
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 motion-safe:transition-transform",
+                  detailsOpen && "rotate-180",
+                )}
+                aria-hidden
+              />
+            </button>
           </div>
-        </div>
+        )}
 
         {complete && assessment && (
           <AdvancedDiagnosticsPanel

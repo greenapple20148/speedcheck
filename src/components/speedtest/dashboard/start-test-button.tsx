@@ -8,6 +8,7 @@ interface StartTestButtonProps {
   phase: TestPhase;
   running: boolean;
   statusLine: string;
+  disabled?: boolean;
   onStart: () => void;
   onCancel: () => void;
 }
@@ -22,27 +23,23 @@ export function StartTestButton({
   phase,
   running,
   statusLine,
+  disabled = false,
   onStart,
   onCancel,
 }: StartTestButtonProps) {
   if (running) {
     return (
       <div className="flex flex-col items-center gap-2">
+        <p className="text-center text-sm font-medium text-muted-foreground">{statusLine}</p>
         <Button
           type="button"
-          disabled
-          className="min-h-[44px] h-11 min-w-[160px] rounded-xl bg-primary px-6 text-[15px] font-semibold text-primary-foreground shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-w-[180px]"
-        >
-          <Loader2 className="mr-2 h-4 w-4 motion-safe:animate-spin" aria-hidden />
-          {statusLine}
-        </Button>
-        <button
-          type="button"
+          variant="outline"
           onClick={onCancel}
-          className="rounded-md px-2 py-1 text-[14px] font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="min-h-14 h-14 w-full min-w-[180px] rounded-full border-border bg-transparent px-8 text-base font-semibold text-foreground shadow-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
         >
-          Cancel
-        </button>
+          <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
+          Stop
+        </Button>
       </div>
     );
   }
@@ -51,7 +48,8 @@ export function StartTestButton({
     <Button
       type="button"
       onClick={onStart}
-      className="min-h-[44px] h-11 w-full min-w-[160px] rounded-xl bg-primary px-6 text-[15px] font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-auto sm:min-w-[180px]"
+      disabled={disabled}
+      className="min-h-14 h-14 w-full min-w-[180px] rounded-full bg-primary px-10 text-base font-semibold text-primary-foreground shadow-glow hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
     >
       {idleLabel(phase)}
     </Button>

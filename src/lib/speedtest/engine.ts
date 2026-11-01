@@ -7,11 +7,15 @@ import type {
 } from "@/types/speedtest";
 import { resolveSpeedtestBaseUrl } from "@/lib/speedtest/base-url";
 import { normalizeSpeedtestError } from "@/lib/speedtest/fetch-errors";
-import { computeBufferbloat, median } from "@/lib/speedtest/bufferbloat";
+import { computeBufferbloat } from "@/lib/speedtest/bufferbloat";
 import { withTimeout } from "@/lib/speedtest/fetch-timeout";
+import { jitterFromSamples } from "@/lib/network/jitter";
+import { median } from "@/lib/network/latency";
+import { bytesToMbps, throughputConnectionCount } from "@/lib/network/throughput";
 
 const LOADED_PING_INTERVAL_MS = 200;
-const IDLE_PING_SAMPLES = 11;
+/** 21 probes, first dropped as warm-up → 20 usable HTTP RTT samples. */
+const IDLE_PING_SAMPLES = 21;
 
 const DEFAULT_BASE =
   process.env.NEXT_PUBLIC_SPEEDTEST_URL?.replace(/\/$/, "") ||
@@ -83,12 +87,8 @@ async function pingOnce(baseUrl: string, signal?: AbortSignal): Promise<number> 
   return nowMs() - t0;
 }
 
-function jitterFromSamples(usable: number[]): number {
-  let jitter = 0;
-  for (let i = 1; i < usable.length; i++) {
-    jitter += Math.abs(usable[i] - usable[i - 1]);
-  }
-  return jitter / Math.max(1, usable.length - 1);
+function jitterOrZero(usable: number[]): number {
+  return jitterFromSamples(usable) ?? 0;
 }
 
 /** Median of N pings (drops first warmup sample). Used for idle / bufferbloat baseline. */
@@ -105,7 +105,7 @@ async function measureIdleLatency(
   const usable = latencies.slice(1);
   const idleMed = median(usable);
   if (idleMed == null) throw new Error("Ping failed");
-  return { idleMs: idleMed, jitterMs: jitterFromSamples(usable) };
+  return { idleMs: idleMed, jitterMs: jitterOrZero(usable) };
 }
 
 async function measurePing(
@@ -120,7 +120,7 @@ async function measurePing(
   }
   const usable = latencies.slice(1);
   const pingMs = usable.reduce((a, b) => a + b, 0) / usable.length;
-  return { pingMs, jitterMs: jitterFromSamples(usable) };
+  return { pingMs, jitterMs: jitterOrZero(usable) };
 }
 
 async function sampleLoadedLatencies(
@@ -140,12 +140,18 @@ async function sampleLoadedLatencies(
   return out;
 }
 
+interface TransferSpan {
+  bytes: number;
+  firstMs: number;
+  lastMs: number;
+}
+
 async function downloadOnce(
   baseUrl: string,
   token: string,
   size: number,
   signal?: AbortSignal,
-): Promise<{ bytes: number; ms: number }> {
+): Promise<TransferSpan> {
   const { signal: timed, cleanup } = withTimeout(signal, REQUEST_TIMEOUT_MS);
   const t0 = nowMs();
   try {
@@ -165,15 +171,27 @@ async function downloadOnce(
     const reader = res.body?.getReader();
     if (!reader) {
       const buf = await res.arrayBuffer();
-      return { bytes: buf.byteLength, ms: Math.max(1, nowMs() - t0) };
+      const end = nowMs();
+      return { bytes: buf.byteLength, firstMs: t0, lastMs: end };
     }
     let bytes = 0;
+    let firstMs: number | null = null;
+    let lastMs = t0;
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      bytes += value.byteLength;
+      if (value && value.byteLength > 0) {
+        const readAt = nowMs();
+        if (firstMs == null) firstMs = readAt;
+        bytes += value.byteLength;
+        lastMs = nowMs();
+      }
     }
-    return { bytes, ms: Math.max(1, nowMs() - t0) };
+    return {
+      bytes,
+      firstMs: firstMs ?? t0,
+      lastMs: Math.max(lastMs, (firstMs ?? t0) + 1),
+    };
   } finally {
     cleanup();
   }
@@ -189,7 +207,7 @@ async function uploadOnce(
   token: string,
   size: number,
   signal?: AbortSignal,
-): Promise<{ bytes: number; ms: number }> {
+): Promise<TransferSpan> {
   const payload = uploadPayload(size);
   const { signal: timed, cleanup } = withTimeout(signal, REQUEST_TIMEOUT_MS);
   const t0 = nowMs();
@@ -216,14 +234,11 @@ async function uploadOnce(
     }
     const json = await res.json();
     const bytes = Number(json.receivedBytes ?? size);
-    return { bytes, ms: Math.max(1, nowMs() - t0) };
+    const end = nowMs();
+    return { bytes, firstMs: t0, lastMs: Math.max(end, t0 + 1) };
   } finally {
     cleanup();
   }
-}
-
-function bytesToMbps(bytes: number, ms: number): number {
-  return (bytes * 8) / (ms / 1000) / 1_000_000;
 }
 
 function isBudgetExhausted(err: unknown): boolean {
@@ -238,10 +253,10 @@ async function measureThroughput(
   onSample: (mbps: number, bytes: number, progress: number) => void,
   sampleLoadedPing = false,
 ): Promise<{ mbps: number; bytes: number; loadedPingSamples: number[] }> {
-  const connections =
-    kind === "download"
-      ? session.downloadConnections
-      : session.uploadConnections;
+  const connections = throughputConnectionCount(
+    kind === "download" ? session.downloadConnections : session.uploadConnections,
+    sampleLoadedPing,
+  );
   const phaseStarted = nowMs();
   const deadline = phaseStarted + session.maxDurationMs;
   // Keep client phase budget under half of the signed session so concurrent
@@ -249,6 +264,8 @@ async function measureThroughput(
   const phaseBudget = Math.floor(session.maxBytes * 0.4);
   let transferred = 0;
   let reserved = 0;
+  let windowStart: number | null = null;
+  let windowEnd = 0;
 
   const reserve = (wanted: number): number => {
     const remaining = phaseBudget - reserved;
@@ -257,6 +274,17 @@ async function measureThroughput(
     reserved += size;
     return size;
   };
+
+  if (kind === "download") {
+    const warm = reserve(Math.min(64 * 1024, session.chunkSize));
+    if (warm > 0) {
+      try {
+        await downloadOnce(baseUrl, session.token, warm, signal);
+      } catch (err) {
+        if (!isBudgetExhausted(err)) throw err;
+      }
+    }
+  }
 
   const worker = async () => {
     while (!signal?.aborted && nowMs() < deadline) {
@@ -268,9 +296,12 @@ async function measureThroughput(
             ? await downloadOnce(baseUrl, session.token, size, signal)
             : await uploadOnce(baseUrl, session.token, size, signal);
         transferred += result.bytes;
-        const elapsed = Math.max(1, nowMs() - phaseStarted);
+        windowStart =
+          windowStart == null ? result.firstMs : Math.min(windowStart, result.firstMs);
+        windowEnd = Math.max(windowEnd, result.lastMs);
+        const elapsed = Math.max(1, nowMs() - windowStart);
         const liveMbps = bytesToMbps(transferred, elapsed);
-        onSample(liveMbps, transferred, Math.min(1, transferred / phaseBudget));
+        onSample(liveMbps, transferred, Math.min(1, transferred / Math.max(1, phaseBudget)));
       } catch (err) {
         if (isBudgetExhausted(err)) break;
         throw err;
@@ -287,8 +318,10 @@ async function measureThroughput(
   phaseActive = false;
   const loadedPingSamples = await loadedPingPromise;
 
-  // Aggregate across parallel workers: total bytes / wall time (not mean per-stream chunk rate).
-  const phaseMs = Math.max(1, nowMs() - phaseStarted);
+  // Total bytes over the union of transfer windows, not the mean of per-stream rates.
+  // Download windows start at the first body byte. Upload windows include request setup.
+  const phaseMs =
+    windowStart == null ? 1 : Math.max(1, windowEnd - windowStart);
   const mbps = transferred > 0 ? bytesToMbps(transferred, phaseMs) : 0;
   return { mbps, bytes: transferred, loadedPingSamples };
 }
