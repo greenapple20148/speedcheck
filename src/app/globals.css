@@ -51,6 +51,7 @@ html[data-theme="dark"] {
   --input-bg: #10162a;
   --input-border: #222b45;
   --input-focus-ring: rgba(20, 200, 180, 0.55);
+  --select-chevron: var(--select-chevron-dark);
 
   --donut-track: rgba(232, 236, 248, 0.1);
   --grid-dot: rgba(232, 236, 248, 0.055);
@@ -143,6 +144,9 @@ html[data-theme="dark"] {
   --input-bg: #ffffff;
   --input-border: #e2e8f0;
   --input-focus-ring: rgba(8, 107, 80, 0.4);
+  --select-chevron-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238d97b2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --select-chevron: var(--select-chevron-light);
 
   --donut-track: rgba(15, 23, 42, 0.08);
   --grid-dot: rgba(15, 23, 42, 0.05);
@@ -493,6 +497,38 @@ html[data-theme="dark"] .site-nav-panel {
   color: #fff;
 }
 
+/*
+  Native selects keep the OS picker. This only restyles the closed control:
+  no browser arrow, a theme chevron, and enough padding that the value stays clear.
+  Unlayered so it wins over Tailwind padding utilities.
+*/
+select[class] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  background-image: var(--select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem 1rem;
+  /* Beats a single padding utility such as px-3. Every select in the app has a class. */
+  padding-right: 2.25rem;
+}
+
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* Floor planner controls stay on a light canvas, so the chevron stays dark. */
+.select-chevron-on-light {
+  --select-chevron: var(--select-chevron-light);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .site-header {
     transition: none;
@@ -501,5 +537,82 @@ html[data-theme="dark"] .site-nav-panel {
   .site-nav-drawer [data-state="open"],
   .site-nav-drawer [data-state="closed"] {
     animation: none !important;
+  }
+}
+
+.dev-tools {
+  --dt-primary: #006b53;
+  --dt-primary-hover: #005541;
+  --dt-accent: #009b78;
+  --dt-pale: #eaf8f1;
+  --dt-page: #fafbf8;
+  --dt-card: #ffffff;
+  --dt-inset: #f7fbf9;
+  --dt-text: #10231f;
+  --dt-muted: #64748b;
+  --dt-border: #e2e8e5;
+  --dt-on-primary: #ffffff;
+  background: var(--dt-page);
+  color: var(--dt-text);
+  overflow-x: clip;
+}
+
+html[data-theme="dark"] .dev-tools {
+  --dt-primary: #14c8b4;
+  --dt-primary-hover: #5eead4;
+  --dt-accent: #5eead4;
+  --dt-pale: #13261f;
+  --dt-page: #0b1020;
+  --dt-card: #131a2e;
+  --dt-inset: #10162a;
+  --dt-text: #e8ecf8;
+  --dt-muted: #b7c0d6;
+  --dt-border: #2a3654;
+  --dt-on-primary: #06231f;
+}
+
+.dev-tools .dt-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.dev-tools .dt-key {
+  color: #006b53;
+}
+
+.dev-tools .dt-string {
+  color: #0f766e;
+}
+
+.dev-tools .dt-number {
+  color: #9a3412;
+}
+
+.dev-tools .dt-literal {
+  color: #6d28d9;
+}
+
+html[data-theme="dark"] .dev-tools .dt-key {
+  color: #5eead4;
+}
+
+html[data-theme="dark"] .dev-tools .dt-string {
+  color: #86efac;
+}
+
+html[data-theme="dark"] .dev-tools .dt-number {
+  color: #fdba74;
+}
+
+html[data-theme="dark"] .dev-tools .dt-literal {
+  color: #c4b5fd;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dev-tools *,
+  .dev-tools *::before,
+  .dev-tools *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }

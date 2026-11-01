@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Check, Copy, Info, RotateCcw } from "lucide-react";
+import { Check, Copy, RotateCcw } from "lucide-react";
+import { CalculatorInput, calculatorControlClass } from "@/components/ui/calculator-input";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
+import { MetricCard } from "@/components/ui/metric-card";
+import { PresetSelector } from "@/components/ui/preset-selector";
+import { ResultPanel } from "@/components/ui/result-panel";
+import { selectControlClass } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 import { readHistory } from "@/lib/speedtest/history-store";
 import { cn } from "@/lib/utils";
 import {
   UPLOAD_CALCULATOR_STORAGE_KEY,
   UPLOAD_PRESETS,
+  UPLOAD_RATE_UNITS,
   UPLOAD_SIZE_UNITS,
   applyPreset,
   barWidthPercent,
@@ -19,8 +27,11 @@ import {
   formatUploadDuration,
   latestMeasuredUploadMbps,
   matchingPreset,
+  mbpsToRate,
+  parsePositiveDecimal,
   parseStoredUploadInputs,
   parseUploadSearchParams,
+  rateToMbps,
   resetUploadInputs,
   serializeUploadQuery,
   uploadContextLine,
@@ -28,24 +39,96 @@ import {
   uploadSpeedComparisons,
   type UploadFields,
   type UploadPresetId,
+  type UploadRateUnit,
   type UploadSizeUnit,
 } from "@/lib/calculators/upload-time";
 
 const cardClass =
-  "min-w-0 rounded-2xl border border-[#E2E8F0] bg-white p-4 text-[#0F172A] shadow-soft [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card [[data-theme=dark]_&]:text-foreground";
+  "min-w-0 rounded-[20px] border border-[#E2E8E5] bg-white p-4 text-[#10231F] shadow-[0_1px_2px_rgba(16,35,31,0.04)] sm:p-5 [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card [[data-theme=dark]_&]:text-foreground";
 const mutedClass = "text-[#64748B] [[data-theme=dark]_&]:text-muted-foreground";
-const fieldClass =
-  "h-10 w-full min-w-0 rounded-xl border border-[#E2E8F0] bg-white px-3 text-sm text-[#0F172A] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-[var(--input-bg)] [[data-theme=dark]_&]:text-foreground";
 
 const INITIAL_FIELDS: UploadFields = fieldsFromInputs(resetUploadInputs());
+const TABS = [
+  { id: "calculator", label: "Calculator" },
+  { id: "examples", label: "Examples" },
+  { id: "learn", label: "Learn" },
+] as const;
 
-export function UploadInfoTip() {
+type UploadTab = (typeof TABS)[number]["id"];
+
+const EFFICIENCY_HELP =
+  "Transfer efficiency is an allowance you set, from 50% to 100%. Estimated time is the ideal time divided by that fraction. It is not a measured overhead, and it does not use download speed.";
+
+export function UploadTimeTabs({
+  calculator,
+  examples,
+  learn,
+}: {
+  calculator: ReactNode;
+  examples: ReactNode;
+  learn: ReactNode;
+}) {
+  const [tab, setTab] = useState<UploadTab>("calculator");
+  const panels = { calculator, examples, learn };
+
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const next =
+      event.key === "ArrowRight" || event.key === "ArrowDown"
+        ? (index + 1) % TABS.length
+        : event.key === "ArrowLeft" || event.key === "ArrowUp"
+          ? (index - 1 + TABS.length) % TABS.length
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? TABS.length - 1
+              : null;
+    if (next == null) return;
+    event.preventDefault();
+    const id = TABS[next].id;
+    setTab(id);
+    document.getElementById(`upload-tab-${id}`)?.focus();
+  }
+
   return (
-    <Hint
-      align="end"
-      label="About this estimate"
-      text="This estimates upload time from the file size and upload rate you enter. It does not upload the file or test your connection."
-    />
+    <div>
+      <div role="tablist" aria-label="Upload time calculator sections" className="mb-4 flex flex-wrap gap-2">
+        {TABS.map((item, index) => {
+          const selected = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              id={`upload-tab-${item.id}`}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              aria-controls={`upload-panel-${item.id}`}
+              tabIndex={selected ? 0 : -1}
+              className={cn(
+                "inline-flex min-h-10 items-center rounded-full px-4 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006B53]",
+                selected
+                  ? "bg-[#006B53] text-white"
+                  : "text-[#64748B] hover:bg-[#EAF8F1] hover:text-[#10231F] [[data-theme=dark]_&]:text-muted-foreground [[data-theme=dark]_&]:hover:bg-card [[data-theme=dark]_&]:hover:text-foreground",
+              )}
+              onClick={() => setTab(item.id)}
+              onKeyDown={(event) => onKeyDown(event, index)}
+            >
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+      {TABS.map((item) => (
+        <div
+          key={item.id}
+          id={`upload-panel-${item.id}`}
+          role="tabpanel"
+          aria-labelledby={`upload-tab-${item.id}`}
+          hidden={tab !== item.id}
+        >
+          {panels[item.id]}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -54,26 +137,33 @@ export function UploadTimeCalculator() {
   const pathname = usePathname() ?? "/upload-time-calculator";
   const query = searchParams.toString();
   const [fields, setFields] = useState<UploadFields>(INITIAL_FIELDS);
+  const [rateUnit, setRateUnit] = useState<UploadRateUnit>("Mbps");
+  const [rateText, setRateText] = useState(INITIAL_FIELDS.speed);
   const [ready, setReady] = useState(false);
   const [measuredUpload, setMeasuredUpload] = useState<number | null>(null);
   const [copied, setCopied] = useState<"copied" | "failed" | null>(null);
   const loadedRef = useRef(false);
+  const resultRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (loadedRef.current) return;
     loadedRef.current = true;
     const parsed = parseUploadSearchParams(new URLSearchParams(query));
+    let next = INITIAL_FIELDS;
     if (parsed.status === "ok" && parsed.inputs) {
-      setFields(fieldsFromInputs(parsed.inputs));
+      next = fieldsFromInputs(parsed.inputs);
     } else {
       try {
         const raw = localStorage.getItem(UPLOAD_CALCULATOR_STORAGE_KEY);
         const stored = raw ? parseStoredUploadInputs(raw) : null;
-        if (stored) setFields(fieldsFromInputs(stored));
+        if (stored) next = fieldsFromInputs(stored);
       } catch {
         /* Keep the default inputs when storage is unavailable. */
       }
     }
+    setFields(next);
+    setRateUnit("Mbps");
+    setRateText(next.speed);
     try {
       setMeasuredUpload(latestMeasuredUploadMbps(readHistory()));
     } catch {
@@ -119,14 +209,57 @@ export function UploadTimeCalculator() {
   const efficiencyNumber = Number(fields.efficiency);
   const efficiencyLabel = Number.isFinite(efficiencyNumber) ? formatEfficiencyPercent(efficiencyNumber) : "—";
 
-  function choosePreset(id: Exclude<UploadPresetId, "custom">) {
+  function choosePreset(id: UploadPresetId) {
+    if (id === "custom") return;
     const next = applyPreset(id);
     setFields((current) => ({ ...current, size: String(next.size), unit: next.unit }));
   }
 
   function reset() {
     setFields(INITIAL_FIELDS);
+    setRateUnit("Mbps");
+    setRateText(INITIAL_FIELDS.speed);
     setCopied(null);
+  }
+
+  function focusResult() {
+    const node = resultRef.current;
+    if (!node) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+    node.focus({ preventScroll: true });
+  }
+
+  function changeRate(text: string) {
+    setRateText(text);
+    if (text.trim() === "") {
+      setFields((current) => ({ ...current, speed: "" }));
+      return;
+    }
+    const parsed = parsePositiveDecimal(text);
+    if (parsed == null) {
+      setFields((current) => ({ ...current, speed: text }));
+      return;
+    }
+    setFields((current) => ({ ...current, speed: formatInputNumber(rateToMbps(parsed, rateUnit)) }));
+  }
+
+  function changeRateUnit(next: UploadRateUnit) {
+    const parsed = parsePositiveDecimal(rateText);
+    const mbps = parsed == null ? Number(fields.speed) : rateToMbps(parsed, rateUnit);
+    setRateUnit(next);
+    if (Number.isFinite(mbps) && mbps > 0) {
+      setRateText(formatInputNumber(mbpsToRate(mbps, next)));
+      setFields((current) => ({ ...current, speed: formatInputNumber(mbps) }));
+    }
+  }
+
+  function useMeasuredUpload() {
+    if (measuredUpload == null) return;
+    const text = formatInputNumber(measuredUpload);
+    setRateUnit("Mbps");
+    setRateText(text);
+    setFields((current) => ({ ...current, speed: text }));
   }
 
   async function copyEstimate() {
@@ -141,39 +274,38 @@ export function UploadTimeCalculator() {
     }
   }
 
-  const sizeErrorId = "upload-size-error";
-  const speedErrorId = "upload-speed-error";
-  const efficiencyErrorId = "upload-efficiency-error";
-  const idealShare =
-    evaluation.estimate && evaluation.estimate.realisticSeconds > 0
-      ? Math.min(100, (evaluation.estimate.idealSeconds / evaluation.estimate.realisticSeconds) * 100)
-      : 0;
-
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,0.45fr)_minmax(0,0.55fr)]">
+    <form
+      className="grid items-start gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]"
+      onSubmit={(event) => {
+        event.preventDefault();
+        focusResult();
+      }}
+    >
       <section className={cardClass} aria-labelledby="upload-settings-heading">
         <h2 id="upload-settings-heading" className="text-base font-semibold">
           Upload Settings
         </h2>
-        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_5.75rem] gap-2">
-          <label className="block text-sm font-medium" htmlFor="upload-file-size">
-            File size
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_7.25rem] gap-2">
+          <CalculatorInput id="upload-file-size" label="File size" error={evaluation.errors.size}>
             <input
               id="upload-file-size"
-              className={cn(fieldClass, "mt-1", evaluation.errors.size && "border-destructive")}
+              className={cn(calculatorControlClass, evaluation.errors.size && "border-destructive")}
               value={fields.size}
               onChange={(event) => setFields((current) => ({ ...current, size: event.target.value }))}
               inputMode="decimal"
               autoComplete="off"
               aria-invalid={evaluation.errors.size ? true : undefined}
-              aria-describedby={evaluation.errors.size ? sizeErrorId : undefined}
+              aria-describedby={evaluation.errors.size ? "upload-file-size-error" : undefined}
             />
-          </label>
-          <label className="block text-sm font-medium" htmlFor="upload-file-unit">
-            Unit
+          </CalculatorInput>
+          <div className="min-w-0">
+            <label htmlFor="upload-file-unit" className="text-sm font-medium text-[#10231F] [[data-theme=dark]_&]:text-foreground">
+              Unit
+            </label>
             <select
               id="upload-file-unit"
-              className={cn(fieldClass, "mt-1")}
+              className={selectControlClass}
               value={fields.unit}
               onChange={(event) =>
                 setFields((current) => ({ ...current, unit: event.target.value as UploadSizeUnit }))
@@ -185,82 +317,108 @@ export function UploadTimeCalculator() {
                 </option>
               ))}
             </select>
-          </label>
+            {evaluation.errors.unit && (
+              <p className="mt-1 text-sm text-destructive" role="alert">
+                {evaluation.errors.unit}
+              </p>
+            )}
+          </div>
         </div>
-        {evaluation.errors.size && (
-          <p id={sizeErrorId} className="mt-1 text-sm text-destructive" role="alert">
-            {evaluation.errors.size}
-          </p>
-        )}
-        {evaluation.errors.unit && (
-          <p className="mt-1 text-sm text-destructive" role="alert">
-            {evaluation.errors.unit}
-          </p>
-        )}
 
-        <label className="mt-3 block text-sm font-medium" htmlFor="upload-speed">
-          Upload speed (Mbps)
-          <input
+        <div className="mt-3 grid grid-cols-[minmax(0,1fr)_7.25rem] gap-2">
+          <CalculatorInput
             id="upload-speed"
-            className={cn(fieldClass, "mt-1", evaluation.errors.speed && "border-destructive")}
-            value={fields.speed}
-            onChange={(event) => setFields((current) => ({ ...current, speed: event.target.value }))}
-            inputMode="decimal"
-            autoComplete="off"
-            aria-invalid={evaluation.errors.speed ? true : undefined}
-            aria-describedby={evaluation.errors.speed ? speedErrorId : undefined}
-          />
-        </label>
-        {evaluation.errors.speed && (
-          <p id={speedErrorId} className="mt-1 text-sm text-destructive" role="alert">
-            {evaluation.errors.speed}
-          </p>
-        )}
+            label="Upload speed"
+            error={evaluation.errors.speed}
+            hint="Saved and shared as Mbps. Kbps and Gbps are converted before the estimate."
+          >
+            <input
+              id="upload-speed"
+              className={cn(calculatorControlClass, evaluation.errors.speed && "border-destructive")}
+              value={rateText}
+              onChange={(event) => changeRate(event.target.value)}
+              inputMode="decimal"
+              autoComplete="off"
+              aria-invalid={evaluation.errors.speed ? true : undefined}
+              aria-describedby={evaluation.errors.speed ? "upload-speed-error" : undefined}
+            />
+          </CalculatorInput>
+          <div className="min-w-0">
+            <label htmlFor="upload-speed-unit" className="text-sm font-medium text-[#10231F] [[data-theme=dark]_&]:text-foreground">
+              Speed unit
+            </label>
+            <select
+              id="upload-speed-unit"
+              className={selectControlClass}
+              value={rateUnit}
+              onChange={(event) => changeRateUnit(event.target.value as UploadRateUnit)}
+            >
+              {UPLOAD_RATE_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         {measuredUpload != null && (
           <div className="mt-2">
             <button
               type="button"
-              className="text-sm font-medium text-[#0c6b62] underline-offset-2 hover:underline [[data-theme=dark]_&]:text-[var(--accent-text)]"
-              onClick={() =>
-                setFields((current) => ({ ...current, speed: formatInputNumber(measuredUpload) }))
-              }
+              className="text-sm font-medium text-[#006B53] underline-offset-2 hover:underline [[data-theme=dark]_&]:text-[var(--accent-text)]"
+              onClick={useMeasuredUpload}
             >
               Use my latest speed test ({formatMbpsValue(measuredUpload)} Mbps)
             </button>
             <p className={cn("mt-1 text-xs", mutedClass)}>
-              Fills the upload speed from the newest saved upload measurement on this device.
+              Fills the upload speed from the newest saved upload measurement on this device. It does not change a subscribed plan.
             </p>
           </div>
         )}
 
-        <div className="mt-3">
+        <div className="mt-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
               <label className="text-sm font-medium" htmlFor="upload-efficiency">
-                Transfer Efficiency
+                Transfer efficiency
               </label>
-              <Hint
-                label="About transfer efficiency"
-                text="This accounts for protocol overhead and network conditions."
-              />
+              <HelpTooltip label="About transfer efficiency" text={EFFICIENCY_HELP} />
             </div>
-            <output className="text-sm font-semibold tabular-nums" htmlFor="upload-efficiency">
-              {efficiencyLabel}
-            </output>
+            <div className="flex items-center gap-1">
+              <label className="sr-only" htmlFor="upload-efficiency-number">
+                Transfer efficiency percent
+              </label>
+              <input
+                id="upload-efficiency-number"
+                className={cn(
+                  calculatorControlClass,
+                  "mt-0 h-9 w-16 px-2 text-right tabular-nums",
+                  evaluation.errors.efficiency && "border-destructive",
+                )}
+                value={fields.efficiency}
+                onChange={(event) => setFields((current) => ({ ...current, efficiency: event.target.value }))}
+                inputMode="decimal"
+                aria-invalid={evaluation.errors.efficiency ? true : undefined}
+                aria-describedby={evaluation.errors.efficiency ? "upload-efficiency-error" : undefined}
+              />
+              <span className={cn("text-sm font-semibold tabular-nums", mutedClass)} aria-hidden>
+                %
+              </span>
+            </div>
           </div>
           <input
             id="upload-efficiency"
-            className="mt-2 h-2 w-full cursor-pointer accent-[#00866A]"
+            className="mt-2 h-2 w-full cursor-pointer accent-[#006B53]"
             type="range"
             min={50}
             max={100}
             step={1}
-            value={clampEfficiency(fields.efficiency)}
+            value={Math.round(clampEfficiency(fields.efficiency))}
             aria-valuemin={50}
             aria-valuemax={100}
-            aria-valuenow={clampEfficiency(fields.efficiency)}
+            aria-valuenow={Math.round(clampEfficiency(fields.efficiency))}
             aria-valuetext={efficiencyLabel}
-            aria-describedby={evaluation.errors.efficiency ? efficiencyErrorId : undefined}
+            aria-describedby={evaluation.errors.efficiency ? "upload-efficiency-error" : undefined}
             onChange={(event) => setFields((current) => ({ ...current, efficiency: event.target.value }))}
           />
           <div className={cn("mt-1 flex justify-between text-[11px]", mutedClass)}>
@@ -268,73 +426,50 @@ export function UploadTimeCalculator() {
             <span>100%</span>
           </div>
           {evaluation.errors.efficiency && (
-            <p id={efficiencyErrorId} className="mt-1 text-sm text-destructive" role="alert">
+            <p id="upload-efficiency-error" className="mt-1 text-sm text-destructive" role="alert">
               {evaluation.errors.efficiency}
             </p>
           )}
         </div>
 
-        <div className="mt-3">
-          <p className="text-sm font-medium" id="upload-presets-label">
-            Quick presets
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-labelledby="upload-presets-label">
-            {UPLOAD_PRESETS.map((item) => {
-              const active = preset === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={presetClass(active)}
-                  aria-pressed={active}
-                  onClick={() => choosePreset(item.id)}
-                >
-                  {item.label} {item.detail}
-                </button>
-              );
-            })}
-            <button type="button" className={presetClass(preset === "custom")} aria-pressed={preset === "custom"}>
-              Custom
-            </button>
-          </div>
-          <p className={cn("mt-2 text-xs", mutedClass)}>Example sizes you can edit.</p>
+        <div className="mt-4">
+          <PresetSelector
+            labelId="upload-presets-label"
+            label="Quick presets"
+            hint="Example sizes you can edit. They do not change the upload speed."
+            value={preset}
+            options={[
+              ...UPLOAD_PRESETS.map((item) => ({ id: item.id, label: item.label, detail: item.detail })),
+              { id: "custom" as const, label: "Custom" },
+            ]}
+            onSelect={choosePreset}
+          />
         </div>
 
-        <button
-          type="button"
-          className="mt-3 inline-flex h-10 items-center gap-2 rounded-xl border border-[#E2E8F0] px-3 text-sm font-medium hover:bg-[#F8FAFC] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:hover:bg-[var(--bg-surface-hover)]"
-          onClick={reset}
-        >
-          <RotateCcw className="h-4 w-4" aria-hidden />
-          Reset
-        </button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button type="button" variant="outline" onClick={reset}>
+            <RotateCcw className="h-4 w-4" aria-hidden />
+            Reset
+          </Button>
+          <Button type="submit">Calculate upload time</Button>
+        </div>
       </section>
 
-      <section className={cardClass} aria-labelledby="upload-estimate-heading">
-        <h2 id="upload-estimate-heading" className="text-base font-semibold">
-          Upload Estimate
-        </h2>
+      <ResultPanel ref={resultRef} title="Estimated upload time" titleId="upload-estimate-heading">
         {evaluation.estimate && evaluation.inputs ? (
           <div className="mt-3">
-            <p className={cn("text-xs font-medium uppercase tracking-wide", mutedClass)}>Estimated upload time</p>
-            <p className="mt-1 text-3xl font-semibold tabular-nums tracking-tight text-[#00866A] sm:text-4xl [[data-theme=dark]_&]:text-[var(--accent-text)]">
+            <p className="font-heading text-4xl font-semibold tabular-nums tracking-tight text-[#006B53] sm:text-5xl [[data-theme=dark]_&]:text-[var(--accent-text)]">
               {formatUploadDuration(evaluation.estimate.realisticSeconds)}
             </p>
-            <p className={cn("mt-1 text-sm", mutedClass)}>{uploadContextLine(evaluation.inputs)}</p>
+            <p className={cn("mt-2 text-sm", mutedClass)}>{uploadContextLine(evaluation.inputs)}</p>
+            <p className={cn("mt-1 text-xs", mutedClass)}>Estimate, not a live upload.</p>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="min-w-0 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-[var(--bg-tertiary)]">
-                <p className={cn("text-xs", mutedClass)}>Ideal transfer</p>
-                <p className="mt-1 text-sm font-semibold tabular-nums">
-                  {formatUploadDuration(evaluation.estimate.idealSeconds)}
-                </p>
-              </div>
-              <div className="min-w-0 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-3 [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-[var(--bg-tertiary)]">
-                <p className={cn("text-xs", mutedClass)}>Effective upload speed</p>
-                <p className="mt-1 text-sm font-semibold tabular-nums">
-                  {formatMbpsValue(evaluation.estimate.effectiveMbps)} Mbps
-                </p>
-              </div>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <MetricCard label="Ideal transfer" value={formatUploadDuration(evaluation.estimate.idealSeconds)} />
+              <MetricCard
+                label="Effective upload speed"
+                value={`${formatMbpsValue(evaluation.estimate.effectiveMbps)} Mbps`}
+              />
             </div>
 
             {evaluation.estimate.warnings.length > 0 && (
@@ -347,84 +482,43 @@ export function UploadTimeCalculator() {
 
             <h3 className="mt-4 text-sm font-semibold">Speed comparison</h3>
             <p className={cn("mt-1 text-xs", mutedClass)}>
-              Estimated times for this file and efficiency. Estimate, not a live upload.
+              Estimated times for this file and efficiency, using the same calculation.
             </p>
-            <table className="mt-2 w-full table-fixed text-sm">
-              <caption className="sr-only">Estimated upload time at comparison speeds</caption>
-              <thead className="sr-only">
-                <tr>
-                  <th scope="col">Speed</th>
-                  <th scope="col">Relative time</th>
-                  <th scope="col">Estimated time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparisons.map((row) => (
-                  <tr
-                    key={row.speedMbps}
-                    className={cn(row.highlighted && "bg-[#F0FDFA] [[data-theme=dark]_&]:bg-[var(--bg-tertiary)]")}
-                    aria-current={row.highlighted ? "true" : undefined}
-                  >
-                    <th scope="row" className="w-[34%] px-1 py-1 text-left text-xs font-medium">
-                      <span className="block">{row.label}</span>
-                      {row.highlighted && <span className="block text-[11px] font-medium text-[#0c6b62] [[data-theme=dark]_&]:text-[var(--accent-text)]">Your speed</span>}
-                    </th>
-                    <td className="px-1 py-1">
-                      <div className="h-1.5 overflow-hidden rounded-full bg-[#E2E8F0] [[data-theme=dark]_&]:bg-[var(--donut-track)]" aria-hidden>
-                        <div
-                          className={cn(
-                            "h-full rounded-full motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out",
-                            row.highlighted ? "bg-[#00866A] [[data-theme=dark]_&]:bg-[var(--primary)]" : "bg-[#14B8A6]",
-                          )}
-                          style={{ width: `${barWidthPercent(row.seconds ?? 0, longest)}%` }}
-                        />
-                      </div>
-                    </td>
-                    <td className="w-[38%] px-1 py-1 text-right text-xs tabular-nums">
-                      {row.seconds == null ? "—" : formatUploadDuration(row.seconds)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <h3 className="mt-4 text-sm font-semibold">Ideal and estimated time</h3>
-            <p className={cn("mt-1 text-xs", mutedClass)}>
-              Ideal time is the upper bar. Estimated time is the lower bar and includes transfer efficiency.
-            </p>
-            <div className="mt-2 space-y-2">
-              <div>
-                <div className="flex items-baseline justify-between gap-3 text-xs">
-                  <span>Ideal transfer</span>
-                  <span className="tabular-nums">{formatUploadDuration(evaluation.estimate.idealSeconds)}</span>
-                </div>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#E2E8F0] [[data-theme=dark]_&]:bg-[var(--donut-track)]" aria-hidden>
-                  <div
-                    className="h-full rounded-full bg-[#14B8A6] motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out"
-                    style={{ width: `${idealShare}%` }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-baseline justify-between gap-3 text-xs">
-                  <span>Estimated time</span>
-                  <span className="tabular-nums">{formatUploadDuration(evaluation.estimate.realisticSeconds)}</span>
-                </div>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#E2E8F0] [[data-theme=dark]_&]:bg-[var(--donut-track)]" aria-hidden>
-                  <div className="h-full w-full rounded-full bg-[#00866A] [[data-theme=dark]_&]:bg-[var(--primary)]" />
-                </div>
-              </div>
-            </div>
+            <ul className="mt-2 space-y-1.5">
+              {comparisons.map((row) => (
+                <li
+                  key={row.speedMbps}
+                  className={cn(
+                    "grid grid-cols-[5.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-xl px-2 py-1.5 text-xs",
+                    row.highlighted && "bg-white [[data-theme=dark]_&]:bg-card",
+                  )}
+                  aria-current={row.highlighted ? "true" : undefined}
+                >
+                  <span className="font-medium">
+                    {row.label}
+                    {row.highlighted ? <span className="mt-0.5 block text-[11px] font-medium text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]">Yours</span> : null}
+                  </span>
+                  <span className="h-1.5 overflow-hidden rounded-full bg-[#E2E8E5] [[data-theme=dark]_&]:bg-[var(--donut-track)]" aria-hidden>
+                    <span
+                      className={cn(
+                        "block h-full rounded-full motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out",
+                        row.highlighted ? "bg-[#006B53] [[data-theme=dark]_&]:bg-[var(--primary)]" : "bg-[#009B78]",
+                      )}
+                      style={{ width: `${barWidthPercent(row.seconds ?? 0, longest)}%` }}
+                    />
+                  </span>
+                  <span className="text-right tabular-nums">
+                    {row.seconds == null ? "—" : formatUploadDuration(row.seconds)}
+                  </span>
+                </li>
+              ))}
+            </ul>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#00866A] px-4 text-sm font-semibold text-white hover:bg-[#007A5E] disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => void copyEstimate()}
-              >
+              <Button type="button" onClick={() => void copyEstimate()}>
                 {copied === "copied" ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
                 {copied === "copied" ? "Copied" : "Copy estimate"}
-              </button>
+              </Button>
               {copied === "failed" && (
                 <p className="text-sm text-destructive" role="alert">
                   Could not copy the estimate.
@@ -435,17 +529,8 @@ export function UploadTimeCalculator() {
         ) : (
           <p className={cn("mt-3 text-sm", mutedClass)}>Enter a file size and upload speed to see an estimate.</p>
         )}
-      </section>
-    </div>
-  );
-}
-
-function presetClass(active: boolean) {
-  return cn(
-    "max-w-full rounded-full border px-3 py-1.5 text-left text-xs font-semibold",
-    active
-      ? "border-[#007A5E] bg-[#007A5E] text-white"
-      : "border-[#E2E8F0] bg-white text-[#0F172A] hover:border-[#14B8A6] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card [[data-theme=dark]_&]:text-foreground",
+      </ResultPanel>
+    </form>
   );
 }
 
@@ -454,28 +539,3 @@ function clampEfficiency(value: string): number {
   if (!Number.isFinite(parsed)) return 90;
   return Math.min(100, Math.max(50, parsed));
 }
-
-function Hint({ label, text, align = "start" }: { label: string; text: string; align?: "start" | "end" }) {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  return (
-    <span className="relative inline-flex">
-      <button
-        type="button"
-        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[#64748B] hover:text-[#0F172A] [[data-theme=dark]_&]:text-muted-foreground"
-        aria-label={label}
-        aria-expanded={open}
-        aria-describedby={id}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <Info className="h-3.5 w-3.5" aria-hidden />
-      </button>
-      <span id={id} role="tooltip" className={open ? cn(hintClass, align === "end" ? "right-0" : "left-0") : "sr-only"}>
-        {text}
-      </span>
-    </span>
-  );
-}
-
-const hintClass =
-  "absolute top-full z-20 mt-1 w-56 max-w-[min(14rem,calc(100vw-2rem))] rounded-xl border border-[#E2E8F0] bg-white p-2 text-left text-xs font-normal leading-5 text-[#0F172A] shadow-card [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card [[data-theme=dark]_&]:text-foreground";

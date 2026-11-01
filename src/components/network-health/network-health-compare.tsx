@@ -8,6 +8,7 @@ import { loadPlan } from "@/lib/mesh/store";
 import { CHANGE_LABELS, compareSnapshots, type ChangeKind } from "@/lib/network-health/compare";
 import { snapshotFromHistory, snapshotFromRoom, snapshotFromSpeedResult, type HealthSnapshot } from "@/lib/network-health/snapshot";
 import { exportComparison, readComparisons, saveComparison, type SavedComparison } from "@/lib/network-health/store";
+import { selectControlClass } from "@/components/ui/field";
 
 const SpeedTestDashboard = dynamic(
   () => import("@/components/speedtest/dashboard/speed-test-dashboard").then((mod) => mod.SpeedTestDashboard),
@@ -111,7 +112,7 @@ export function NetworkHealthCompare() {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
           What changed
-          <select className="mt-1 w-full rounded-lg border border-border bg-background px-2 py-2" value={changeKind} onChange={(event) => setChangeKind(event.target.value as ChangeKind)}>
+          <select className={selectControlClass} value={changeKind} onChange={(event) => setChangeKind(event.target.value as ChangeKind)}>
             {CHANGE_KINDS.map((kind) => <option key={kind} value={kind}>{CHANGE_LABELS[kind]}</option>)}
           </select>
         </label>

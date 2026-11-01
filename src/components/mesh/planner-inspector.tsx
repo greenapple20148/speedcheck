@@ -181,7 +181,7 @@ export function PlannerInspector({
                 <input className={fieldClass} value={selectedNode.name} onChange={(event) => onRenameNode(event.target.value.slice(0, 40))} />
               </label>
               <label className="block text-[11px] text-[#64748B]">Type
-                <select className={fieldClass} value={selectedNode.role} onChange={(event) => onRole(event.target.value as "primary" | "satellite")}>
+                <select className={`${fieldClass} select-chevron-on-light`} value={selectedNode.role} onChange={(event) => onRole(event.target.value as "primary" | "satellite")}>
                   <option value="primary">Primary router</option>
                   <option value="satellite">Mesh node</option>
                 </select>
@@ -192,13 +192,13 @@ export function PlannerInspector({
                 <NumberField label="Y (ft)" value={selectedNode.y} onChange={(value) => onMoveNode(selectedNode.x, value)} />
               </div>
               <label className="block text-[11px] text-[#64748B]">Backhaul
-                <select className={fieldClass} value={selectedNode.link ?? "wireless"} onChange={(event) => onLink(event.target.value as "wired" | "wireless")}>
+                <select className={`${fieldClass} select-chevron-on-light`} value={selectedNode.link ?? "wireless"} onChange={(event) => onLink(event.target.value as "wired" | "wireless")}>
                   <option value="wireless">Wireless</option>
                   <option value="wired">Wired</option>
                 </select>
               </label>
               <label className="block text-[11px] text-[#64748B]">Connected parent
-                <select className={fieldClass} value={selectedNode.parentId ?? ""} onChange={(event) => onParent(event.target.value)}>
+                <select className={`${fieldClass} select-chevron-on-light`} value={selectedNode.parentId ?? ""} onChange={(event) => onParent(event.target.value)}>
                   <option value="">Nearest node</option>
                   {floor.nodes.filter((node) => node.id !== selectedNode.id).map((node) => <option key={node.id} value={node.id}>{node.name}</option>)}
                 </select>
@@ -206,7 +206,7 @@ export function PlannerInspector({
               {parentDistance && <p className="text-[#64748B]">About {Math.round(parentDistance.distanceFt)} ft from {parentDistance.name}. Distance is from the plan, not a signal reading.</p>}
               <p className="text-[11px] leading-4 text-[#64748B]">The planner does not estimate link speed or dBm. Drag the marker to move it.</p>
               <label className="block text-[11px] text-[#64748B]">Planning band
-                <select className={fieldClass} value={selectedNode.band ?? "5"} onChange={(event) => onBand(event.target.value as WifiBand)}>
+                <select className={`${fieldClass} select-chevron-on-light`} value={selectedNode.band ?? "5"} onChange={(event) => onBand(event.target.value as WifiBand)}>
                   <option value="2.4">2.4 GHz</option>
                   <option value="5">5 GHz</option>
                   <option value="6">6 GHz</option>
@@ -335,7 +335,7 @@ function NumberField({ label, value, onChange }: { label: string; value: number;
 function MaterialSelect({ materials, value, onChange }: { materials: WallMaterial[]; value: WallMaterial; onChange: (value: WallMaterial) => void }) {
   return (
     <label className="block text-[11px] text-[#64748B]">Material
-      <select className={fieldClass} value={value} onChange={(event) => onChange(event.target.value as WallMaterial)}>
+      <select className={`${fieldClass} select-chevron-on-light`} value={value} onChange={(event) => onChange(event.target.value as WallMaterial)}>
         {materials.map((material) => <option key={material} value={material}>{MATERIAL_DB[material].label}</option>)}
       </select>
     </label>

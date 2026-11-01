@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { useMeshPlan } from "@/components/mesh/use-mesh-plan";
 import { appendRoomSample, bestRoomDownload, roomSampleFromResult, summarizeRoom, throughputBand, type ThroughputBand } from "@/lib/mesh/measurements";
 import { providerLabel } from "@/lib/network-health/snapshot";
+import { selectControlClass } from "@/components/ui/field";
 
 const SpeedTestDashboard = dynamic(
   () => import("@/components/speedtest/dashboard/speed-test-dashboard").then((mod) => mod.SpeedTestDashboard),
@@ -57,12 +58,12 @@ export function DeadZoneTester() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">Floor
-            <select className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2" value={activeFloor?.id ?? ""} onChange={(event) => { setFloorId(event.target.value); setRoomId(null); }}>
+            <select className={selectControlClass} value={activeFloor?.id ?? ""} onChange={(event) => { setFloorId(event.target.value); setRoomId(null); }}>
               {plan.floors.map((floor) => <option key={floor.id} value={floor.id}>{floor.name}</option>)}
             </select>
           </label>
           <label className="block text-sm">Room
-            <select className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2" value={roomId ?? ""} onChange={(event) => setRoomId(event.target.value || null)}>
+            <select className={selectControlClass} value={roomId ?? ""} onChange={(event) => setRoomId(event.target.value || null)}>
               <option value="">Select a room</option>
               {rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}
             </select>

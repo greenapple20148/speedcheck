@@ -12,7 +12,9 @@ import {
   formatUploadDuration,
   latestMeasuredUploadMbps,
   matchingPreset,
+  mbpsToRate,
   parseStoredUploadInputs,
+  rateToMbps,
   parseUploadSearchParams,
   resetUploadInputs,
   serializeUploadQuery,
@@ -73,6 +75,21 @@ describe("upload time math", () => {
     expect(formatUploadDuration(Number.NaN)).toBe("—");
     expect(formatUploadDuration(Number.POSITIVE_INFINITY)).toBe("—");
     expect(formatUploadDuration(-1)).toBe("—");
+  });
+});
+
+describe("upload rate unit conversion", () => {
+  it("converts Kbps and Gbps into the Mbps the estimator stores", () => {
+    expect(rateToMbps(100_000, "Kbps")).toBe(100);
+    expect(rateToMbps(0.1, "Gbps")).toBe(100);
+    expect(rateToMbps(100, "Mbps")).toBe(100);
+    expect(mbpsToRate(100, "Kbps")).toBe(100_000);
+    expect(mbpsToRate(100, "Gbps")).toBe(0.1);
+    const viaGbps = computeUploadEstimate({ ...defaults, speedMbps: rateToMbps(0.1, "Gbps") });
+    expect(viaGbps?.idealSeconds).toBeCloseTo(80);
+    expect(viaGbps?.realisticSeconds).toBeCloseTo(80 / 0.9);
+    expect(viaGbps?.effectiveMbps).toBeCloseTo(90);
+    expect(serializeUploadQuery({ ...defaults, speedMbps: rateToMbps(100_000, "Kbps") })).toContain("speed=100");
   });
 });
 

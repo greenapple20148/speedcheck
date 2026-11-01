@@ -1,8 +1,27 @@
 "use client";
 
-import { Check, Gamepad, Gauge, Network, Unplug, Video, WifiOff, type LucideIcon } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Check,
+  ClipboardList,
+  Download,
+  Gamepad,
+  Gauge,
+  MapPin,
+  Monitor,
+  Network,
+  SlidersHorizontal,
+  Timer,
+  Unplug,
+  Upload,
+  Video,
+  Wifi,
+  WifiOff,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { AdSlot } from "@/components/ads/ad-slot";
 import { useMeshPlan } from "@/components/mesh/use-mesh-plan";
 import { getMeshBrand } from "@/lib/mesh/catalog";
@@ -38,6 +57,7 @@ import {
   type AssistantContext,
   type DiagnosticQuestion,
   type LocationSample,
+  type QuestionPlan,
   type VerificationStatus,
   type WifiRecommendation,
   type WifiSession,
@@ -45,11 +65,14 @@ import {
 import { readHistory, type StoredHistoryEntry } from "@/lib/speedtest/history-store";
 import { cn } from "@/lib/utils";
 
-const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00866A]";
-const PRIMARY = `inline-flex min-h-11 items-center justify-center rounded-[12px] bg-[#00866A] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${FOCUS}`;
-const SECONDARY = `inline-flex min-h-11 items-center justify-center rounded-[12px] border border-[#E2E8F0] bg-white px-4 text-sm font-semibold text-[#0F172A] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${FOCUS}`;
+const FOCUS = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#006B53] [[data-theme=dark]_&]:focus-visible:outline-[var(--ring)]";
+const PRIMARY = `inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-[#006B53] px-4 text-sm font-semibold text-white hover:bg-[#064E3B] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${FOCUS} [[data-theme=dark]_&]:bg-[var(--primary)] [[data-theme=dark]_&]:text-[var(--primary-foreground)]`;
+const SECONDARY = `inline-flex min-h-11 items-center justify-center rounded-full border border-[#E2E8E5] bg-white px-4 text-sm font-semibold text-[#10231F] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none ${FOCUS} [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-transparent [[data-theme=dark]_&]:text-foreground`;
 const STEP_LABELS = ["Symptoms", "Diagnose", "Recommendations"] as const;
-const STEP_TITLES = ["Find What's Slowing Down Your Wi-Fi", "Diagnose", "Recommendations"] as const;
+const STEP_TITLES = ["What are you seeing?", "Diagnose the issue", "Recommendations"] as const;
+const CARD = "min-w-0 rounded-[20px] border border-[#E2E8E5] bg-white text-[#10231F] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card [[data-theme=dark]_&]:text-foreground";
+const MUTED = "text-[#64748B] [[data-theme=dark]_&]:text-muted-foreground";
+const INPUT = `min-h-11 w-full min-w-0 rounded-xl border border-[#E2E8E5] bg-white px-3 text-sm text-[#10231F] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-[var(--input-bg)] [[data-theme=dark]_&]:text-foreground ${FOCUS}`;
 
 const ICONS: Record<string, LucideIcon> = {
   gauge: Gauge,
@@ -60,6 +83,18 @@ const ICONS: Record<string, LucideIcon> = {
   network: Network,
 };
 
+const QUESTION_GROUPS: Array<{ id: string; label: string; icon: LucideIcon; questionIds: string[] }> = [
+  { id: "where", label: "Where it happens", icon: MapPin, questionIds: ["where", "weak-room", "other-floor"] },
+  { id: "connection", label: "Connection type", icon: Wifi, questionIds: ["connection", "ethernet-compare", "ethernet-faster", "ethernet-helps-gaming", "backhaul"] },
+  {
+    id: "seeing",
+    label: "What you're seeing",
+    icon: Monitor,
+    questionIds: ["when", "near-primary", "slow-near-router", "faster-near-primary", "multiple-devices", "vendor-weak", "latency-during-transfers", "gaming-pattern", "which-devices", "app-offline"],
+  },
+  { id: "details", label: "More details", icon: SlidersHorizontal, questionIds: ["obstructions", "isp-plan", "node-count", "after-update"] },
+];
+
 const VERIFY_OPTIONS: Array<{ value: VerificationStatus; label: string }> = [
   { value: "fixed", label: "Yes, fixed" },
   { value: "improved", label: "Improved somewhat" },
@@ -68,6 +103,25 @@ const VERIFY_OPTIONS: Array<{ value: VerificationStatus; label: string }> = [
   { value: "untried", label: "Haven't tried yet" },
 ];
 
+const METRICS = [
+  { key: "downloadMbps", label: "Download", unit: "Mbps", icon: Download },
+  { key: "uploadMbps", label: "Upload", unit: "Mbps", icon: Upload },
+  { key: "pingMs", label: "Latency", unit: "ms", icon: Timer },
+  { key: "jitterMs", label: "Jitter", unit: "ms", icon: Activity },
+] as const;
+
+type FlowItem = {
+  id: string;
+  question: DiagnosticQuestion;
+  savedLabel: string | null;
+  savedValue: string | null;
+};
+
+type ShownSample = LocationSample & {
+  source: "room" | "history";
+  testedAt: string | null;
+};
+
 export function MeshTroubleshooter() {
   const { plan, ready } = useMeshPlan();
   const [session, setSession] = useState<WifiSession | null>(null);
@@ -75,9 +129,11 @@ export function MeshTroubleshooter() {
   const [routerSupport, setRouterSupport] = useState<{ name: string | null; url: string | null } | null>(null);
   const [resume, setResume] = useState(false);
   const [rejected, setRejected] = useState(false);
-  const [editingSaved, setEditingSaved] = useState<string[]>([]);
+  const [cursorId, setCursorId] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const questionRef = useRef<HTMLHeadingElement>(null);
   const announced = useRef(false);
+  const questionMoved = useRef(false);
   const step = session?.step;
 
   useEffect(() => {
@@ -138,11 +194,21 @@ export function MeshTroubleshooter() {
       announced.current = true;
       return;
     }
-    headingRef.current?.focus();
+    if (step === 1) questionRef.current?.focus();
+    else headingRef.current?.focus();
   }, [step]);
 
+  useEffect(() => {
+    if (step !== 1) return;
+    if (!questionMoved.current) {
+      questionMoved.current = true;
+      return;
+    }
+    questionRef.current?.focus();
+  }, [cursorId, step]);
+
   if (!session || !ready || !plan || !history || !routerSupport) {
-    return <p className="text-sm text-[#64748B]">Loading saved session…</p>;
+    return <p className={cn("text-sm", MUTED)}>Loading saved session…</p>;
   }
 
   const meshBrand = plan.home.brandSlug !== "generic" ? getMeshBrand(plan.home.brandSlug) : undefined;
@@ -169,18 +235,20 @@ export function MeshTroubleshooter() {
   };
   const known = knownFromContext(context);
   const questions = questionsFor(session.symptoms, known, session.answers);
+  const flow = buildFlow(questions);
+  const found = cursorId ? flow.findIndex((item) => item.id === cursorId) : -1;
+  const index = found >= 0 ? found : 0;
+  const currentQuestion = flow[index] ?? null;
   const ranked = rankRecommendations({ symptoms: session.symptoms, answers: session.answers, context });
   const queue = advanceQueue(ranked, session.verifications);
   const gate = canContinue(session);
-  const savedVisible = questions.saved.filter((item) => !editingSaved.includes(item.id));
-  const editing = questions.saved.filter((item) => editingSaved.includes(item.id));
 
   function patch(next: WifiSession) {
     setSession(next);
   }
 
   function startNew() {
-    setEditingSaved([]);
+    setCursorId(null);
     setResume(false);
     patch(emptySession());
   }
@@ -190,14 +258,55 @@ export function MeshTroubleshooter() {
     startNew();
   }
 
+  function onContinue() {
+    if (session!.step === 0) {
+      setCursorId(null);
+      patch(continueSession(session!));
+      return;
+    }
+    if (session!.step !== 1) return;
+    const next = flow[index + 1];
+    if (!next) {
+      patch(continueSession(session!));
+      return;
+    }
+    setCursorId(next.id);
+  }
+
+  function onBack() {
+    if (session!.step === 1 && index > 0) {
+      setCursorId(flow[index - 1].id);
+      return;
+    }
+    patch(backSession(session!));
+  }
+
+  function onSkip() {
+    if (!currentQuestion) return;
+    const skipped = withAnswer(session!, currentQuestion.id, "skip");
+    const next = flow[index + 1];
+    if (!next) {
+      patch(continueSession(skipped));
+      return;
+    }
+    patch(skipped);
+    setCursorId(next.id);
+  }
+
+  const lede = session.step === 0
+    ? "Select every symptom that fits. You can choose more than one."
+    : session.step === 1
+      ? "Answer a few questions about what you're seeing. You can skip any question."
+      : "These checks come from your symptoms and answers. They are possible next steps, not a confirmed cause.";
+
   return (
-    <div className="w-full min-w-0 rounded-[16px] bg-[#F8FAFC] p-3 text-[#0F172A] sm:p-4">
+    <div className="w-full min-w-0 text-[#10231F] [[data-theme=dark]_&]:text-foreground">
       <p className="sr-only" aria-live="polite">
         Step {session.step + 1} of 3, {STEP_LABELS[session.step]}
       </p>
       {(resume || rejected) && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[12px] border border-[#E2E8F0] bg-white px-3 py-2">
-          <p className="min-w-0 flex-1 text-sm text-[#64748B]">
+        <div className={cn(CARD, "mb-3 flex flex-wrap items-center gap-2 px-3 py-2")}>
+          <p className={cn("min-w-0 flex-1 text-sm", MUTED)}>
             {rejected ? "Saved session could not be read, so this is a new diagnosis." : "Saved session restored."}
           </p>
           <button type="button" className={SECONDARY} onClick={startNew}>Start new diagnosis</button>
@@ -205,50 +314,71 @@ export function MeshTroubleshooter() {
         </div>
       )}
       <Stepper session={session} onStep={(target) => patch(goToStep(session, target))} />
-      <section className="mt-3 min-w-0 rounded-[14px] border border-[#E2E8F0] bg-white p-3 shadow-sm sm:p-4" aria-labelledby="wifi-step-heading">
-        <h3 id="wifi-step-heading" ref={headingRef} tabIndex={-1} className="font-heading text-lg font-semibold tracking-tight outline-none">
-          {STEP_TITLES[session.step]}
-        </h3>
-        {session.step === 0 && (
-          <SymptomStep session={session} onCategory={(id) => patch(toggleCategory(session, id))} onSymptom={(id) => patch(toggleSymptom(session, id))} />
-        )}
-        {session.step === 1 && (
-          <QuestionStep
-            session={session}
-            ask={[...editing.map((item) => item.question), ...questions.ask]}
-            saved={savedVisible}
-            notes={questions.fromSymptoms}
-            onAnswer={(id, value) => patch(withAnswer(session, id, value))}
-            onEdit={(id) => setEditingSaved((current) => current.includes(id) ? current : [...current, id])}
-          />
-        )}
-        {session.step === 2 && (
-          <RecommendationStep
-            session={session}
-            queue={queue}
-            context={context}
-            history={history}
-            onVerify={(id, status) => patch(withVerification(session, id, status))}
-            onFinish={() => patch(finishSession(session))}
-            onRooms={(patchRooms) => patch(withRoomAssociation(session, patchRooms))}
-          />
-        )}
-        <div className="sticky bottom-0 z-10 -mx-3 mt-3 flex flex-wrap items-center gap-2 border-t border-[#E2E8F0] bg-white/95 px-3 py-2 sm:-mx-4 motion-reduce:transition-none">
-          {session.step === 0 && gate.reason && (
-            <p id="wifi-continue-reason" className="w-full text-xs text-[#64748B]">{gate.reason}</p>
-          )}
-          <button type="button" className={SECONDARY} disabled={session.step === 0} onClick={() => patch(backSession(session))}>Back</button>
+      <section className={cn(CARD, "mt-3 shadow-[0_1px_2px_rgba(16,35,31,0.04)]")} aria-labelledby="wifi-step-heading">
+        <div className="px-3 pb-4 pt-3 sm:px-4 sm:pt-4">
+          <h2 id="wifi-step-heading" ref={headingRef} tabIndex={-1} className="scroll-mt-24 font-heading text-lg font-semibold tracking-tight text-[#10231F] outline-none [[data-theme=dark]_&]:text-foreground">
+            {STEP_TITLES[session.step]}
+          </h2>
+          <p className={cn("mt-1 text-sm", MUTED)}>{lede}</p>
           {session.step === 0 && (
-            <button type="button" className={SECONDARY} onClick={() => patch(resetSelection(session))}>Reset selection</button>
+            <SymptomStep session={session} onCategory={(id) => patch(toggleCategory(session, id))} onSymptom={(id) => patch(toggleSymptom(session, id))} />
           )}
-          {session.step < 2 && (
-            <button type="button" className={PRIMARY} disabled={!gate.ok} aria-describedby={gate.reason ? "wifi-continue-reason" : undefined} onClick={() => patch(continueSession(session))}>
-              Continue
-            </button>
+          {session.step === 1 && (
+            <DiagnoseStep
+              flow={flow}
+              index={index}
+              session={session}
+              notes={questions.fromSymptoms}
+              questionRef={questionRef}
+              onAnswer={(id, value) => patch(withAnswer(session, id, value))}
+              onJump={(id) => setCursorId(id)}
+            />
+          )}
+          {session.step === 2 && (
+            <RecommendationStep
+              session={session}
+              queue={queue}
+              context={context}
+              history={history}
+              onVerify={(id, status) => patch(withVerification(session, id, status))}
+              onFinish={() => patch(finishSession(session))}
+              onRooms={(patchRooms) => patch(withRoomAssociation(session, patchRooms))}
+            />
           )}
         </div>
+        <div className="flex flex-wrap items-center gap-2 border-t border-[#E2E8E5] bg-white px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-4 [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card">
+          {session.step === 0 && gate.reason && (
+            <p id="wifi-continue-reason" className={cn("w-full text-xs", MUTED)}>{gate.reason}</p>
+          )}
+          {session.step === 1 && currentQuestion?.question.optional && (
+            <button type="button" className={SECONDARY} aria-describedby="wifi-skip-note" onClick={onSkip}>
+              Skip
+            </button>
+          )}
+          <p id="wifi-skip-note" className="sr-only">Skipping leaves the question unanswered. It does not answer no.</p>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {session.step === 0 && (
+              <button type="button" className={SECONDARY} onClick={() => patch(resetSelection(session))}>Reset selection</button>
+            )}
+            <button type="button" className={SECONDARY} disabled={session.step === 0} onClick={onBack}>Back</button>
+            {session.step < 2 && (
+              <button
+                type="button"
+                className={PRIMARY}
+                disabled={session.step === 0 && !gate.ok}
+                aria-describedby={session.step === 0 && gate.reason ? "wifi-continue-reason" : undefined}
+                onClick={onContinue}
+              >
+                Continue
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </div>
       </section>
-      <p className="mt-3 text-sm text-[#64748B]">This assistant cannot see router settings, which node a device joined, firmware, or backhaul quality.</p>
+      <p className={cn("mt-3 text-sm", MUTED)}>
+        This assistant cannot see router settings, which node a device joined, firmware, or backhaul quality. A speed test does not reveal RSSI, which node a device joined, or backhaul quality.
+      </p>
       {session.step === 2 && <AdSlot slot="mesh-troubleshooter" />}
     </div>
   );
@@ -257,31 +387,32 @@ export function MeshTroubleshooter() {
 function Stepper({ session, onStep }: { session: WifiSession; onStep: (step: number) => void }) {
   return (
     <div>
-      <p className="mb-2 text-sm font-medium sm:hidden">Step {session.step + 1} of 3: {STEP_LABELS[session.step]}</p>
-      <ol className="grid grid-cols-3 gap-1" aria-label="Troubleshooting steps">
+      <p className={cn("mb-2 text-sm font-medium sm:hidden", MUTED)}>Step {session.step + 1} of 3: {STEP_LABELS[session.step]}</p>
+      <ol className="relative grid grid-cols-3" aria-label="Troubleshooting steps">
+        <span className="absolute left-[16%] right-[16%] top-4 h-px bg-[#E2E8E5] [[data-theme=dark]_&]:bg-border" aria-hidden="true" />
         {STEP_LABELS.map((name, index) => {
           const current = session.step === index;
-          const completed = index <= session.highestStep && !current;
+          const done = index < session.step;
           const enabled = index <= session.highestStep;
           return (
-            <li key={name}>
+            <li key={name} className="relative min-w-0">
               <button
                 type="button"
-                className={cn("flex min-h-11 w-full flex-col items-center justify-center gap-1 rounded-[12px] px-1 py-1 text-center", FOCUS)}
+                className={cn("flex min-h-11 w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-center", FOCUS)}
                 aria-current={current ? "step" : undefined}
                 disabled={!enabled}
                 onClick={() => onStep(index)}
               >
                 <span className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold",
-                  completed && "border-[#16A34A] bg-white text-[#16A34A]",
-                  current && "border-[#00866A] bg-[#00866A] text-white",
-                  !completed && !current && "border-[#E2E8F0] bg-white text-[#64748B]",
+                  done && "border-[#009B78] bg-[#EAF8F1] text-[#006B53] [[data-theme=dark]_&]:border-[var(--gold-primary)] [[data-theme=dark]_&]:bg-[#10241C] [[data-theme=dark]_&]:text-[var(--accent-text)]",
+                  current && "border-[#006B53] bg-[#006B53] text-white [[data-theme=dark]_&]:border-[var(--primary)] [[data-theme=dark]_&]:bg-[var(--primary)] [[data-theme=dark]_&]:text-[var(--primary-foreground)]",
+                  !done && !current && "border-[#E2E8E5] bg-white text-[#64748B] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-card [[data-theme=dark]_&]:text-muted-foreground",
                 )} aria-hidden="true">
-                  {completed ? <Check className="h-4 w-4" /> : index + 1}
+                  {done ? <Check className="h-4 w-4" /> : index + 1}
                 </span>
-                <span className="text-[11px] font-medium leading-tight">{name}</span>
-                {completed && <span className="text-[10px] font-medium text-[#16A34A]">Done</span>}
+                <span className="text-[11px] font-medium leading-tight sm:text-xs">{name}</span>
+                {done && <span className="text-[10px] font-semibold text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]">Done</span>}
                 {current && <span className="sr-only">Current step</span>}
               </button>
             </li>
@@ -302,42 +433,58 @@ function SymptomStep({ session, onCategory, onSymptom }: {
       {SYMPTOM_CATEGORIES.map((category) => {
         const open = session.openCategories.includes(category.id);
         const Icon = ICONS[category.icon] ?? Gauge;
+        const selectedCount = category.symptoms.filter((id) => session.symptoms.includes(id)).length;
         return (
-          <li key={category.id} className="min-w-0 rounded-[12px] border border-[#E2E8F0] bg-[#F8FAFC] p-2">
+          <li key={category.id} className={cn(
+            "min-w-0 rounded-2xl border p-2",
+            open
+              ? "border-[#009B78] bg-[#EAF8F1] [[data-theme=dark]_&]:border-[var(--gold-primary)] [[data-theme=dark]_&]:bg-[#10241C]"
+              : "border-[#E2E8E5] bg-[#FAFBF8] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-transparent",
+          )}>
             <button
               type="button"
-              className={cn("flex min-h-11 w-full items-start gap-2 rounded-[12px] px-2 py-2 text-left", FOCUS, open && "bg-white ring-2 ring-[#00866A]")}
+              className={cn("flex min-h-11 w-full items-start gap-2 rounded-xl px-2 py-2 text-left", FOCUS)}
               aria-pressed={open}
               onClick={() => onCategory(category.id)}
             >
-              <Icon className="mt-0.5 h-5 w-5 shrink-0 text-[#00866A]" aria-hidden="true" />
+              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#006B53] [[data-theme=dark]_&]:bg-card [[data-theme=dark]_&]:text-[var(--accent-text)]">
+                <Icon className="h-4 w-4" aria-hidden="true" />
+              </span>
               <span className="min-w-0">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="font-heading text-sm font-semibold">{category.label}</span>
-                  {open && (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#00866A]">
+                  {selectedCount > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]">
                       <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                      Selected
+                      {selectedCount} selected
                     </span>
                   )}
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-[#64748B]">{category.description}</span>
+                <span className={cn("mt-0.5 block text-xs leading-5", MUTED)}>{category.description}</span>
               </span>
             </button>
             {open && (
-              <fieldset className="mt-2 space-y-1">
+              <fieldset className="mt-1 space-y-1 px-1 pb-1">
                 <legend className="sr-only">{category.label} symptoms</legend>
-                {category.symptoms.map((id) => (
-                  <label key={id} className="flex min-h-11 items-center gap-2 rounded-[10px] bg-white px-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-[#00866A]"
-                      checked={session.symptoms.includes(id)}
-                      onChange={() => onSymptom(id)}
-                    />
-                    {meshSymptomLabel(id)}
-                  </label>
-                ))}
+                {category.symptoms.map((id) => {
+                  const checked = session.symptoms.includes(id);
+                  return (
+                    <label key={id} className={cn(
+                      "flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-2 text-sm",
+                      checked
+                        ? "border-[#009B78] bg-white [[data-theme=dark]_&]:border-[var(--gold-primary)] [[data-theme=dark]_&]:bg-card"
+                        : "border-transparent bg-white/70 [[data-theme=dark]_&]:bg-transparent",
+                    )}>
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-[#006B53]"
+                        checked={checked}
+                        onChange={() => onSymptom(id)}
+                      />
+                      {meshSymptomLabel(id)}
+                    </label>
+                  );
+                })}
               </fieldset>
             )}
           </li>
@@ -347,76 +494,148 @@ function SymptomStep({ session, onCategory, onSymptom }: {
   );
 }
 
-function QuestionStep({ session, ask, saved, notes, onAnswer, onEdit }: {
+function DiagnoseStep({ flow, index, session, notes, questionRef, onAnswer, onJump }: {
+  flow: FlowItem[];
+  index: number;
   session: WifiSession;
-  ask: DiagnosticQuestion[];
-  saved: Array<{ id: string; prompt: string; label: string }>;
   notes: Array<{ id: string; text: string }>;
+  questionRef: RefObject<HTMLHeadingElement | null>;
   onAnswer: (id: string, value: string) => void;
-  onEdit: (id: string) => void;
+  onJump: (id: string) => void;
 }) {
+  const current = flow[index] ?? null;
   return (
-    <div className="mt-3 space-y-3">
-      <p className="text-sm text-[#64748B]">Answer what you know. Every question can be skipped.</p>
-      {notes.map((note) => (
-        <p key={note.id} className="rounded-[12px] border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-sm">{note.text}</p>
-      ))}
-      {saved.map((item) => (
-        <div key={item.id} className="rounded-[12px] border border-[#E2E8F0] px-3 py-2">
-          <p className="text-sm font-medium">{item.prompt}</p>
-          <p className="mt-1 text-sm text-[#64748B]">{item.label}</p>
-          <button type="button" className={cn(SECONDARY, "mt-2")} onClick={() => onEdit(item.id)}>Change</button>
-        </div>
-      ))}
-      {ask.map((question) => (
-        <QuestionControl key={question.id} question={question} value={session.answers[question.id] ?? ""} onChange={(value) => onAnswer(question.id, value)} />
-      ))}
+    <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[14.5rem_minmax(0,1fr)] lg:items-start">
+      <ol className="min-w-0 space-y-1" aria-label="Question groups">
+        {QUESTION_GROUPS.map((group, groupIndex) => {
+          const indexes = flow.flatMap((item, itemIndex) => groupOf(item.id) === group.id ? [itemIndex] : []);
+          const state = indexes.length === 0 ? "empty" : indexes.includes(index) ? "active" : indexes.every((itemIndex) => itemIndex < index) ? "done" : "upcoming";
+          const Icon = group.icon;
+          return (
+            <li key={group.id}>
+              <button
+                type="button"
+                className={cn(
+                  "flex min-h-11 w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left text-sm",
+                  FOCUS,
+                  state === "active" && "bg-[#EAF8F1] font-semibold text-[#006B53] [[data-theme=dark]_&]:bg-[#10241C] [[data-theme=dark]_&]:text-[var(--accent-text)]",
+                  state === "done" && "text-[#10231F] [[data-theme=dark]_&]:text-foreground",
+                  state === "upcoming" && MUTED,
+                  state === "empty" && "cursor-not-allowed opacity-60",
+                )}
+                aria-current={state === "active" ? "true" : undefined}
+                disabled={state === "empty"}
+                onClick={() => {
+                  const first = flow.find((item) => groupOf(item.id) === group.id);
+                  if (first) onJump(first.id);
+                }}
+              >
+                <span className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
+                  state === "done" && "border-[#009B78] bg-[#EAF8F1] text-[#006B53] [[data-theme=dark]_&]:border-[var(--gold-primary)] [[data-theme=dark]_&]:bg-[#10241C] [[data-theme=dark]_&]:text-[var(--accent-text)]",
+                  state === "active" && "border-[#006B53] bg-[#006B53] text-white [[data-theme=dark]_&]:border-[var(--primary)] [[data-theme=dark]_&]:bg-[var(--primary)] [[data-theme=dark]_&]:text-[var(--primary-foreground)]",
+                  state !== "done" && state !== "active" && "border-[#E2E8E5] text-[#64748B] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:text-muted-foreground",
+                )} aria-hidden="true">
+                  {state === "done" ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block leading-tight">{groupIndex + 1}. {group.label}</span>
+                  <span className={cn("block text-[11px] font-medium", state === "active" ? "" : MUTED)}>
+                    {state === "empty" ? "No questions" : state === "done" ? "Done" : state === "active" ? "Current" : "Upcoming"}
+                  </span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      <div className="min-w-0">
+        {notes.map((note) => (
+          <p key={note.id} className="mb-2 rounded-xl border border-[#E2E8E5] bg-[#FAFBF8] px-3 py-2 text-sm [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-[var(--bg-tertiary)]">{note.text}</p>
+        ))}
+        {current ? (
+          <QuestionControl
+            item={current}
+            position={index + 1}
+            total={flow.length}
+            value={session.answers[current.id] ?? ""}
+            questionRef={questionRef}
+            onChange={(value) => onAnswer(current.id, value)}
+          />
+        ) : (
+          <p className={cn("text-sm", MUTED)}>No extra questions for these symptoms. Continue to the recommendations.</p>
+        )}
+      </div>
     </div>
   );
 }
 
-function QuestionControl({ question, value, onChange }: {
-  question: DiagnosticQuestion;
+function QuestionControl({ item, position, total, value, questionRef, onChange }: {
+  item: FlowItem;
+  position: number;
+  total: number;
   value: string;
+  questionRef: RefObject<HTMLHeadingElement | null>;
   onChange: (value: string) => void;
 }) {
+  const question = item.question;
   const typed = value === "skip" || value === "not-sure" ? "" : value;
+  const promptId = `wifi-q-${question.id}`;
   return (
-    <fieldset className="min-w-0 rounded-[12px] border border-[#E2E8F0] px-3 py-2">
-      <legend className="px-1 text-sm font-medium">{question.prompt}</legend>
+    <div className="min-w-0">
+      <p className={cn("text-xs font-semibold uppercase tracking-wide", MUTED)}>Question {position} of {total}</p>
+      <h3 id={promptId} ref={questionRef} tabIndex={-1} className="mt-1 scroll-mt-24 font-heading text-base font-semibold text-[#10231F] outline-none [[data-theme=dark]_&]:text-foreground">
+        {question.prompt}
+      </h3>
+      {value === "skip" && (
+        <p className="mt-1 text-sm text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]">You skipped this question.</p>
+      )}
+      {item.savedLabel && value === "" && (
+        <p className={cn("mt-1 text-sm", MUTED)}>
+          Saved on this device: {item.savedLabel} Continue keeps it. Skip does not use it.
+        </p>
+      )}
       {question.kind === "choice" ? (
-        <div className="mt-2 grid grid-cols-1 gap-1 sm:grid-cols-2">
-          {question.options.map((option) => (
-            <label key={option.value} className="flex min-h-11 items-center gap-2 rounded-[10px] px-1 text-sm">
-              <input
-                type="radio"
-                name={`wifi-${question.id}`}
-                className="h-4 w-4 accent-[#00866A]"
-                checked={value === option.value}
-                onChange={() => onChange(option.value)}
-              />
-              {option.label}
-            </label>
-          ))}
+        <div role="radiogroup" aria-labelledby={promptId} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {question.options.map((option) => {
+            const selected = value === option.value;
+            return (
+              <label key={option.value} className={cn(
+                "flex min-h-11 cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 text-sm",
+                selected
+                  ? "border-[#009B78] bg-[#EAF8F1] font-medium [[data-theme=dark]_&]:border-[var(--gold-primary)] [[data-theme=dark]_&]:bg-[#10241C]"
+                  : "border-[#E2E8E5] bg-white hover:border-[#009B78] [[data-theme=dark]_&]:border-border [[data-theme=dark]_&]:bg-transparent",
+              )}>
+                <input
+                  type="radio"
+                  name={`wifi-${question.id}`}
+                  className="h-4 w-4 shrink-0 accent-[#006B53]"
+                  checked={selected}
+                  onChange={() => onChange(option.value)}
+                />
+                {option.label}
+              </label>
+            );
+          })}
         </div>
       ) : (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <input
             type="text"
             inputMode={question.kind === "number" ? "numeric" : "text"}
             maxLength={question.kind === "number" ? 5 : 40}
             value={typed}
-            aria-label={question.prompt}
-            className={cn("min-h-11 w-full min-w-0 rounded-[10px] border border-[#E2E8F0] px-3 text-sm sm:max-w-xs", FOCUS)}
+            aria-labelledby={promptId}
+            placeholder={item.savedValue && value === "" ? item.savedValue : undefined}
+            className={cn(INPUT, "sm:max-w-xs")}
             onChange={(event) => onChange(event.target.value)}
           />
-          <button type="button" className={SECONDARY} aria-pressed={value === "not-sure"} onClick={() => onChange(value === "not-sure" ? "" : "not-sure")}>Not sure</button>
+          <button type="button" className={SECONDARY} aria-pressed={value === "not-sure"} onClick={() => onChange(value === "not-sure" ? "" : "not-sure")}>
+            Not sure
+          </button>
         </div>
       )}
-      <button type="button" className={cn(SECONDARY, "mt-2")} aria-pressed={value === "skip"} onClick={() => onChange(value === "skip" ? "" : "skip")}>
-        {value === "skip" ? "Skipped" : "Skip"}
-      </button>
-    </fieldset>
+    </div>
   );
 }
 
@@ -429,35 +648,38 @@ function RecommendationStep({ session, queue, context, history, onVerify, onFini
   onFinish: () => void;
   onRooms: (patch: Partial<WifiSession["rooms"]>) => void;
 }) {
-  const latest = history.find((entry) => entry.downloadMbps != null || entry.uploadMbps != null || entry.pingMs != null || entry.jitterMs != null);
+  const active = queue.status === "active" ? queue.current : null;
   return (
     <div className="mt-3 min-w-0 space-y-3">
-      {latest && (
-        <p className="rounded-[12px] border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-2 text-sm text-[#64748B]">
-          Latest saved speed test: {metricText("Download", latest.downloadMbps, "Mbps")}, {metricText("upload", latest.uploadMbps, "Mbps")}, {metricText("latency", latest.pingMs, "ms")}, {metricText("jitter", latest.jitterMs, "ms")}. This page did not start that test.
-        </p>
-      )}
-      {session.completed && queue.status === "fixed" ? (
-        <Completion item={queue.item} finished />
-      ) : queue.status === "fixed" ? (
-        <div className="space-y-3">
-          <Completion item={queue.item} finished={false} />
-          <button type="button" className={PRIMARY} onClick={onFinish}>Finish</button>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(240px,0.8fr)]">
+        <div className="min-w-0">
+          {session.completed && queue.status === "fixed" ? (
+            <Completion item={queue.item} finished />
+          ) : queue.status === "fixed" ? (
+            <div className="space-y-3">
+              <Completion item={queue.item} finished={false} />
+              <button type="button" className={PRIMARY} onClick={onFinish}>Finish</button>
+            </div>
+          ) : queue.status === "exhausted" ? (
+            <div className="rounded-2xl border border-[#E2E8E5] p-3 text-sm [[data-theme=dark]_&]:border-border">
+              <p className="font-medium">These checks are marked.</p>
+              <p className={cn("mt-1", MUTED)}>None is marked fixed. You can start a new diagnosis or run a speed test yourself.</p>
+              <Link href="/speed-test" className={cn("mt-2 inline-flex min-h-11 items-center font-medium text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]", FOCUS)}>Run a speed test</Link>
+            </div>
+          ) : (
+            <RecommendationBody item={queue.current} />
+          )}
         </div>
-      ) : queue.status === "exhausted" ? (
-        <div className="rounded-[12px] border border-[#E2E8F0] p-3 text-sm">
-          <p className="font-medium">These checks are marked.</p>
-          <p className="mt-1 text-[#64748B]">None is marked fixed. You can start a new diagnosis or run a speed test yourself.</p>
-          <Link href="/speed-test" className={cn("mt-2 inline-flex min-h-11 items-center font-medium text-[#00866A]", FOCUS)}>Run a speed test</Link>
+        <div className="min-w-0 space-y-3">
+          <SavedSpeedPanel history={history} />
+          {active && (
+            <Feedback itemId={active.id} verification={session.verifications[active.id] ?? ""} onVerify={onVerify} />
+          )}
         </div>
-      ) : (
-        <div className="space-y-3">
-          <RecommendationCard item={queue.current} active verification={session.verifications[queue.current.id] ?? ""} onVerify={onVerify} />
-          {queue.also.map((item) => (
-            <RecommendationCard key={item.id} item={item} active={false} verification="" onVerify={onVerify} />
-          ))}
-        </div>
-      )}
+      </div>
+      {queue.status === "active" && queue.also.map((item) => (
+        <RecommendationBody key={item.id} item={item} />
+      ))}
       <RoomCompare session={session} context={context} history={history} onRooms={onRooms} />
     </div>
   );
@@ -465,67 +687,123 @@ function RecommendationStep({ session, queue, context, history, onVerify, onFini
 
 function Completion({ item, finished }: { item: WifiRecommendation; finished: boolean }) {
   return (
-    <div className="rounded-[12px] border border-[#E2E8F0] p-3">
+    <div className="rounded-2xl border border-[#E2E8E5] p-3 [[data-theme=dark]_&]:border-border">
       <p className="font-heading font-semibold">{finished ? "Session finished." : "You marked this check as fixed."}</p>
       <p className="mt-1 text-sm">Possible cause: {item.possibleCause}</p>
-      <p className="mt-2 text-sm text-[#64748B]">Run a speed test when you want to confirm the change. This page will not start it.</p>
-      <Link href="/speed-test" className={cn("mt-2 inline-flex min-h-11 items-center font-medium text-[#00866A]", FOCUS)}>Run a confirming speed test</Link>
+      <p className={cn("mt-2 text-sm", MUTED)}>Run a speed test when you want to confirm the change. This page will not start it.</p>
+      <Link href="/speed-test" className={cn("mt-2 inline-flex min-h-11 items-center font-medium text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]", FOCUS)}>Run a confirming speed test</Link>
     </div>
   );
 }
 
-function RecommendationCard({ item, active, verification, onVerify }: {
-  item: WifiRecommendation;
-  active: boolean;
+function RecommendationBody({ item }: { item: WifiRecommendation }) {
+  const extra = [...item.supportingEvidence, ...item.missingEvidence];
+  return (
+    <article className="min-w-0 rounded-2xl border border-[#E2E8E5] p-3 [[data-theme=dark]_&]:border-border">
+      <p className="text-xs font-semibold uppercase tracking-wide text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]">Recommendation {item.priority}</p>
+      <h3 className="font-heading mt-1 text-base font-semibold text-[#10231F] [[data-theme=dark]_&]:text-foreground">{item.title}</h3>
+      <p className={cn("mt-3 text-xs font-semibold uppercase tracking-wide", MUTED)}>Possible cause</p>
+      <p className="mt-1 text-sm">{item.possibleCause}</p>
+      <p className={cn("mt-3 text-xs font-semibold uppercase tracking-wide", MUTED)}>Why this may be happening</p>
+      <p className="mt-1 text-sm">{item.why}</p>
+      <p className={cn("mt-3 text-xs font-semibold uppercase tracking-wide", MUTED)}>Worth checking</p>
+      <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm">
+        {item.steps.map((step) => (
+          <li key={step} className="break-words">{step}</li>
+        ))}
+      </ol>
+      <p className={cn("mt-3 text-xs font-semibold uppercase tracking-wide", MUTED)}>How to verify</p>
+      <p className="mt-1 text-sm">{item.verification}</p>
+      <Link href={item.toolHref} className={cn(PRIMARY, "mt-3 w-fit")}>
+        {item.toolLabel}
+        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Link>
+      {item.supportHref && item.supportLabel && (
+        <a className={cn("mt-1 flex min-h-11 items-center text-sm font-medium text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]", FOCUS)} href={item.supportHref} target="_blank" rel="noopener noreferrer">{item.supportLabel}</a>
+      )}
+      {extra.length > 0 && (
+        <details className="mt-3 rounded-xl border border-[#E2E8E5] px-3 py-2 [[data-theme=dark]_&]:border-border">
+          <summary className="cursor-pointer text-sm font-medium">Extra detail</summary>
+          <div className="mt-2 space-y-2">
+            {extra.map((line) => (
+              <p key={line} className="break-words text-sm">{line}</p>
+            ))}
+          </div>
+        </details>
+      )}
+    </article>
+  );
+}
+
+function Feedback({ itemId, verification, onVerify }: {
+  itemId: string;
   verification: string;
   onVerify: (id: string, status: VerificationStatus) => void;
 }) {
   return (
-    <article className="min-w-0 rounded-[12px] border border-[#E2E8F0] p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[#64748B]">Recommendation {item.priority}</p>
-      <h4 className="font-heading mt-1 text-base font-semibold">{item.title}</h4>
-      <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-[#64748B]">Possible cause</p>
-      <p className="mt-1 text-sm">{item.possibleCause}</p>
-      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[#64748B]">Why this may be happening</p>
-      <p className="mt-1 text-sm text-[#334155]">{item.why}</p>
-      {item.supportingEvidence.map((line) => (
-        <p key={line} className="mt-2 break-words text-sm">{line}</p>
-      ))}
-      {item.missingEvidence.map((line) => (
-        <p key={line} className="mt-2 break-words text-sm">{line}</p>
-      ))}
-      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[#64748B]">Worth checking</p>
-      <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm">
-        {item.steps.map((step) => (
-          <li key={step}>{step}</li>
-        ))}
-      </ol>
-      <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[#64748B]">How to verify</p>
-      <p className="mt-1 text-sm">{item.verification}</p>
-      <Link href={item.toolHref} className={cn("mt-2 inline-flex min-h-11 items-center font-medium text-[#00866A]", FOCUS)}>{item.toolLabel}</Link>
-      {item.supportHref && item.supportLabel && (
-        <a className={cn("mt-1 flex min-h-11 items-center text-sm font-medium text-[#00866A]", FOCUS)} href={item.supportHref} target="_blank" rel="noopener noreferrer">{item.supportLabel}</a>
+    <fieldset className="rounded-2xl border border-[#E2E8E5] p-3 [[data-theme=dark]_&]:border-border">
+      <legend className="px-1 text-sm font-semibold">Did this improve the problem?</legend>
+      <div className="mt-2 grid grid-cols-1 gap-1.5">
+        {VERIFY_OPTIONS.map((option) => {
+          const selected = verification === option.value;
+          return (
+            <label key={option.value} className={cn(
+              "flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm",
+              selected
+                ? "border-[#009B78] bg-[#EAF8F1] [[data-theme=dark]_&]:border-[var(--gold-primary)] [[data-theme=dark]_&]:bg-[#10241C]"
+                : "border-[#E2E8E5] [[data-theme=dark]_&]:border-border",
+            )}>
+              <input
+                type="radio"
+                name={`verify-${itemId}`}
+                className="h-4 w-4 accent-[#006B53]"
+                checked={selected}
+                onChange={() => onVerify(itemId, option.value)}
+              />
+              {option.label}
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
+function SavedSpeedPanel({ history }: { history: StoredHistoryEntry[] }) {
+  const latest = latestSpeedTest(history);
+  return (
+    <section className="rounded-2xl border border-[#E2E8E5] p-3 [[data-theme=dark]_&]:border-border" aria-labelledby="saved-speed-heading">
+      <h3 id="saved-speed-heading" className="font-heading text-base font-semibold text-[#10231F] [[data-theme=dark]_&]:text-foreground">Latest saved speed test</h3>
+      {!latest ? (
+        <div className="mt-2">
+          <p className="text-sm">No speed test is saved on this device.</p>
+          <Link href="/speed-test" className={cn("mt-2 inline-flex min-h-11 items-center font-medium text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]", FOCUS)}>Open the speed test</Link>
+          <p className={cn("mt-1 text-sm", MUTED)}>Opening that page does not start a test. Start it there when you are ready.</p>
+        </div>
+      ) : (
+        <div className="mt-2">
+          <dl className="grid grid-cols-2 gap-2">
+            {METRICS.map((metric) => {
+              const Icon = metric.icon;
+              const value = finiteMetric(latest[metric.key]);
+              return (
+                <div key={metric.key} className="rounded-xl bg-[#EAF8F1] px-2.5 py-2 [[data-theme=dark]_&]:bg-[var(--bg-tertiary)]">
+                  <dt className={cn("flex items-center gap-1 text-xs", MUTED)}>
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]" aria-hidden="true" />
+                    {metric.label}
+                  </dt>
+                  <dd className="mt-0.5 text-sm font-semibold tabular-nums">{formatMetric(value, metric.unit)}</dd>
+                </div>
+              );
+            })}
+          </dl>
+          <p className={cn("mt-2 text-xs", MUTED)}>Saved {formatStamp(latest.createdAt)}</p>
+          <p className={cn("mt-1 text-xs leading-5", MUTED)}>
+            This app does not know the room for this speed test. It was not recorded as a test of the problem room. A speed test does not show RSSI, which node a device joined, or backhaul quality.
+          </p>
+        </div>
       )}
-      {active && (
-        <fieldset className="mt-3">
-          <legend className="text-sm font-medium">Did this improve the problem?</legend>
-          <div className="mt-1 grid grid-cols-1 gap-1 sm:grid-cols-2">
-            {VERIFY_OPTIONS.map((option) => (
-              <label key={option.value} className="flex min-h-11 items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name={`verify-${item.id}`}
-                  className="h-4 w-4 accent-[#00866A]"
-                  checked={verification === option.value}
-                  onChange={() => onVerify(item.id, option.value)}
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
-    </article>
+    </section>
   );
 }
 
@@ -541,38 +819,45 @@ function RoomCompare({ session, context, history, onRooms }: {
   const sampleB = sideSample("b", session, context, history, rooms);
   const comparison = sampleA && sampleB ? compareLocations(sampleA, sampleB) : null;
   return (
-    <section className="min-w-0 rounded-[12px] border border-[#E2E8F0] p-3" aria-labelledby="room-compare-heading">
-      <h4 id="room-compare-heading" className="font-heading text-base font-semibold">Compare two locations</h4>
-      <p className="mt-1 text-sm text-[#64748B]">{COMPARISON_CAVEAT}</p>
-      <p className="mt-1 text-sm text-[#64748B]">Use a room test or speed test you already saved. Nothing starts from this page.</p>
+    <section className="min-w-0 rounded-2xl border border-[#E2E8E5] p-3 [[data-theme=dark]_&]:border-border" aria-labelledby="room-compare-heading">
+      <h3 id="room-compare-heading" className="font-heading flex items-center gap-2 text-base font-semibold text-[#10231F] [[data-theme=dark]_&]:text-foreground">
+        <ClipboardList className="h-4 w-4 text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]" aria-hidden="true" />
+        Compare two locations
+      </h3>
+      <p className={cn("mt-1 text-sm", MUTED)}>{COMPARISON_CAVEAT}</p>
+      <p className={cn("mt-1 text-sm", MUTED)}>Use a room test or speed test you already saved. Nothing starts from this page.</p>
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <LocationFields side="a" label="Location A" session={session} rooms={rooms} tests={tests} onRooms={onRooms} />
-        <LocationFields side="b" label="Location B" session={session} rooms={rooms} tests={tests} onRooms={onRooms} />
+        <LocationFields side="a" label="Location A" placeholder="e.g., Living room, Office" session={session} rooms={rooms} tests={tests} onRooms={onRooms} />
+        <LocationFields side="b" label="Location B" placeholder="e.g., Bedroom, Upstairs" session={session} rooms={rooms} tests={tests} onRooms={onRooms} />
       </div>
       {rooms.length === 0 && tests.length === 0 && (
         <p className="mt-3 text-sm">
           No saved room test or speed test is on this device.{" "}
-          <Link href="/speed-test" className="font-medium text-[#00866A]">Open the speed test</Link>
+          <Link href="/speed-test" className="font-medium text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]">Open the speed test</Link>
           {" "}or{" "}
-          <Link href="/mesh-wifi/dead-zone-test" className="font-medium text-[#00866A]">open the room test</Link>
+          <Link href="/mesh-wifi/dead-zone-test" className="font-medium text-[#006B53] [[data-theme=dark]_&]:text-[var(--accent-text)]">open the room test</Link>
           . Start it there when you are ready.
         </p>
       )}
+      {!comparison && (rooms.length > 0 || tests.length > 0) && (
+        <p className={cn("mt-3 text-sm", MUTED)}>Choose a saved room test or speed test for each location to compare them. Nothing is estimated.</p>
+      )}
       {comparison && sampleA && sampleB && (
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <SampleCard sample={sampleA} />
-          <SampleCard sample={sampleB} />
-          <div className="sm:col-span-2">
+        <div className="mt-3 space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <SampleCard sample={sampleA} />
+            <SampleCard sample={sampleB} />
+          </div>
+          <div>
             <p className="text-sm font-medium">Location A minus location B</p>
-            <ul className="mt-1 space-y-1 text-sm text-[#334155]">
-              <li>Download: {deltaText(comparison.downloadDeltaMbps, "Mbps")}</li>
-              <li>Upload: {deltaText(comparison.uploadDeltaMbps, "Mbps")}</li>
-              <li>Latency: {deltaText(comparison.pingDeltaMs, "ms")}</li>
-              <li>Jitter: {deltaText(comparison.jitterDeltaMs, "ms")}</li>
+            <ul className="mt-1 space-y-1 text-sm">
+              {METRICS.map((metric) => (
+                <li key={metric.key}>
+                  {metric.label}: {formatDelta(comparisonValue(comparison, metric.key), metric.unit, sampleB[metric.key])}
+                </li>
+              ))}
             </ul>
-            {sampleA.downloadMbps != null && sampleB.downloadMbps != null && (
-              <DownloadBars a={sampleA} b={sampleB} />
-            )}
+            <CompareBars a={sampleA} b={sampleB} />
           </div>
         </div>
       )}
@@ -580,9 +865,10 @@ function RoomCompare({ session, context, history, onRooms }: {
   );
 }
 
-function LocationFields({ side, label, session, rooms, tests, onRooms }: {
+function LocationFields({ side, label, placeholder, session, rooms, tests, onRooms }: {
   side: "a" | "b";
   label: string;
+  placeholder: string;
   session: WifiSession;
   rooms: Array<{ id: string; label: string }>;
   tests: StoredHistoryEntry[];
@@ -598,15 +884,16 @@ function LocationFields({ side, label, session, rooms, tests, onRooms }: {
         id={`room-label-${side}`}
         type="text"
         maxLength={40}
+        placeholder={placeholder}
         value={session.rooms[labelKey]}
-        className={cn("min-h-11 w-full rounded-[10px] border border-[#E2E8F0] px-3 text-sm", FOCUS)}
+        className={INPUT}
         onChange={(event) => onRooms({ [labelKey]: event.target.value })}
       />
       {rooms.length > 0 && (
         <label className="block text-sm">
-          <span className="text-[#64748B]">Saved room</span>
+          <span className={MUTED}>Saved room</span>
           <select
-            className={cn("mt-1 min-h-11 w-full rounded-[10px] border border-[#E2E8F0] bg-white px-2 text-sm", FOCUS)}
+            className={cn(INPUT, "mt-1")}
             value={session.rooms[roomKey] ?? ""}
             onChange={(event) => onRooms({ [roomKey]: event.target.value || null, [historyKey]: null })}
           >
@@ -619,9 +906,9 @@ function LocationFields({ side, label, session, rooms, tests, onRooms }: {
       )}
       {tests.length > 0 && (
         <label className="block text-sm">
-          <span className="text-[#64748B]">Saved speed test</span>
+          <span className={MUTED}>Saved speed test</span>
           <select
-            className={cn("mt-1 min-h-11 w-full rounded-[10px] border border-[#E2E8F0] bg-white px-2 text-sm", FOCUS)}
+            className={cn(INPUT, "mt-1")}
             value={session.rooms[historyKey] ?? ""}
             onChange={(event) => onRooms({ [historyKey]: event.target.value || null, [roomKey]: null })}
           >
@@ -636,41 +923,88 @@ function LocationFields({ side, label, session, rooms, tests, onRooms }: {
   );
 }
 
-function SampleCard({ sample }: { sample: LocationSample }) {
+function SampleCard({ sample }: { sample: ShownSample }) {
   return (
-    <div className="rounded-[12px] bg-[#F8FAFC] p-3 text-sm">
+    <div className="rounded-xl bg-[#FAFBF8] p-3 text-sm [[data-theme=dark]_&]:bg-[var(--bg-tertiary)]">
       <p className="font-medium">{sample.label || "Unlabeled location"}</p>
-      <ul className="mt-1 space-y-1 text-[#334155]">
-        <li>Download: {metricText("", sample.downloadMbps, "Mbps")}</li>
-        <li>Upload: {metricText("", sample.uploadMbps, "Mbps")}</li>
-        <li>Latency: {metricText("", sample.pingMs, "ms")}</li>
-        <li>Jitter: {metricText("", sample.jitterMs, "ms")}</li>
+      <p className={cn("mt-1 text-xs leading-5", MUTED)}>
+        {sample.source === "room"
+          ? `Room known from a saved room test: ${sample.label || "Saved room"}.`
+          : "This saved speed test has no room. It was not recorded in the problem room."}
+      </p>
+      {sample.testedAt && <p className={cn("text-xs", MUTED)}>Saved {formatStamp(sample.testedAt)}</p>}
+      <ul className="mt-2 space-y-1">
+        {METRICS.map((metric) => (
+          <li key={metric.key}>{metric.label}: {formatMetric(sample[metric.key], metric.unit)}</li>
+        ))}
       </ul>
     </div>
   );
 }
 
-function DownloadBars({ a, b }: { a: LocationSample; b: LocationSample }) {
-  const left = a.downloadMbps ?? 0;
-  const right = b.downloadMbps ?? 0;
-  const max = Math.max(left, right, 0.1);
+function CompareBars({ a, b }: { a: LocationSample; b: LocationSample }) {
+  const rows = METRICS.flatMap((metric) => {
+    const left = a[metric.key];
+    const right = b[metric.key];
+    if (left == null || right == null) return [];
+    return [{ label: metric.label, left, right, aLabel: a.label || "Location A", bLabel: b.label || "Location B" }];
+  });
+  if (rows.length === 0) return null;
   return (
-    <div className="mt-3 space-y-2" aria-hidden="true">
-      <Bar label={a.label || "Location A"} value={left} max={max} />
-      <Bar label={b.label || "Location B"} value={right} max={max} />
+    <div className="mt-3 space-y-3" aria-hidden="true">
+      {rows.map((row) => {
+        const max = Math.max(row.left, row.right, 0.1);
+        return (
+          <div key={row.label} className="min-w-0">
+            <p className={cn("text-xs", MUTED)}>{row.label}</p>
+            <Bar label={row.aLabel} value={row.left} max={max} />
+            <Bar label={row.bLabel} value={row.right} max={max} />
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 function Bar({ label, value, max }: { label: string; value: number; max: number }) {
   return (
-    <div className="min-w-0">
-      <p className="truncate text-xs text-[#64748B]">{label}</p>
-      <div className="mt-1 h-2 rounded-full bg-[#E2E8F0]">
-        <div className="h-2 rounded-full bg-[#00866A]" style={{ width: `${Math.max(4, (value / max) * 100)}%` }} />
+    <div className="mt-1 min-w-0">
+      <p className={cn("truncate text-xs", MUTED)}>{label}</p>
+      <div className="mt-1 h-2 rounded-full bg-[#E2E8E5] [[data-theme=dark]_&]:bg-border">
+        <div className="h-2 rounded-full bg-[#006B53] [[data-theme=dark]_&]:bg-[var(--primary)]" style={{ width: `${Math.max(4, (value / max) * 100)}%` }} />
       </div>
     </div>
   );
+}
+
+function buildFlow(plan: QuestionPlan): FlowItem[] {
+  const ask = new Map(plan.ask.map((question) => [question.id, question]));
+  const saved = new Map(plan.saved.map((item) => [item.id, item]));
+  const seen = new Set<string>();
+  const items: FlowItem[] = [];
+  const push = (id: string) => {
+    if (seen.has(id)) return;
+    const question = ask.get(id);
+    const known = saved.get(id);
+    if (!question && !known) return;
+    seen.add(id);
+    items.push({
+      id,
+      question: question ?? known!.question,
+      savedLabel: known?.label ?? null,
+      savedValue: known?.value ?? null,
+    });
+  };
+  for (const group of QUESTION_GROUPS) {
+    for (const id of group.questionIds) push(id);
+  }
+  for (const question of plan.ask) push(question.id);
+  for (const item of plan.saved) push(item.id);
+  return items;
+}
+
+function groupOf(questionId: string): string {
+  return QUESTION_GROUPS.find((group) => group.questionIds.includes(questionId))?.id ?? "details";
 }
 
 function roomChoices(context: AssistantContext): Array<{ id: string; label: string }> {
@@ -689,7 +1023,7 @@ function sideSample(
   context: AssistantContext,
   history: StoredHistoryEntry[],
   rooms: Array<{ id: string; label: string }>,
-): LocationSample | null {
+): ShownSample | null {
   const label = side === "a" ? session.rooms.aLabel : session.rooms.bLabel;
   const roomId = side === "a" ? session.rooms.aRoomId : session.rooms.bRoomId;
   const historyId = side === "a" ? session.rooms.aHistoryId : session.rooms.bHistoryId;
@@ -697,31 +1031,74 @@ function sideSample(
     const summary = summarizeRoom(context.measurements, roomId);
     if (!summary) return null;
     const room = rooms.find((item) => item.id === roomId);
-    return sampleFromMetrics(label || room?.label || "Saved room", summary);
+    return {
+      ...sampleFromMetrics(label || room?.label || "Saved room", summary),
+      source: "room",
+      testedAt: summary.testedAt,
+    };
   }
   if (historyId) {
     const entry = history.find((item) => item.id === historyId);
     if (!entry) return null;
-    return sampleFromMetrics(label || "Saved test", entry);
+    return {
+      ...sampleFromMetrics(label || "Saved test", entry),
+      source: "history",
+      testedAt: entry.createdAt,
+    };
   }
   return null;
 }
 
+function latestSpeedTest(history: StoredHistoryEntry[]): StoredHistoryEntry | null {
+  const usable = history.filter((entry) => finiteMetric(entry.downloadMbps) != null || finiteMetric(entry.uploadMbps) != null || finiteMetric(entry.pingMs) != null || finiteMetric(entry.jitterMs) != null);
+  if (usable.length === 0) return null;
+  return usable.reduce((best, entry) => {
+    const bestTime = Date.parse(best.createdAt);
+    const time = Date.parse(entry.createdAt);
+    if (Number.isNaN(time)) return best;
+    if (Number.isNaN(bestTime) || time > bestTime) return entry;
+    return best;
+  });
+}
+
 function historyOptionLabel(entry: StoredHistoryEntry): string {
-  const when = new Date(entry.createdAt);
-  const stamp = Number.isNaN(when.getTime()) ? "Saved test" : when.toLocaleDateString();
+  const stamp = formatStamp(entry.createdAt);
   const down = entry.downloadMbps == null ? "download not saved" : `${Math.round(entry.downloadMbps)} Mbps down`;
   return `${stamp}, ${down}`;
 }
 
-function metricText(name: string, value: number | null, unit: string): string {
-  const amount = value == null ? "not saved" : unit === "Mbps" ? `${Math.round(value * 10) / 10} ${unit}` : `${Math.round(value)} ${unit}`;
-  return name ? `${name} ${amount}` : amount;
+function finiteMetric(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function deltaText(value: number | null, unit: string): string {
+function formatMetric(value: number | null, unit: string): string {
+  if (value == null) return "Not saved";
+  if (unit === "Mbps") return `${Math.round(value * 10) / 10} Mbps`;
+  return `${Math.round(value)} ${unit}`;
+}
+
+function formatStamp(iso: string | null | undefined): string {
+  if (!iso) return "Time not saved";
+  const when = new Date(iso);
+  if (Number.isNaN(when.getTime())) return "Time not saved";
+  return when.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+function comparisonValue(comparison: ReturnType<typeof compareLocations>, key: (typeof METRICS)[number]["key"]): number | null {
+  if (key === "downloadMbps") return comparison.downloadDeltaMbps;
+  if (key === "uploadMbps") return comparison.uploadDeltaMbps;
+  if (key === "pingMs") return comparison.pingDeltaMs;
+  return comparison.jitterDeltaMs;
+}
+
+function formatDelta(value: number | null, unit: string, base: number | null): string {
   if (value == null) return "Not saved";
   const rounded = unit === "Mbps" ? Math.round(value * 10) / 10 : Math.round(value);
   const sign = rounded > 0 ? "+" : "";
-  return `${sign}${rounded} ${unit}`;
+  const absolute = `${sign}${rounded} ${unit}`;
+  if (base == null || Math.abs(base) < 1) return absolute;
+  const pct = Math.round((value / Math.abs(base)) * 100);
+  if (!Number.isFinite(pct)) return absolute;
+  const pctSign = pct > 0 ? "+" : "";
+  return `${absolute} (${pctSign}${pct}%)`;
 }

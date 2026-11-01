@@ -4,7 +4,7 @@ test.describe("mesh wifi", () => {
   test("hub explains the planner and has no horizontal overflow", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/mesh-wifi");
-    await expect(page.getByRole("heading", { level: 1, name: "Mesh Wi-Fi setup and placement" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Wi-Fi & Mesh Tools" })).toBeVisible();
     await expect(page.getByRole("link", { name: "How many mesh nodes do I need?" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Mesh Planner" })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -106,21 +106,37 @@ test.describe("mesh wifi", () => {
 
   test("troubleshooter shows a likely cause without a password field", async ({ page }) => {
     await page.goto("/mesh-wifi/troubleshooter");
-    await expect(page.getByRole("heading", { level: 1, name: "Why Is My Mesh Wi-Fi Slow?" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Mesh Wi-Fi Troubleshooter" })).toBeVisible();
+    await expect(page.getByText("Why is my mesh Wi-Fi slow?")).toBeVisible();
     await page.getByRole("button", { name: /Slow Internet/ }).click();
     await page.getByLabel("Slow internet").check();
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByRole("heading", { name: "Diagnose" })).toBeVisible();
-    await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Possible cause").first()).toBeVisible();
-    await expect(page.getByText("Worth checking").first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Diagnose the issue" })).toBeVisible();
+    await expect(page.getByText("Where does the problem occur?")).toBeVisible();
+    await page.getByRole("button", { name: "Skip" }).click();
+    await expect(page.getByText("Where does the problem occur?")).toHaveCount(0);
+    await page.getByRole("button", { name: "Back" }).click();
+    await expect(page.getByText("You skipped this question.")).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Everywhere" })).not.toBeChecked();
+    for (let i = 0; i < 12; i += 1) {
+      if (await page.getByRole("heading", { name: "Recommendations" }).count()) break;
+      await page.getByRole("button", { name: "Continue" }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Recommendations" })).toBeVisible();
+    await expect(page.getByText("Possible cause", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Worth checking", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("Haven't tried yet")).toBeVisible();
     await expect(page.getByRole("link", { name: "Run a speed test" })).toHaveAttribute("href", "/speed-test");
     await expect(page.getByRole("button", { name: /start speed test/i })).toHaveCount(0);
     await expect(page.locator("input[type=password]")).toHaveCount(0);
+    await expect(page.getByText("No speed test is saved on this device.")).toBeVisible();
     await expect(page).toHaveURL(/\/mesh-wifi\/troubleshooter/);
-    await page.setViewportSize({ width: 390, height: 844 });
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 375, height: 812 });
+    const narrow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(narrow).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(wide).toBeLessThanOrEqual(1);
   });
 
   test("room test does not start by itself", async ({ page }) => {

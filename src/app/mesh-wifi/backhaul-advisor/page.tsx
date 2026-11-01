@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BackhaulPanel } from "@/components/mesh/backhaul-panel";
 import { ToolShell } from "@/components/seo/tool-shell";
+import { ToolPageHero } from "@/components/ui/tool-page-hero";
 import { meshCrumbs } from "@/lib/mesh/crumbs";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = buildMetadata({
 export default function BackhaulPage() {
   return (
     <ToolShell
+      hideHeader
       title="Ethernet vs wireless mesh backhaul"
       description="How mesh nodes should connect"
       path="/mesh-wifi/backhaul-advisor"
@@ -23,6 +25,10 @@ export default function BackhaulPage() {
       ]}
       related={[{ href: "/mesh-wifi/guides/ethernet-vs-wireless-backhaul", label: "Ethernet vs wireless" }, { href: "/mesh-wifi/planner", label: "Mark Ethernet outlets" }]}
     >
+      <ToolPageHero
+        title="Ethernet vs wireless mesh backhaul"
+        description="The link between nodes is separate from the link to your phone. A cable helps when the model can use it. A wireless hop is normal, and it is not free."
+      />
       <BackhaulPanel />
     </ToolShell>
   );

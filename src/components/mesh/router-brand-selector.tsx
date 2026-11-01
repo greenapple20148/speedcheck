@@ -1,5 +1,6 @@
 "use client";
 
+import { selectControlClass } from "@/components/ui/field";
 import { ROUTER_MANUFACTURERS, getRouterManufacturer } from "@/lib/mesh/router-admin";
 
 export function RouterBrandSelector({
@@ -14,14 +15,13 @@ export function RouterBrandSelector({
   onModelChange: (id: string) => void;
 }) {
   const manufacturer = getRouterManufacturer(manufacturerId) ?? ROUTER_MANUFACTURERS[0];
-  const field = "mt-1 w-full rounded-lg border border-border bg-background px-2 py-2 text-sm";
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <label className="block text-xs font-medium text-foreground">
         Manufacturer
         <select
-          className={field}
+          className={selectControlClass}
           value={manufacturer?.id}
           aria-label="Router manufacturer"
           onChange={(event) => onManufacturerChange(event.target.value)}
@@ -34,7 +34,7 @@ export function RouterBrandSelector({
       <label className="block text-xs font-medium text-foreground">
         Model
         <select
-          className={field}
+          className={selectControlClass}
           value={modelId}
           aria-label="Router model"
           onChange={(event) => onModelChange(event.target.value)}

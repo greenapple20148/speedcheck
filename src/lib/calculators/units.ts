@@ -1,19 +1,21 @@
 import { z } from "zod";
 
-export type ByteUnit = "B" | "KB" | "MB" | "GB" | "KiB" | "MiB" | "GiB";
+export type ByteUnit = "B" | "KB" | "MB" | "GB" | "TB" | "KiB" | "MiB" | "GiB" | "TiB";
 
-const DECIMAL: Record<"B" | "KB" | "MB" | "GB", number> = {
+const DECIMAL: Record<"B" | "KB" | "MB" | "GB" | "TB", number> = {
   B: 1,
   KB: 1_000,
   MB: 1_000_000,
   GB: 1_000_000_000,
+  TB: 1_000_000_000_000,
 };
 
-const BINARY: Record<"B" | "KiB" | "MiB" | "GiB", number> = {
+const BINARY: Record<"B" | "KiB" | "MiB" | "GiB" | "TiB", number> = {
   B: 1,
   KiB: 1024,
   MiB: 1024 ** 2,
   GiB: 1024 ** 3,
+  TiB: 1024 ** 4,
 };
 
 export function toBytes(value: number, unit: ByteUnit): number {

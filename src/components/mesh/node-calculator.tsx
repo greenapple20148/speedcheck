@@ -7,7 +7,6 @@ import {
   BrickWall,
   Calculator,
   Check,
-  ChevronDown,
   Gauge,
   Home,
   Info,
@@ -404,12 +403,9 @@ function Field({
 
 function Select({ className, children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <div className="relative">
-      <select {...props} className={cn(fieldClass, "appearance-none pr-9", className)}>
-        {children}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" aria-hidden />
-    </div>
+    <select {...props} className={cn(fieldClass, className)}>
+      {children}
+    </select>
   );
 }
 
