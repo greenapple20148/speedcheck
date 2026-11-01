@@ -36,6 +36,11 @@ export interface MeshNode {
   band?: WifiBand;
   /** How this node links to the rest of the mesh. Omitted means wireless. */
   link?: "wired" | "wireless";
+  /**
+   * Explicit backhaul parent on this floor. Omitted plans connect each
+   * satellite to the nearest node. This is not a signal reading.
+   */
+  parentId?: string;
 }
 
 export interface MeshWall {
@@ -63,6 +68,21 @@ export interface RoomMeasurement {
   jitterMs: number | null;
   testedAt: string;
   endpointName: string | null;
+  /** Present when the standard test recorded loaded latency. Older rows omit it. */
+  loadedLatencyMs?: number | null;
+  /** Present when the test recorded which measurement service ran. Older rows omit it. */
+  provider?: "cloudflare" | "dedicated" | null;
+}
+
+/** How a local floor-plan image sits in the drawing, in feet. Omitted plans fill the floor. */
+export interface MeshFloorImage {
+  opacity?: number;
+  /** Degrees clockwise. */
+  rotation?: number;
+  /** 1 draws the image across the full floor width. */
+  scale?: number;
+  offsetX?: number;
+  offsetY?: number;
 }
 
 export interface MeshFloor {
@@ -74,8 +94,10 @@ export interface MeshFloor {
   nodes: MeshNode[];
   outlets: MeshOutlet[];
   walls?: MeshWall[];
-  /** Local preview only. Never uploaded unless the visitor later opts into cloud sync. */
+  /** Local preview only. Never uploaded. */
   imageDataUrl?: string | null;
+  /** Optional placement for imageDataUrl. Older plans omit it and still fill the floor. */
+  image?: MeshFloorImage;
 }
 
 export interface MeshHome {

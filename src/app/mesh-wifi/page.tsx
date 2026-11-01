@@ -12,6 +12,7 @@ export const metadata: Metadata = buildMetadata({
 
 const CARDS = [
   { href: "/mesh-wifi/planner", title: "Mesh Planner", body: "Draw rooms, drag nodes, and see an estimated coverage map you can correct with measurements." },
+  { href: "/router-setup", title: "Router Setup", body: "Brand, login page, placement checklist, and a speed test you start yourself. The password stays on the vendor page." },
   { href: "/mesh-wifi/setup", title: "Mesh Setup Assistant", body: "A model-aware checklist for eero, Nest, Deco, Orbi, ZenWiFi, Velop, or another kit." },
   { href: "/mesh-wifi/placement-optimizer", title: "Node Placement", body: "Four layouts you can apply and then edit. Not a claim of a perfect plan." },
   { href: "/mesh-wifi/dead-zone-test", title: "Room Testing", body: "Run the speed test in a room you choose and keep that result with the room." },

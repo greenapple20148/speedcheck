@@ -7,12 +7,15 @@ import { useSearchParams } from "next/navigation";
 import { buildConnectionInsights } from "@/lib/speedtest/connection-insights";
 import { readHistory, readPlan, type PlanSettings, type StoredHistoryEntry } from "@/lib/speedtest/history-store";
 import { BUFFERBLOAT_GRADE_LABEL } from "@/lib/speedtest/bufferbloat-config";
+import { getMeshBrand } from "@/lib/mesh/catalog";
+import { summarizeRoom } from "@/lib/mesh/measurements";
 import { loadPlan } from "@/lib/mesh/store";
 import type { MeshPlan } from "@/lib/mesh/types";
+import { CHANGE_LABELS, compareSnapshots } from "@/lib/network-health/compare";
+import { coverageOverview } from "@/lib/network-health/overview";
 import { buildHealthRecommendations } from "@/lib/network-health/recommendations";
-import { latestSnapshot, providerLabel, snapshotFromHistory, type HealthSnapshot } from "@/lib/network-health/snapshot";
-import type { SpeedMetrics } from "@/types/speedtest";
-
+import { latestSnapshot, providerLabel, snapshotFromSpeedResult, type HealthSnapshot } from "@/lib/network-health/snapshot";
+import { readComparisons, type SavedComparison } from "@/lib/network-health/store";
 const SpeedTestDashboard = dynamic(
   () => import("@/components/speedtest/dashboard/speed-test-dashboard").then((mod) => mod.SpeedTestDashboard),
   { ssr: false, loading: () => <p className="text-sm text-muted-foreground">Loading the speed test…</p> },
@@ -28,11 +31,13 @@ export function NetworkHealthDashboard() {
   const [history, setHistory] = useState<StoredHistoryEntry[]>([]);
   const [plan, setPlan] = useState<MeshPlan | null>(null);
   const [ispPlan, setIspPlan] = useState<PlanSettings | null>(null);
+  const [comparisons, setComparisons] = useState<SavedComparison[]>([]);
   useEffect(() => {
     try {
       setHistory(readHistory());
       setPlan(loadPlan());
       setIspPlan(readPlan());
+      setComparisons(readComparisons());
       setError(null);
     } catch {
       setError("Saved results could not be read on this device.");
@@ -43,7 +48,7 @@ export function NetworkHealthDashboard() {
   const saved = latestSnapshot(history);
   const current = session ?? saved;
   const rooms = (plan?.floors ?? []).flatMap((floor) => floor.rooms.map((room) => {
-    const measurement = plan?.measurements.find((row) => row.roomId === room.id) ?? null;
+    const measurement = plan ? summarizeRoom(plan.measurements, room.id) : null;
     return { room, floorName: floor.name, measurement };
   }));
   const recommendations = buildHealthRecommendations({
@@ -60,6 +65,12 @@ export function NetworkHealthDashboard() {
   const chartPoints = history
     .filter((entry) => entry.downloadMbps != null)
     .slice(0, 6);
+  const coverage = coverageOverview(ready ? plan : null);
+  const brand = plan && plan.home.brandSlug !== "generic" ? getMeshBrand(plan.home.brandSlug) : undefined;
+  const enteredConnection = plan && plan.home.connection !== "unknown" ? plan.home.connection : null;
+  const enteredBackhaul = plan && plan.home.backhaul !== "unknown" ? plan.home.backhaul : null;
+  const latestComparison = comparisons[0] ?? null;
+  const comparisonPreview = latestComparison?.followUp ? compareSnapshots(latestComparison.baseline, latestComparison.followUp) : null;
 
   return (
     <div className="min-w-0 space-y-6">
@@ -83,7 +94,7 @@ export function NetworkHealthDashboard() {
             defaultMode="standard"
             onComplete={(result) => {
               try {
-                setSession(snapshotFromLive(result));
+                setSession(snapshotFromSpeedResult(result));
                 setTesting(false);
               } catch {
                 setError("The test finished, and this page could not read the result.");
@@ -124,6 +135,67 @@ export function NetworkHealthDashboard() {
         </article>
       </section>
       ) : null}
+      {ready && (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <section aria-label="Mesh coverage" className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Mesh coverage</h2>
+              <SourceTag kind={coverage.status === "estimated" ? "estimated" : "unavailable"} />
+            </div>
+            {coverage.status === "estimated" ? (
+              <p className="mt-2 text-sm text-muted-foreground">About {coverage.weakPercent}% of the drawn area on {coverage.floorName} looks weak in the 5 GHz planning model. This is not a measured Wi-Fi signal map.</p>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Add a node in the floor planner before this estimate can be shown.</p>
+            )}
+            <Link href="/mesh-wifi/planner" className="mt-3 inline-flex text-sm font-medium text-primary">Open the floor planner</Link>
+          </section>
+          <section aria-label="Router status" className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Router</h2>
+              <SourceTag kind="unavailable" />
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">Automatic router status is unavailable. Opening a login page does not connect this site to the router.</p>
+            {brand ? (
+              <p className="mt-2 text-sm text-foreground"><SourceTag kind="user-entered" /> {brand.name}</p>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">No router brand is saved.</p>
+            )}
+            {enteredConnection && <p className="mt-1 text-sm text-foreground"><SourceTag kind="user-entered" /> Connection {enteredConnection}</p>}
+            {enteredBackhaul && <p className="mt-1 text-sm text-foreground"><SourceTag kind="user-entered" /> Backhaul {enteredBackhaul}</p>}
+            <Link href="/router-setup" className="mt-3 inline-flex text-sm font-medium text-primary">Open router setup</Link>
+          </section>
+          <section aria-label="Connected devices" className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Connected devices</h2>
+              <SourceTag kind="unavailable" />
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">No authorized router integration is available, so this page does not list devices.</p>
+          </section>
+          <section aria-label="Before and after" className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Before and after</h2>
+              <SourceTag kind={comparisonPreview ? "measured" : "unavailable"} />
+            </div>
+            {latestComparison ? (
+              <>
+                <p className="mt-2 text-sm text-foreground">{CHANGE_LABELS[latestComparison.changeKind] ?? "Saved comparison"}</p>
+                {comparisonPreview ? (
+                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                    {comparisonPreview.metrics.map((metric) => (
+                      <li key={metric.id}>{metric.label}: {directionLabel(metric.direction)}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-muted-foreground">A follow-up measurement has not been saved.</p>
+                )}
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">No saved comparison.</p>
+            )}
+            <Link href="/network-health/compare" className="mt-3 inline-flex text-sm font-medium text-primary">Compare before and after</Link>
+          </section>
+        </div>
+      )}
       <section aria-label="Readiness assessments">
         <h2 className="text-sm font-semibold text-foreground">Readiness from this speed test</h2>
         <p className="mt-1 text-xs text-muted-foreground">These labels are assessments of the measured speed, latency, and jitter. They are not separate test results.</p>
@@ -171,14 +243,18 @@ export function NetworkHealthDashboard() {
           <ul className="mt-3 grid gap-3 sm:grid-cols-2">
             {rooms.map(({ room, floorName, measurement }) => (
               <li key={room.id} id={`room-${room.id}`} className={`rounded-2xl border p-3 ${focusRoom === room.id ? "border-primary" : "border-border"}`}>
-                <h3 className="text-sm font-semibold">{room.name}</h3>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold">{room.name}</h3>
+                  <SourceTag kind={measurement ? "measured" : "unavailable"} />
+                </div>
                 <p className="text-xs text-muted-foreground">{floorName}</p>
                 {measurement ? (
                   <>
                     <p className="mt-2 text-sm">Download {formatOptional(measurement.downloadMbps, "Mbps")}</p>
                     <p className="text-sm">Upload {formatOptional(measurement.uploadMbps, "Mbps")}</p>
                     <p className="text-sm">Latency {formatOptional(measurement.pingMs, "ms")} · Jitter {formatOptional(measurement.jitterMs, "ms")}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{formatWhen(measurement.testedAt)} · Server {measurement.endpointName ?? "Not recorded"}</p>
+                    <p className="text-sm">Loaded latency {formatOptional(measurement.loadedLatencyMs, "ms")}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Median of {measurement.sampleCount} {measurement.sampleCount === 1 ? "test" : "tests"} · {formatWhen(measurement.testedAt)} · {measurement.mixedProvider ? "More than one provider" : providerLabel(measurement.provider ?? null)} · Server {measurement.endpointName ?? "Not recorded"}</p>
                   </>
                 ) : (
                   <p className="mt-2 text-sm text-muted-foreground">Not measured</p>
@@ -193,29 +269,25 @@ export function NetworkHealthDashboard() {
   );
 }
 
-function snapshotFromLive(result: { metrics: SpeedMetrics; serverName: string | null; testedAt: string; provider: "cloudflare" | "dedicated" }): HealthSnapshot {
-  return snapshotFromHistory({
-    id: `session-${result.testedAt}`,
-    downloadMbps: result.metrics.downloadMbps,
-    uploadMbps: result.metrics.uploadMbps,
-    pingMs: result.metrics.pingMs,
-    jitterMs: result.metrics.jitterMs,
-    mode: "standard",
-    serverName: result.serverName ?? undefined,
-    createdAt: result.testedAt,
-    bufferbloatIdleMs: result.metrics.bufferbloatIdleMs,
-    bufferbloatLoadedDownMs: result.metrics.bufferbloatLoadedDownMs,
-    bufferbloatLoadedUpMs: result.metrics.bufferbloatLoadedUpMs,
-    bufferbloatGrade: result.metrics.bufferbloatGrade,
-    provider: result.provider,
-    packetLossPercent: result.metrics.packetLossPercent ?? null,
-  });
+function SourceTag({ kind }: { kind: "measured" | "estimated" | "user-entered" | "unavailable" }) {
+  const label = kind === "user-entered" ? "User-entered" : kind === "measured" ? "Measured" : kind === "estimated" ? "Estimated" : "Unavailable";
+  return <span className="rounded-md border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>;
+}
+
+function directionLabel(direction: string): string {
+  if (direction === "improved") return "Improved";
+  if (direction === "regressed") return "Regressed";
+  if (direction === "unchanged") return "About the same";
+  return "Not comparable";
 }
 
 function MetricCard({ label, value, unit }: { label: string; value: number | null | undefined; unit: string }) {
   return (
     <article className="rounded-2xl border border-border bg-card p-3">
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</h2>
+        <SourceTag kind={value == null ? "unavailable" : "measured"} />
+      </div>
       <p className="mt-2 text-2xl font-semibold text-foreground">{value == null ? "Not measured" : `${Math.round(value * 10) / 10}`}</p>
       {value != null && <p className="text-xs text-muted-foreground">{unit}</p>}
     </article>

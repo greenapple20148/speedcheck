@@ -9,7 +9,6 @@ import {
   transferTimeSeconds,
   type ByteUnit,
 } from "@/lib/calculators/units";
-import { HOUSEHOLD_ACTIVITIES, householdDemand } from "@/lib/calculators/household";
 import { trackEvent } from "@/lib/analytics/events";
 import { readPrefs } from "@/lib/speedtest/history-store";
 
@@ -118,67 +117,4 @@ export function UnitConverter() {
   );
 }
 
-export function HouseholdPlanner() {
-  const [counts, setCounts] = useState<Record<string, string>>({});
-  const [planDown, setPlanDown] = useState("300");
-  const [planUp, setPlanUp] = useState("20");
-  const numeric = Object.fromEntries(
-    Object.entries(counts).map(([key, value]) => [key, Number(value) || 0]),
-  );
-  const demand = householdDemand(numeric);
-
-  return (
-    <form
-      className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6"
-      onSubmit={(event) => {
-        event.preventDefault();
-        trackEvent("calculator_used", { calculator: "household" });
-      }}
-    >
-      <p className="text-sm text-muted-foreground">
-        These are planning figures for simultaneous use, not a measurement of your line.
-      </p>
-      <ul className="mt-4 space-y-2">
-        {HOUSEHOLD_ACTIVITIES.map((activity) => (
-          <li key={activity.id} className="grid grid-cols-[1fr_6rem] items-center gap-3 text-sm">
-            <span>
-              {activity.label}
-              <span className="block text-muted-foreground">
-                {activity.downloadMbps} Mbps down · {activity.uploadMbps} Mbps up each
-              </span>
-            </span>
-            <input
-              aria-label={`${activity.label} count`}
-              className="rounded-lg border border-border bg-background px-3 py-2"
-              inputMode="numeric"
-              value={counts[activity.id] ?? ""}
-              onChange={(event) =>
-                setCounts((current) => ({ ...current, [activity.id]: event.target.value }))
-              }
-            />
-          </li>
-        ))}
-      </ul>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="text-sm">
-          Plan download Mbps
-          <input className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2" value={planDown} onChange={(e) => setPlanDown(e.target.value)} />
-        </label>
-        <label className="text-sm">
-          Plan upload Mbps
-          <input className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2" value={planUp} onChange={(e) => setPlanUp(e.target.value)} />
-        </label>
-      </div>
-      <button type="submit" className="mt-4 min-h-11 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground">
-        Estimate
-      </button>
-      <p className="mt-4 text-sm text-foreground">
-        Combined planning load: {demand.downloadMbps.toFixed(1)} Mbps down and {demand.uploadMbps.toFixed(1)} Mbps up.
-        {Number(planDown) > 0 &&
-          ` That is about ${((demand.downloadMbps / Number(planDown)) * 100).toFixed(0)}% of the download plan you entered.`}
-        {Number(planUp) > 0 &&
-          ` Upload use is about ${((demand.uploadMbps / Number(planUp)) * 100).toFixed(0)}% of that upload plan.`}
-      </p>
-    </form>
-  );
-}
+export { BandwidthEstimator as HouseholdPlanner } from "@/components/calculators/bandwidth/bandwidth-estimator";

@@ -92,8 +92,12 @@ async function pingOnce(baseUrl: string, signal?: AbortSignal): Promise<number> 
   return nowMs() - t0;
 }
 
-function jitterOrZero(usable: number[]): number {
-  return jitterFromSamples(usable) ?? 0;
+/**
+ * Jitter is undefined until there are two comparable samples.
+ * Returning 0 here used to paint an unmeasured phase as a real 0 ms result.
+ */
+function jitterOrNull(usable: number[]): number | null {
+  return jitterFromSamples(usable);
 }
 
 /** Median of N pings (drops first warmup sample). Used for idle / bufferbloat baseline. */
@@ -101,7 +105,7 @@ async function measureIdleLatency(
   baseUrl: string,
   signal?: AbortSignal,
   samples = IDLE_PING_SAMPLES,
-): Promise<{ idleMs: number; jitterMs: number }> {
+): Promise<{ idleMs: number; jitterMs: number | null }> {
   const latencies: number[] = [];
   for (let i = 0; i < samples; i++) {
     latencies.push(await pingOnce(baseUrl, signal));
@@ -110,14 +114,14 @@ async function measureIdleLatency(
   const usable = latencies.slice(1);
   const idleMed = median(usable);
   if (idleMed == null) throw new Error("Ping failed");
-  return { idleMs: idleMed, jitterMs: jitterOrZero(usable) };
+  return { idleMs: idleMed, jitterMs: jitterOrNull(usable) };
 }
 
 async function measurePing(
   baseUrl: string,
   samples = 8,
   signal?: AbortSignal,
-): Promise<{ pingMs: number; jitterMs: number }> {
+): Promise<{ pingMs: number; jitterMs: number | null }> {
   const latencies: number[] = [];
   for (let i = 0; i < samples; i++) {
     latencies.push(await pingOnce(baseUrl, signal));
@@ -125,7 +129,7 @@ async function measurePing(
   }
   const usable = latencies.slice(1);
   const pingMs = usable.reduce((a, b) => a + b, 0) / usable.length;
-  return { pingMs, jitterMs: jitterOrZero(usable) };
+  return { pingMs, jitterMs: jitterOrNull(usable) };
 }
 
 async function sampleLoadedLatencies(
@@ -358,10 +362,12 @@ async function runDedicatedSpeedTest(
     progress: number,
     currentMbps: number | null = null,
     error?: string,
+    phaseProgress: number | null = null,
   ) => {
     options.onProgress?.({
       phase,
       progress,
+      phaseProgress,
       currentMbps,
       metrics: { ...metrics, durationMs: nowMs() - started },
       error,
@@ -399,7 +405,7 @@ async function runDedicatedSpeedTest(
       (mbps, bytes, p) => {
         metrics.downloadedBytes = bytes;
         metrics.downloadMbps = mbps;
-        emit("download", 0.2 + p * 0.4, mbps);
+        emit("download", 0.2 + p * 0.4, mbps, undefined, p);
       },
       measureBufferbloat,
     );
@@ -415,7 +421,7 @@ async function runDedicatedSpeedTest(
       (mbps, bytes, p) => {
         metrics.uploadedBytes = bytes;
         metrics.uploadMbps = mbps;
-        emit("upload", 0.65 + p * 0.3, mbps);
+        emit("upload", 0.65 + p * 0.3, mbps, undefined, p);
       },
       measureBufferbloat,
     );

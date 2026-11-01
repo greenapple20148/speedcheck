@@ -59,7 +59,13 @@ export interface SpeedMetrics {
 
 export interface ProgressState {
   phase: TestPhase;
+  /** Legacy overall fraction. The dashboard ignores this unless `phaseProgress` is set. */
   progress: number;
+  /**
+   * 0–1 progress of the active transfer phase when the engine computed it
+   * from bytes transferred. Null when the engine does not know.
+   */
+  phaseProgress?: number | null;
   currentMbps: number | null;
   metrics: SpeedMetrics;
   error?: string;

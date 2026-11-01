@@ -31,6 +31,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/internet-speed-calculator",
     "/history",
     "/diagnostics",
+    "/router-setup",
     "/network-health",
     "/network-health/compare",
     "/guides",

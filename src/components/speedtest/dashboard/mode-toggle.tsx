@@ -13,9 +13,10 @@ interface ModeToggleProps {
   disabled?: boolean;
   onChange: (mode: TestMode) => void;
   compact?: boolean;
+  hint?: string;
 }
 
-export function ModeToggle({ mode, disabled, onChange, compact }: ModeToggleProps) {
+export function ModeToggle({ mode, disabled, onChange, compact, hint }: ModeToggleProps) {
   return (
     <div className={cn(compact ? "w-auto" : "w-full max-w-[280px]")}>
       <div
@@ -43,10 +44,16 @@ export function ModeToggle({ mode, disabled, onChange, compact }: ModeToggleProp
           </button>
         ))}
       </div>
-      {!compact && (
-        <p className="mt-2 text-center text-[12px] leading-snug text-muted-foreground">
-          Lightweight uses less data. Standard is more thorough.
+      {hint ? (
+        <p className="mt-1.5 text-center text-[11px] leading-snug text-[var(--sd-muted,var(--text-muted))]">
+          {hint}
         </p>
+      ) : (
+        !compact && (
+          <p className="mt-2 text-center text-[12px] leading-snug text-muted-foreground">
+            Lightweight uses less data. Standard is more thorough.
+          </p>
+        )
       )}
     </div>
   );

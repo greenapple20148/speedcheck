@@ -3,11 +3,11 @@
 import { RouterConnectionCard } from "@/components/mesh/router-connection-card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-export function RouterConnectionDialog() {
+export function RouterConnectionDialog({ className }: { className?: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button type="button" className="min-h-11 rounded-xl border border-border px-3 text-sm">
+        <button type="button" className={className ?? "min-h-11 rounded-xl border border-border px-3 text-sm"}>
           Connect to router
         </button>
       </DialogTrigger>

@@ -12,9 +12,16 @@ import { RouterBrandSelector } from "./router-brand-selector";
 import { RouterConnectionHelp } from "./router-connection-help";
 import { RouterLoginGuide } from "./router-login-guide";
 
-export function RouterConnectionCard() {
-  const [manufacturerId, setManufacturerId] = useState(ROUTER_MANUFACTURERS[0]?.id ?? "other");
-  const [modelId, setModelId] = useState(ROUTER_MANUFACTURERS[0]?.models[0]?.id ?? "other");
+export function RouterConnectionCard({
+  initialManufacturerId,
+  initialModelId,
+}: {
+  initialManufacturerId?: string;
+  initialModelId?: string;
+} = {}) {
+  const initial = getRouterManufacturer(initialManufacturerId ?? "") ?? ROUTER_MANUFACTURERS[0];
+  const [manufacturerId, setManufacturerId] = useState(initial?.id ?? "other");
+  const [modelId, setModelId] = useState(initial?.models.find((item) => item.id === initialModelId)?.id ?? initial?.models[0]?.id ?? "other");
   const [address, setAddress] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [opened, setOpened] = useState(false);

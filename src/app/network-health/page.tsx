@@ -17,8 +17,8 @@ export default function NetworkHealthPage() {
       description="Measured connection health"
       path="/network-health"
       crumbs={[{ label: "Network health" }]}
-      intro="This dashboard shows completed speed tests and room tests saved on this device. Empty fields were not measured."
-      methodology="Download, upload, latency, jitter, and bufferbloat come from the speed test you run. Gaming, streaming, and video-call labels are assessments of those measurements. Room rows are throughput tests, separate from the planner’s estimated coverage. Comparisons stay in this browser."
+      intro="This dashboard shows completed speed tests and room tests saved on this device. Each figure is marked measured, estimated, user-entered, or unavailable."
+      methodology="Download, upload, latency, jitter, and bufferbloat come from the speed test you run. Gaming, streaming, and video-call labels are assessments of those measurements. The coverage share is the planner’s 5 GHz model, not a signal reading. Router brand, connection, and backhaul appear only when you saved them. Device lists stay unavailable until an authorized integration exists. Comparisons stay in this browser."
       faqs={[
         { question: "Does an empty card mean the connection failed?", answer: "No. It means that metric was not part of the saved test." },
         { question: "Are the planner colors the same as these speeds?", answer: "No. Planner colors are an estimate. Room rows here are measured throughput." },

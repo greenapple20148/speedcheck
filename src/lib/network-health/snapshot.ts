@@ -1,5 +1,5 @@
 import type { StoredHistoryEntry } from "@/lib/speedtest/history-store";
-import type { BufferbloatGrade } from "@/types/speedtest";
+import type { BufferbloatGrade, SpeedMetrics } from "@/types/speedtest";
 
 export interface HealthSnapshot {
   id: string;
@@ -61,12 +61,14 @@ export function snapshotFromRoom(input: {
   jitterMs: number | null;
   testedAt: string;
   endpointName: string | null;
+  loadedLatencyMs?: number | null;
+  provider?: "cloudflare" | "dedicated" | null;
 }): HealthSnapshot {
   return {
     id: `room:${input.roomId}:${input.testedAt}`,
     testedAt: input.testedAt,
     source: "room-test",
-    provider: null,
+    provider: input.provider ?? null,
     endpointName: input.endpointName,
     connection: "wifi",
     roomId: input.roomId,
@@ -78,10 +80,34 @@ export function snapshotFromRoom(input: {
     idleLatencyMs: input.pingMs,
     loadedDownMs: null,
     loadedUpMs: null,
-    loadedLatencyMs: null,
+    loadedLatencyMs: input.loadedLatencyMs ?? null,
     bufferbloatGrade: null,
     packetLossPercent: null,
   };
+}
+
+export function snapshotFromSpeedResult(result: {
+  metrics: SpeedMetrics;
+  serverName: string | null;
+  testedAt: string;
+  provider: "cloudflare" | "dedicated";
+}): HealthSnapshot {
+  return snapshotFromHistory({
+    id: `session-${result.testedAt}`,
+    downloadMbps: result.metrics.downloadMbps,
+    uploadMbps: result.metrics.uploadMbps,
+    pingMs: result.metrics.pingMs,
+    jitterMs: result.metrics.jitterMs,
+    mode: "standard",
+    serverName: result.serverName ?? undefined,
+    createdAt: result.testedAt,
+    bufferbloatIdleMs: result.metrics.bufferbloatIdleMs,
+    bufferbloatLoadedDownMs: result.metrics.bufferbloatLoadedDownMs,
+    bufferbloatLoadedUpMs: result.metrics.bufferbloatLoadedUpMs,
+    bufferbloatGrade: result.metrics.bufferbloatGrade,
+    provider: result.provider,
+    packetLossPercent: result.metrics.packetLossPercent ?? null,
+  });
 }
 
 export function latestSnapshot(entries: StoredHistoryEntry[]): HealthSnapshot | null {

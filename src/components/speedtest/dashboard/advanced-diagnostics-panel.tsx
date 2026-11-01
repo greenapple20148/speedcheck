@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { DiagnosisCard } from "@/components/speedtest/dashboard/diagnosis-card";
 import { ConnectionTagToggle } from "@/components/speedtest/dashboard/connection-tag-toggle";
@@ -49,6 +50,7 @@ interface AdvancedDiagnosticsPanelProps {
   shareUrl: string | null;
   connectionTag: ConnectionTag;
   onConnectionTagChange: (tag: ConnectionTag) => void;
+  protocol?: string | null;
 }
 
 function GridItem({ label, value }: { label: string; value: string }) {
@@ -78,8 +80,11 @@ export function AdvancedDiagnosticsPanel({
   connectionTag,
   onConnectionTagChange,
   showToggle = true,
+  protocol = null,
 }: AdvancedDiagnosticsPanelProps) {
   const under = assessment.underLoad;
+  const [ipVisible, setIpVisible] = useState(false);
+  const transferred = metrics.downloadedBytes + metrics.uploadedBytes;
 
   if (!open && !showToggle) return null;
 
@@ -178,9 +183,32 @@ export function AdvancedDiagnosticsPanel({
 
           <dl className="grid grid-cols-1 gap-x-4 gap-y-3 rounded-xl border border-[var(--card-border)] bg-card p-3.5 sm:grid-cols-2 lg:grid-cols-3">
             <GridItem label="ISP" value={formatIspDisplay(network)} />
-            <GridItem label="Public IP" value={formatPublicIpDisplay(network)} />
+            <div className="min-w-0">
+              <dt className="text-[12px] font-medium text-muted-foreground">Public IP</dt>
+              <dd className="mt-0.5 flex flex-wrap items-center gap-2 text-[14px] font-medium text-foreground">
+                <span>{ipVisible ? formatPublicIpDisplay(network) : "Hidden"}</span>
+                <button
+                  type="button"
+                  onClick={() => setIpVisible((open) => !open)}
+                  className="rounded-md text-[13px] font-semibold text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {ipVisible ? "Hide" : "Show"}
+                </button>
+              </dd>
+            </div>
             <GridItem label="Test server" value={formatServerDisplay(server)} />
             <GridItem label="Server location" value={formatServerLocation(server)} />
+            <GridItem label="Protocol" value={protocol ?? "Unavailable"} />
+            <GridItem
+              label="Data transferred"
+              value={transferred > 0 ? `${(transferred / 1_000_000).toFixed(1)} MB` : "Not measured"}
+            />
+            {metrics.packetLossPercent != null && (
+              <GridItem
+                label="Packet loss"
+                value={`${metrics.packetLossPercent.toFixed(1)}%`}
+              />
+            )}
             <GridItem
               label="Browser link estimate"
               value={formatBrowserLinkEstimate(browserLinkEstimate)}

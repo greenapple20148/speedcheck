@@ -24,6 +24,7 @@ const node = z.object({
   role: z.enum(["primary", "satellite"]),
   band: z.enum(["2.4", "5", "6"]).optional(),
   link: z.enum(["wired", "wireless"]).optional(),
+  parentId: z.string().min(1).max(80).optional(),
 });
 const wall = z.object({
   id: z.string().min(1).max(80),
@@ -44,6 +45,13 @@ const floor = z.object({
   outlets: z.array(z.object({ id: z.string().max(80), x: z.number().min(0).max(400), y: z.number().min(0).max(400) })).max(30),
   walls: z.array(wall).max(80).optional(),
   imageDataUrl: z.string().max(500_000).nullable().optional(),
+  image: z.object({
+    opacity: z.number().min(0).max(1).optional(),
+    rotation: z.number().min(-360).max(360).optional(),
+    scale: z.number().min(0.2).max(5).optional(),
+    offsetX: z.number().min(-200).max(200).optional(),
+    offsetY: z.number().min(-200).max(200).optional(),
+  }).optional(),
 });
 
 const planSchema = z.object({
@@ -74,6 +82,8 @@ const planSchema = z.object({
     jitterMs: z.number().nullable(),
     testedAt: z.string().max(40),
     endpointName: z.string().max(80).nullable(),
+    loadedLatencyMs: z.number().nullable().optional(),
+    provider: z.enum(["cloudflare", "dedicated"]).nullable().optional(),
   })).max(80),
   checkedSetup: z.array(z.string().max(80)).max(40),
 });

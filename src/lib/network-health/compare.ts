@@ -1,11 +1,24 @@
 import type { HealthSnapshot } from "@/lib/network-health/snapshot";
 
-export type ChangeKind = "mesh-move" | "router-move" | "ethernet-vs-wifi" | "router-setting" | "different-room";
+export type ChangeKind =
+  | "mesh-move"
+  | "router-move"
+  | "ethernet-backhaul"
+  | "firmware"
+  | "channel"
+  | "router-mode"
+  | "ethernet-vs-wifi"
+  | "router-setting"
+  | "different-room";
 
 export const CHANGE_LABELS: Record<ChangeKind, string> = {
   "mesh-move": "Mesh node relocation",
   "router-move": "Router relocation",
-  "ethernet-vs-wifi": "Ethernet vs Wi-Fi",
+  "ethernet-backhaul": "Ethernet backhaul installation",
+  "firmware": "Router firmware update",
+  "channel": "Channel configuration change",
+  "router-mode": "Router mode change",
+  "ethernet-vs-wifi": "Wi-Fi vs Ethernet",
   "router-setting": "Router setting change",
   "different-room": "Different rooms",
 };
@@ -53,6 +66,16 @@ export function comparisonWarnings(before: HealthSnapshot, after: HealthSnapshot
   if (before.source !== after.source) warnings.push("These results came from different kinds of tests.");
   if (before.provider && after.provider && before.provider !== after.provider) {
     warnings.push("The tests used different measurement providers.");
+  }
+  if (before.roomId && after.roomId && before.roomId !== after.roomId) {
+    warnings.push("These tests were saved for different rooms.");
+  }
+  const loadedSides = [before.loadedLatencyMs != null, after.loadedLatencyMs != null].filter(Boolean).length;
+  if (loadedSides === 1) warnings.push("Loaded latency was recorded on only one of the tests.");
+  const beforeTime = Date.parse(before.testedAt);
+  const afterTime = Date.parse(after.testedAt);
+  if (Number.isFinite(beforeTime) && Number.isFinite(afterTime) && Math.abs(afterTime - beforeTime) > 7 * 24 * 60 * 60 * 1000) {
+    warnings.push("These tests were taken more than a week apart.");
   }
   return warnings;
 }

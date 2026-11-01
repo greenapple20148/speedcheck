@@ -78,7 +78,15 @@ function mapResultsToMetrics(
       ? summary.jitter
       : null;
 
-  if (summary.packetLoss != null && Number.isFinite(summary.packetLoss)) {
+  const packetLossStarted = Boolean(
+    (engine.results.raw as { packetLoss?: { started?: boolean } }).packetLoss
+      ?.started,
+  );
+  if (
+    packetLossStarted &&
+    summary.packetLoss != null &&
+    Number.isFinite(summary.packetLoss)
+  ) {
     metrics.packetLossPercent = Math.round(summary.packetLoss * 1000) / 10;
   }
 
@@ -188,6 +196,7 @@ export async function runCloudflareSpeedTest(
     onProgress?.({
       phase,
       progress,
+      phaseProgress: null,
       currentMbps,
       metrics: { ...metrics, durationMs: performance.now() - started },
     });
@@ -237,6 +246,7 @@ export async function runCloudflareSpeedTest(
     onProgress?.({
       phase: "complete",
       progress: 1,
+      phaseProgress: null,
       currentMbps: null,
       metrics,
     });

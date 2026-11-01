@@ -36,7 +36,7 @@ export function SetupWizard() {
       {step === 0 && (
         <fieldset>
           <legend className="text-sm font-semibold">Which system are you installing?</legend>
-          <p className="mt-1 text-sm text-muted-foreground">Models from the same brand do not share one setup. Use the official guide for the model on the label.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Models from the same brand do not share one setup. Use the official guide for the model on the label. The <a className="text-primary" href="/router-setup">router setup guide</a> also covers the login page, backhaul, and a speed test.</p>
           <ul className="mt-3 space-y-2">
             {MESH_BRANDS.map((item) => (
               <li key={item.slug}>
