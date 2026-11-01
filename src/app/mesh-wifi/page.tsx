@@ -44,9 +44,9 @@ export default function MeshHomePage() {
       <ul className="grid gap-3 sm:grid-cols-2">
         {CARDS.map((card) => (
           <li key={card.title}>
-            <Link href={card.href} className="block h-full rounded-2xl border border-border bg-card p-4 hover:border-primary">
-              <h2 className="text-base font-semibold">{card.title}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{card.body}</p>
+            <Link href={card.href} className="block h-full rounded-[20px] border border-border bg-card p-4 hover:border-[var(--accent-text)]">
+              <h2 className="text-base font-semibold text-foreground">{card.title}</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{card.body}</p>
             </Link>
           </li>
         ))}

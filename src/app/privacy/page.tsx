@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
@@ -9,7 +10,9 @@ export const metadata: Metadata = buildMetadata({
 
 export default function PrivacyPage() {
   return (
-    <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-10 prose-headings:font-heading">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+      <Breadcrumbs items={[{ label: "Privacy" }]} />
+      <article className="prose prose-neutral max-w-none prose-headings:font-heading">
       <h1>Privacy Policy</h1>
       <p>
         SpeedCheck is designed to measure your connection without unnecessary personal data.
@@ -33,5 +36,6 @@ export default function PrivacyPage() {
         may set cookies when enabled—see their policies and use consent tooling appropriate for your region.
       </p>
     </article>
+    </div>
   );
 }

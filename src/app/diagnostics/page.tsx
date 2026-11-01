@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DiagnosticsToolGrid } from "@/components/diagnostics/diagnostics-tool-grid";
 import { JsonLd } from "@/components/seo/json-ld";
+import { PageHeader } from "@/components/ui/page-header";
 import { absoluteUrl } from "@/lib/seo/metadata";
 
 export const metadata = {
@@ -21,17 +22,17 @@ export default function DiagnosticsPage() {
           description: metadata.description,
         }}
       />
-      <div className="mx-auto max-w-[1100px] px-4 py-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Diagnostics
-        </h1>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Understand why your connection feels slow or unstable. Start with a{" "}
-          <Link href="/#speed-test" className="font-semibold text-primary hover:underline">
-            speed test
-          </Link>
-          , then open AI troubleshooting from the results.
-        </p>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:py-10">
+        <PageHeader
+          title="Diagnostics"
+          description="Understand why your connection feels slow or unstable. Start with a speed test, then open troubleshooting from the results."
+        >
+          <p className="mt-3 text-sm">
+            <Link href="/#speed-test" className="font-semibold text-primary hover:underline">
+              Open the speed test
+            </Link>
+          </p>
+        </PageHeader>
 
         <div className="mt-8">
           <DiagnosticsToolGrid />

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
@@ -9,7 +10,9 @@ export const metadata: Metadata = buildMetadata({
 
 export default function TermsPage() {
   return (
-    <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-10 prose-headings:font-heading">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+      <Breadcrumbs items={[{ label: "Terms" }]} />
+      <article className="prose prose-neutral max-w-none prose-headings:font-heading">
       <h1>Terms of Use</h1>
       <p>
         SpeedCheck provides informational network measurements. Results vary with device, Wi‑Fi,
@@ -27,5 +30,6 @@ export default function TermsPage() {
         performance.
       </p>
     </article>
+    </div>
   );
 }

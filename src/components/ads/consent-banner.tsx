@@ -59,7 +59,7 @@ export function ConsentBanner() {
           </Button>
           <Button
             onClick={() => decide("accepted")}
-            className="rounded-full bg-primary hover:bg-primary-hover"
+            className="rounded-full bg-primary text-primary-foreground hover:bg-primary-hover"
           >
             Accept
           </Button>

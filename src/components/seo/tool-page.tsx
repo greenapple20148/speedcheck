@@ -3,12 +3,13 @@ import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { FaqSection, type FaqItem } from "@/components/seo/faq-section";
 import { JsonLd } from "@/components/seo/json-ld";
 import { AdSlot } from "@/components/ads/ad-slot";
+import { PageHeader } from "@/components/ui/page-header";
+import { RelatedActions } from "@/components/ui/related-actions";
 import {
   faqPageJsonLd,
   webApplicationJsonLd,
 } from "@/lib/seo/structured-data";
 import type { TestMode } from "@/types/speedtest";
-import Link from "next/link";
 
 interface ToolPageProps {
   title: string;
@@ -41,17 +42,15 @@ export function ToolPage({
     <div className="mx-auto max-w-6xl px-4 py-10">
       <JsonLd data={structured} />
       <Breadcrumbs items={[{ label: title }]} />
-      <header className="mb-8 max-w-3xl">
-        <h1 className="heading-1 text-foreground">{title}</h1>
-        <p className="mt-3 text-muted-foreground">{intro}</p>
+      <PageHeader title={title} description={intro}>
         {bullets.length > 0 && (
-          <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+          <ul className="mt-4 list-disc space-y-1 pl-5 text-left text-sm text-muted-foreground">
             {bullets.map((b) => (
               <li key={b}>{b}</li>
             ))}
           </ul>
         )}
-      </header>
+      </PageHeader>
       <SpeedTestWidget defaultMode={defaultMode} />
       <AdSlot className="max-w-3xl" format="horizontal" />
       {faqs.length > 0 && (
@@ -59,20 +58,7 @@ export function ToolPage({
           <FaqSection items={faqs} />
         </div>
       )}
-      {related.length > 0 && (
-        <nav className="mt-12" aria-label="Related pages">
-          <h2 className="mb-3 font-heading text-lg font-semibold">Related</h2>
-          <ul className="flex flex-wrap gap-3">
-            {related.map((r) => (
-              <li key={r.href}>
-                <Link href={r.href} className="text-sm text-primary hover:underline">
-                  {r.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
+      <RelatedActions items={related} />
     </div>
   );
 }

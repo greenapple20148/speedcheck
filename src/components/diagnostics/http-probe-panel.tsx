@@ -7,6 +7,7 @@ import { REQUEST_LOSS_LABEL } from "@/lib/network/packet-loss";
 import { summarizeStability } from "@/lib/network/stability";
 import { readPrefs, writePrefs } from "@/lib/speedtest/history-store";
 import { trackEvent } from "@/lib/analytics/events";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type ProbeMode = "ping" | "jitter" | "loss" | "stability";
 
@@ -122,7 +123,7 @@ export function HttpProbePanel({ mode }: { mode: ProbeMode }) {
   const max = spark.length ? Math.max(...spark) : 1;
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6" aria-label="HTTP latency probe">
+    <section className="rounded-[20px] border border-border bg-card p-4 shadow-soft sm:p-6" aria-label="HTTP latency probe">
       <p className="text-sm text-muted-foreground">
         Endpoint: {endpoint.label}. These are HTTP round trips, not ICMP ping.
       </p>
@@ -175,12 +176,20 @@ export function HttpProbePanel({ mode }: { mode: ProbeMode }) {
       <p className="sr-only" aria-live="polite">
         {running ? `Sample ${samples.length}` : samples.length ? "Test finished" : ""}
       </p>
-      <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label={mode === "loss" ? REQUEST_LOSS_LABEL : "Median RTT"} value={mode === "loss" ? (summary.failurePercent == null ? "—" : `${summary.failurePercent.toFixed(1)}%`) : formatMs(summary.medianMs)} />
-        <Stat label="p95 RTT" value={formatMs("p95Ms" in summary ? summary.p95Ms : null)} />
-        <Stat label="Jitter" value={formatMs(summary.jitterMs)} />
-        <Stat label="Failed requests" value={summary.failurePercent == null ? "—" : `${summary.failurePercent.toFixed(1)}%`} />
-      </dl>
+      {samples.length === 0 ? (
+        <EmptyState
+          className="mt-6"
+          title="No samples yet"
+          body="Start the test to measure HTTP round trips. This page does not fill in a result before a sample returns."
+        />
+      ) : (
+        <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label={mode === "loss" ? REQUEST_LOSS_LABEL : "Median RTT"} value={mode === "loss" ? (summary.failurePercent == null ? "—" : `${summary.failurePercent.toFixed(1)}%`) : formatMs(summary.medianMs)} />
+          <Stat label="p95 RTT" value={formatMs("p95Ms" in summary ? summary.p95Ms : null)} />
+          <Stat label="Jitter" value={formatMs(summary.jitterMs)} />
+          <Stat label="Failed requests" value={summary.failurePercent == null ? "—" : `${summary.failurePercent.toFixed(1)}%`} />
+        </dl>
+      )}
       {mode === "loss" && samples.length > 0 && (
         <p className="mt-3 text-sm text-muted-foreground">
           {REQUEST_LOSS_LABEL} counts HTTP requests that failed. It is not network packet loss.

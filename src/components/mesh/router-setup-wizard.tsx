@@ -49,8 +49,8 @@ import { readHistory } from "@/lib/speedtest/history-store";
 import { cn } from "@/lib/utils";
 
 const FOCUS =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00866A]";
-const PRIMARY = `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#00866A] px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#086B50]";
+const PRIMARY = `inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#086B50] px-4 text-sm font-semibold text-white hover:bg-[#064E3B] disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
 const SECONDARY = `inline-flex min-h-11 items-center justify-center rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-50 ${FOCUS}`;
 
 const TOOL_LINKS = [
@@ -257,7 +257,7 @@ function Stepper({ state, onStep }: { state: RouterWizardState; onStep: (step: n
           <li key={name} className="relative">
             {index < WIZARD_STEP_LABELS.length - 1 && (
               <span
-                className={cn("absolute left-[calc(50%+18px)] right-[calc(-50%+18px)] top-4 h-0.5", index < state.step ? "bg-[#00866A]" : "bg-border")}
+                className={cn("absolute left-[calc(50%+18px)] right-[calc(-50%+18px)] top-4 h-0.5", index < state.step ? "bg-[#086B50]" : "bg-border")}
                 aria-hidden="true"
               />
             )}
@@ -273,7 +273,7 @@ function Stepper({ state, onStep }: { state: RouterWizardState; onStep: (step: n
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border text-sm font-semibold",
                   completed && "border-[#16A34A] bg-[#F0FDF4] text-[#16A34A]",
-                  current && "border-[#00866A] bg-[#00866A] text-white",
+                  current && "border-[#086B50] bg-[#086B50] text-white",
                   !completed && !current && "border-border bg-card text-muted-foreground",
                 )}
                 aria-hidden="true"
@@ -331,7 +331,7 @@ function DeviceStep({
                   className={cn(
                     "flex min-h-[4.25rem] w-full flex-col items-center justify-center gap-1 rounded-xl border bg-card px-2 py-2 text-center",
                     FOCUS,
-                    pressed ? "border-[#00866A] ring-1 ring-[#00866A]" : "border-border",
+                    pressed ? "border-[#086B50] ring-1 ring-[#00866A]" : "border-border",
                   )}
                   onClick={() => onManufacturer(item.id)}
                 >
@@ -373,7 +373,7 @@ function DeviceStep({
                       className={cn(
                         "flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border px-3 text-left text-sm",
                         FOCUS,
-                        pressed ? "border-[#00866A] bg-[#F0FDF4] text-[#0F172A]" : "border-border bg-card",
+                        pressed ? "border-[#086B50] bg-[#F0FDF4] text-[#0F172A]" : "border-border bg-card",
                       )}
                       onClick={() => onModel(model.id)}
                     >
@@ -485,7 +485,7 @@ function ConnectStep({
         <ol className="space-y-2">
           {cards.map((step, index) => (
             <li key={step} className="flex gap-3 rounded-xl border border-border bg-card p-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#00866A] text-xs font-semibold text-white" aria-hidden="true">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#086B50] text-xs font-semibold text-white" aria-hidden="true">
                 {index + 1}
               </span>
               <p className="text-sm leading-5">{step}</p>
@@ -542,7 +542,7 @@ function ConnectStep({
                     key={guide.id}
                     type="button"
                     aria-pressed={state.selectedOs === guide.id}
-                    className={cn(SECONDARY, "min-h-9 px-3 text-xs", state.selectedOs === guide.id && "border-[#00866A]")}
+                    className={cn(SECONDARY, "min-h-9 px-3 text-xs", state.selectedOs === guide.id && "border-[#086B50]")}
                     onClick={() => onOs(guide.id)}
                   >
                     {guide.title}
@@ -628,7 +628,7 @@ function ConfigureStep({
                   <span className="block text-sm font-semibold">{TASK_CATEGORY_LABELS[category]}</span>
                   <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-muted">
                     <span
-                      className="block h-full rounded-full bg-[#00866A]"
+                      className="block h-full rounded-full bg-[#086B50]"
                       style={{ width: items.length ? `${Math.round((done / items.length) * 100)}%` : "0%" }}
                     />
                   </span>
@@ -685,7 +685,7 @@ function IspOption({
 function TaskRow({ task, checked, onToggle }: { task: WizardTask; checked: boolean; onToggle: (id: string) => void }) {
   const inputId = `task-${task.id}`;
   return (
-    <div className={cn("rounded-xl border px-3 py-2", checked ? "border-[#00866A]/50 bg-[#F0FDF4] text-[#0F172A]" : "border-border")}>
+    <div className={cn("rounded-xl border px-3 py-2", checked ? "border-[#086B50]/50 bg-[#F0FDF4] text-[#0F172A]" : "border-border")}>
       <div className="flex items-start gap-2">
         <input id={inputId} type="checkbox" className="mt-1" checked={checked} onChange={() => onToggle(task.id)} />
         <div className="min-w-0 flex-1">

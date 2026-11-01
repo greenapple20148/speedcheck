@@ -45,8 +45,8 @@ export default async function MeshGuidePage({ params }: { params: Promise<{ slug
     >
       {guide.sections.map((section) => (
         <section key={section.heading} className="mb-6">
-          <h2 className="text-lg font-semibold">{section.heading}</h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{section.body}</p>
+          <h2 className="text-xl font-semibold text-foreground">{section.heading}</h2>
+          <p className="mt-2 max-w-3xl text-base leading-7 text-muted-foreground">{section.body}</p>
         </section>
       ))}
       <p className="text-sm text-muted-foreground">Last reviewed {guide.reviewed}.</p>

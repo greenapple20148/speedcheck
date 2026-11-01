@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getResult } from "@/lib/db/store";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { ShareControls } from "@/components/speedtest/share-controls";
+import { MetricTile } from "@/components/ui/metric-tile";
 import { formatMbps, formatMs } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -55,13 +56,8 @@ export default async function ResultPage({
           { label: "Upload", value: `${formatMbps(result.uploadMbps)} Mbps` },
           { label: "Ping", value: `${formatMs(result.pingMs)} ms` },
           { label: "Jitter", value: `${formatMs(result.jitterMs)} ms` },
-        ].map((m) => (
-          <div key={m.label} className="rounded-2xl border border-border bg-card p-4">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {m.label}
-            </div>
-            <div className="mt-1 font-heading text-2xl font-bold">{m.value}</div>
-          </div>
+        ].map((metric) => (
+          <MetricTile key={metric.label} label={metric.label} value={metric.value} />
         ))}
       </div>
       {result.isp && (

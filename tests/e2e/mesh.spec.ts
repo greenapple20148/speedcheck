@@ -13,8 +13,30 @@ test.describe("mesh wifi", () => {
 
   test("node calculator shows a starting count", async ({ page }) => {
     await page.goto("/mesh-wifi/node-calculator");
+    await expect(page.getByRole("heading", { level: 1, name: "How many mesh nodes do I need?" })).toBeVisible();
     await expect(page.getByText("A mesh kit may be unnecessary")).toBeVisible();
-    await expect(page.getByText("Suggested starting count")).toBeVisible();
+    await expect(page.getByText("Recommended starting count")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open room tests" })).toHaveAttribute("href", "/mesh-wifi/dead-zone-test");
+    await expect(page.getByRole("link", { name: "Learn more about Mesh Wi-Fi" })).toHaveAttribute("href", "/mesh-wifi");
+
+    await page.getByLabel("Floors", { exact: true }).selectOption("2");
+    await page.getByLabel(/Home size/).fill("2400");
+    await expect(page.getByText("A mesh kit may be unnecessary")).toHaveCount(0);
+    await page.getByRole("checkbox", { name: /Ethernet is available/ }).check();
+    await expect(page.getByText(/Ethernet between nodes/)).toBeVisible();
+
+    await page.getByLabel(/Home size/).fill("");
+    await expect(page.getByText("Enter a home size.")).toBeVisible();
+    await expect(page.getByText("Recommended starting count")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Reset to defaults" }).click();
+    await expect(page.getByLabel(/Home size/)).toHaveValue("1200");
+    await expect(page.getByLabel("Floors", { exact: true })).toHaveValue("1");
+    await expect(page.getByText("A mesh kit may be unnecessary")).toBeVisible();
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
   });
 
   test("planner adds a node", async ({ page }) => {

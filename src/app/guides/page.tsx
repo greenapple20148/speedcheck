@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { PageHeader } from "@/components/ui/page-header";
 import { GUIDES } from "@/content/guides";
 import { buildMetadata } from "@/lib/seo/metadata";
 
@@ -18,28 +19,28 @@ export const metadata: Metadata = buildMetadata({
 
 export default function GuidesIndexPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
       <Breadcrumbs items={[{ label: "Guides" }]} />
-      <h1 className="text-3xl font-semibold tracking-tight text-foreground">Guides</h1>
-      <p className="mt-3 text-muted-foreground">
-        Short explanations with a test to run next. Unpublished topics stay in the editorial backlog instead of going live as thin pages.
-      </p>
-      <ul className="mt-8 space-y-4">
+      <PageHeader
+        title="Guides"
+        description="Short explanations with a test to run next. Unpublished topics stay in the editorial backlog instead of going live as thin pages."
+      />
+      <ul className="grid gap-3">
         {existing.map((guide) => (
-          <li key={guide.href} className="rounded-xl border border-border bg-card p-4">
-            <Link href={guide.href} className="text-lg font-semibold text-foreground hover:text-primary">
-              {guide.title}
+          <li key={guide.href}>
+            <Link href={guide.href} className="block rounded-[20px] border border-border bg-card p-4 hover:border-[var(--accent-text)]">
+              <span className="text-lg font-semibold text-foreground">{guide.title}</span>
+              <span className="mt-1 block text-sm leading-6 text-muted-foreground">{guide.description}</span>
             </Link>
-            <p className="mt-1 text-sm text-muted-foreground">{guide.description}</p>
           </li>
         ))}
         {GUIDES.map((guide) => (
-          <li key={guide.slug} className="rounded-xl border border-border bg-card p-4">
-            <Link href={`/guides/${guide.slug}`} className="text-lg font-semibold text-foreground hover:text-primary">
-              {guide.title}
+          <li key={guide.slug}>
+            <Link href={`/guides/${guide.slug}`} className="block rounded-[20px] border border-border bg-card p-4 hover:border-[var(--accent-text)]">
+              <span className="text-lg font-semibold text-foreground">{guide.title}</span>
+              <span className="mt-1 block text-sm leading-6 text-muted-foreground">{guide.description}</span>
+              <span className="mt-2 block text-xs text-muted-foreground">Reviewed {guide.reviewed}</span>
             </Link>
-            <p className="mt-1 text-sm text-muted-foreground">{guide.description}</p>
-            <p className="mt-2 text-xs text-muted-foreground">Reviewed {guide.reviewed}</p>
           </li>
         ))}
       </ul>

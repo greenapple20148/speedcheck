@@ -51,7 +51,7 @@ const columns = [
 export function SiteFooter() {
   return (
     <footer className="mt-16 border-t border-border bg-card">
-      <div className="mx-auto grid max-w-[960px] gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-5">
         <div>
           <div className="font-heading text-lg font-semibold text-foreground">MySpeedGauge</div>
           <p className="mt-2 text-sm text-muted-foreground">

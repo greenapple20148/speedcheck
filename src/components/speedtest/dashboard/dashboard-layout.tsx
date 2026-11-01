@@ -157,8 +157,8 @@ function SemiGauge({
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="#14B8A6" />
-            <stop offset="100%" stopColor="#4F7CF3" />
+            <stop offset="0%" stopColor="#086B50" />
+            <stop offset="100%" stopColor="#16A34A" />
           </linearGradient>
         </defs>
         <path
@@ -263,7 +263,7 @@ function MetricCard({
     <div
       className={cn(
         "min-w-0 rounded-2xl border bg-[var(--sd-card)] px-3 py-2.5 shadow-sm",
-        active ? "border-[#14B8A6]" : "border-[var(--sd-border)]",
+        active ? "border-[var(--sd-primary)]" : "border-[var(--sd-border)]",
       )}
     >
       <div className="flex items-center gap-1.5 text-[var(--sd-muted)]">
@@ -285,8 +285,8 @@ function MetricCard({
 }
 
 function statusClass(status: StageStatus, active: boolean): string {
-  if (active || status === "active") return "border-transparent bg-[#14B8A6] text-white";
-  if (status === "completed") return "border-[#14B8A6]/40 text-[#00866A]";
+  if (active || status === "active") return "border-transparent bg-[var(--sd-primary)] text-white";
+  if (status === "completed") return "border-[var(--accent-text)]/40 text-[var(--accent-text)]";
   if (status === "failed") return "border-red-300 text-red-700";
   return "border-[var(--sd-border)] text-[var(--sd-muted)]";
 }
@@ -348,7 +348,7 @@ export function SpeedDashboardLayout({
   const isp = network?.isp ?? network?.org ?? null;
 
   return (
-    <div className="speed-dashboard rounded-2xl border border-[var(--sd-border)] bg-[var(--sd-bg)] p-3 shadow-sm sm:p-4">
+    <div className="speed-dashboard rounded-[20px] border border-[var(--sd-border)] bg-[var(--sd-bg)] p-3 shadow-sm sm:p-4">
       <div className="grid items-start gap-3 min-[1100px]:grid-cols-[minmax(0,42%)_minmax(0,58%)] min-[1100px]:gap-5">
         <div className="min-w-0 min-[1100px]:col-start-1 min-[1100px]:row-start-1">
           <SemiGauge runId={view.runId} mbps={view.currentMbps} phase={phase} />
@@ -393,7 +393,7 @@ export function SpeedDashboardLayout({
                 aria-label={phase === "upload" ? "Upload progress" : "Download progress"}
               >
                 <div
-                  className="h-full rounded-full bg-[#14B8A6] motion-safe:transition-[width] motion-safe:duration-300"
+                  className="h-full rounded-full bg-[var(--sd-primary)] motion-safe:transition-[width] motion-safe:duration-300"
                   style={{ width: `${Math.round(view.phaseProgress * 100)}%` }}
                 />
               </div>
@@ -416,7 +416,7 @@ export function SpeedDashboardLayout({
             active={phase === "download"}
             icon={<Download className="h-3.5 w-3.5" aria-hidden />}
             spark={downloadSamples}
-            sparkColor="#14B8A6"
+            sparkColor="#086B50"
           />
           <MetricCard
             label="Upload"

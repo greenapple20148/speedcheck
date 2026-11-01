@@ -49,11 +49,11 @@ export function DiagnosticsToolGrid() {
           <div
             className={
               t.enabled
-                ? "flex h-full flex-col rounded-2xl border border-[var(--card-border)] bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
-                : "flex h-full flex-col rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--surface-subtle)] p-5 opacity-80"
+                ? "flex h-full flex-col rounded-[20px] border border-[var(--card-border)] bg-card p-5 shadow-sm transition-shadow hover:border-[var(--accent-text)]"
+                : "flex h-full flex-col rounded-[20px] border border-dashed border-[var(--card-border)] bg-[var(--surface-subtle)] p-5 opacity-80"
             }
           >
-            <Icon className="h-6 w-6 text-primary" aria-hidden />
+            <Icon className="h-6 w-6 text-[var(--accent-text)]" aria-hidden />
             <h3 className="mt-3 text-[15px] font-semibold text-foreground">
               {t.title}
             </h3>
