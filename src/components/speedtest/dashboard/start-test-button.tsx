@@ -22,7 +22,6 @@ function idleLabel(phase: TestPhase): string {
 export function StartTestButton({
   phase,
   running,
-  statusLine,
   disabled = false,
   onStart,
   onCancel,
@@ -30,12 +29,11 @@ export function StartTestButton({
   if (running) {
     return (
       <div className="flex flex-col items-center gap-2">
-        <p className="text-center text-sm font-medium text-muted-foreground">{statusLine}</p>
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="h-11 min-h-11 w-full min-w-[180px] rounded-lg border-border bg-transparent px-6 text-sm font-semibold text-foreground shadow-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+          className="h-11 min-h-11 w-full rounded-xl border-[var(--sd-border,var(--border))] bg-transparent px-6 text-sm font-semibold text-[var(--sd-text,var(--foreground))] shadow-none hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-[#00866A] focus-visible:ring-offset-2"
         >
           <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
           Stop
@@ -49,7 +47,7 @@ export function StartTestButton({
       type="button"
       onClick={onStart}
       disabled={disabled}
-      className="h-11 min-h-11 w-full min-w-[180px] rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-none hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+      className="h-11 min-h-11 w-full rounded-xl bg-[#00866A] px-6 text-sm font-semibold text-white shadow-none hover:bg-[#0a7560] focus-visible:ring-2 focus-visible:ring-[#00866A] focus-visible:ring-offset-2"
     >
       {idleLabel(phase)}
     </Button>

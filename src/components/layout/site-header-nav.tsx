@@ -3,305 +3,456 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronDown, History, Menu, X } from "lucide-react";
-import { PRIMARY_LINKS, TOOL_COLUMNS, pathMatches } from "@/content/navigation";
+import * as Dialog from "@radix-ui/react-dialog";
+import { ChevronDown, Gauge, History, Menu, X } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import {
+  HISTORY_HREF,
+  NAV_ITEMS,
+  SPEED_TEST_HREF,
+  isCurrentPage,
+  isNavItemActive,
+  showTestSpeedCta,
+  type NavItem,
+  type NavLinkItem,
+} from "@/content/navigation";
 import { cn } from "@/lib/utils";
 
-const linkClass = (active: boolean) =>
-  cn(
-    "rounded-md px-2.5 py-1.5 text-[13px] font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-    active ? "text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+const DESKTOP_NAV_QUERY = "(min-width: 1280px)";
+const CLOSE_DELAY_MS = 180;
+const CLICK_GUARD_MS = 400;
+
+const triggerClass =
+  "site-nav-link inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1.5 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+function TestSpeedLink({ className }: { className?: string }) {
+  return (
+    <Link
+      href={SPEED_TEST_HREF}
+      className={cn(
+        "site-test-speed inline-flex h-10 items-center justify-center gap-1.5 rounded-full px-3.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        className,
+      )}
+    >
+      <Gauge className="h-4 w-4" aria-hidden />
+      Test Speed
+    </Link>
   );
+}
+
+function HistoryLink({ labeled = false }: { labeled?: boolean }) {
+  const pathname = usePathname() ?? "/";
+  const current = isCurrentPage(pathname, HISTORY_HREF);
+  if (labeled) {
+    return (
+      <Link
+        href={HISTORY_HREF}
+        aria-current={current ? "page" : undefined}
+        className="flex min-h-11 items-center gap-2 rounded-md px-2 text-base font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <History className="h-4 w-4" aria-hidden />
+        Test History
+      </Link>
+    );
+  }
+  return (
+    <Link
+      href={HISTORY_HREF}
+      aria-label="Test History"
+      title="Test History"
+      aria-current={current ? "page" : undefined}
+      data-active={current ? "true" : undefined}
+      className="site-nav-link inline-flex h-10 w-10 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <History className="h-4 w-4" aria-hidden />
+    </Link>
+  );
+}
+
+function MenuLink({
+  link,
+  pathname,
+  onNavigate,
+}: {
+  link: NavLinkItem;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const current = isCurrentPage(pathname, link.href);
+  const Icon = link.icon;
+  return (
+    <Link
+      href={link.href}
+      aria-current={current ? "page" : undefined}
+      onClick={onNavigate}
+      className={cn(
+        "flex gap-2.5 rounded-[10px] px-2 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        current ? "bg-[rgba(0,134,106,0.1)]" : "hover:bg-muted",
+      )}
+    >
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+      <span className="min-w-0">
+        <span
+          className={cn(
+            "block text-sm text-foreground",
+            current && "font-semibold text-[var(--accent-text)] underline decoration-2 underline-offset-2",
+          )}
+        >
+          {link.label}
+        </span>
+        <span className="mt-0.5 block text-xs leading-snug text-muted-foreground" aria-hidden>
+          {link.description}
+        </span>
+      </span>
+    </Link>
+  );
+}
 
 export function SiteHeaderNav() {
   const pathname = usePathname() ?? "/";
-  const [toolsOpen, setToolsOpen] = useState(false);
+  const baseId = useId();
+  const [openId, setOpenId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const toolsId = useId();
-  const mobileId = useId();
-  const toolsRef = useRef<HTMLDivElement>(null);
-  const toolsButtonRef = useRef<HTMLButtonElement>(null);
-  const toolsPanelRef = useRef<HTMLDivElement>(null);
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const mobileRef = useRef<HTMLDivElement>(null);
+  const [section, setSection] = useState("");
+  const roots = useRef(new Map<string, HTMLElement>());
   const closeTimer = useRef<number | null>(null);
   const openedAt = useRef(0);
-
-  const toolActive = TOOL_COLUMNS.some((column) =>
-    column.links.some((link) => pathMatches(pathname, [link.href])),
-  );
+  const showCta = showTestSpeedCta(pathname);
 
   const clearClose = () => {
     if (closeTimer.current != null) window.clearTimeout(closeTimer.current);
     closeTimer.current = null;
   };
 
+  const reveal = (id: string) => {
+    clearClose();
+    openedAt.current = Date.now();
+    setOpenId(id);
+  };
+
   const scheduleClose = () => {
     clearClose();
     closeTimer.current = window.setTimeout(() => {
-      const root = toolsRef.current;
-      if (root?.contains(document.activeElement)) return;
-      setToolsOpen(false);
-    }, 180);
+      const active = document.activeElement;
+      const panel = document.querySelector<HTMLElement>("[data-nav-panel='open']");
+      if (panel?.contains(active)) return;
+      setOpenId(null);
+    }, CLOSE_DELAY_MS);
+  };
+
+  const toggle = (id: string) => {
+    setOpenId((current) => {
+      if (current !== id) {
+        openedAt.current = Date.now();
+        return id;
+      }
+      if (Date.now() - openedAt.current < CLICK_GUARD_MS) return current;
+      return null;
+    });
+  };
+
+  const focusFirstLink = (id: string) => {
+    window.requestAnimationFrame(() => {
+      document.getElementById(panelId(baseId, id))?.querySelector("a")?.focus();
+    });
   };
 
   useEffect(() => {
-    setToolsOpen(false);
+    setOpenId(null);
     setMobileOpen(false);
+    setSection("");
   }, [pathname]);
 
   useEffect(() => {
-    if (!toolsOpen && !mobileOpen) return;
+    return () => {
+      if (closeTimer.current != null) window.clearTimeout(closeTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!openId) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (toolsOpen) {
-        setToolsOpen(false);
-        toolsButtonRef.current?.focus();
-      }
-      if (mobileOpen) {
-        setMobileOpen(false);
-        menuButtonRef.current?.focus();
-      }
+      const id = openId;
+      setOpenId(null);
+      document.getElementById(triggerId(baseId, id))?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [toolsOpen, mobileOpen]);
+  }, [openId, baseId]);
 
   useEffect(() => {
-    if (!toolsOpen) return;
+    if (!openId) return;
     const onPointer = (event: PointerEvent) => {
-      if (!toolsRef.current?.contains(event.target as Node)) setToolsOpen(false);
+      const root = roots.current.get(openId);
+      if (!root?.contains(event.target as Node)) setOpenId(null);
     };
     document.addEventListener("pointerdown", onPointer);
     return () => document.removeEventListener("pointerdown", onPointer);
-  }, [toolsOpen]);
+  }, [openId]);
 
   useEffect(() => {
-    if (!mobileOpen) return;
-    const root = mobileRef.current;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const items = root?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
-    items?.[0]?.focus();
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Tab" || !root) return;
-      const focusable = [...root.querySelectorAll<HTMLElement>("a[href], button:not([disabled])")];
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
+    const media = window.matchMedia(DESKTOP_NAV_QUERY);
+    const onChange = () => {
+      setOpenId(null);
+      if (media.matches) setMobileOpen(false);
     };
-    root?.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      root?.removeEventListener("keydown", onKey);
-    };
-  }, [mobileOpen]);
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
 
   return (
     <>
-      <nav aria-label="Primary" className="hidden items-center gap-0.5 lg:flex">
-        <Link
-          href="/speed-test"
-          aria-current={pathMatches(pathname, PRIMARY_LINKS[0].match) ? "page" : undefined}
-          className={linkClass(pathMatches(pathname, PRIMARY_LINKS[0].match))}
-        >
-          Speed Test
-        </Link>
-        <div
-          ref={toolsRef}
-          className="relative"
-          onMouseEnter={() => {
-            clearClose();
-            openedAt.current = Date.now();
-            setToolsOpen(true);
-          }}
-          onMouseLeave={scheduleClose}
-        >
-          <button
-            ref={toolsButtonRef}
-            type="button"
-            aria-expanded={toolsOpen}
-            aria-controls={toolsId}
-            aria-haspopup="true"
-            className={cn(linkClass(toolActive), "inline-flex items-center gap-1")}
-            onClick={() => {
-              setToolsOpen((open) => {
-                if (!open) return true;
-                if (Date.now() - openedAt.current < 400) return true;
-                return false;
-              });
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== "ArrowDown") return;
-              event.preventDefault();
-              setToolsOpen(true);
-              window.requestAnimationFrame(() => {
-                toolsPanelRef.current?.querySelector("a")?.focus();
-              });
-            }}
-          >
-            Tools
-            <ChevronDown className={cn("h-3.5 w-3.5", toolsOpen && "rotate-180")} aria-hidden />
-          </button>
-          {toolsOpen && (
-            <>
-            <div className="absolute left-0 right-0 top-full z-50 h-4" aria-hidden />
+      <nav aria-label="Primary" className="hidden min-w-0 items-center gap-0.5 xl:flex">
+        {NAV_ITEMS.map((item) => {
+          const active = isNavItemActive(pathname, item);
+          const menuId = panelId(baseId, item.id);
+          const buttonId = triggerId(baseId, item.id);
+          const open = openId === item.id;
+          if (!item.groups?.length) {
+            return (
+              <Link
+                key={item.id}
+                href={item.href ?? SPEED_TEST_HREF}
+                aria-current={item.href && isCurrentPage(pathname, item.href, item.activeHrefs ?? []) ? "page" : undefined}
+                data-active={active ? "true" : undefined}
+                className={triggerClass}
+              >
+                {item.label}
+              </Link>
+            );
+          }
+
+          return (
             <div
-              className="fixed left-1/2 top-16 z-50 w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 pt-2"
-              onMouseEnter={clearClose}
+              key={item.id}
+              className="relative"
+              ref={(node) => {
+                if (node) roots.current.set(item.id, node);
+                else roots.current.delete(item.id);
+              }}
+              onMouseEnter={() => reveal(item.id)}
               onMouseLeave={scheduleClose}
             >
+              {item.linkTrigger && item.href ? (
+                <span className="inline-flex items-center">
+                  <Link
+                    href={item.href}
+                    aria-current={isCurrentPage(pathname, item.href) ? "page" : undefined}
+                    data-active={active ? "true" : undefined}
+                    className={triggerClass}
+                  >
+                    {item.label}
+                  </Link>
+                  <button
+                    id={buttonId}
+                    type="button"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={`${item.label} menu`}
+                    aria-expanded={open}
+                    aria-controls={menuId}
+                    aria-haspopup="true"
+                    onClick={() => toggle(item.id)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "ArrowDown") return;
+                      event.preventDefault();
+                      reveal(item.id);
+                      focusFirstLink(item.id);
+                    }}
+                  >
+                    <ChevronDown className={cn("h-3.5 w-3.5 motion-safe:transition-transform", open && "rotate-180")} aria-hidden />
+                  </button>
+                </span>
+              ) : (
+                <button
+                  id={buttonId}
+                  type="button"
+                  className={triggerClass}
+                  data-active={active ? "true" : undefined}
+                  aria-expanded={open}
+                  aria-controls={menuId}
+                  aria-haspopup="true"
+                  onClick={() => toggle(item.id)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowDown") return;
+                    event.preventDefault();
+                    reveal(item.id);
+                    focusFirstLink(item.id);
+                  }}
+                >
+                  {item.label}
+                  <ChevronDown className={cn("h-3.5 w-3.5 motion-safe:transition-transform", open && "rotate-180")} aria-hidden />
+                </button>
+              )}
+              <div className="absolute inset-x-0 top-full z-50 h-3" aria-hidden />
               <div
-                ref={toolsPanelRef}
-                id={toolsId}
+                id={menuId}
                 role="region"
-                aria-label="Tools"
-                className="rounded-xl border border-border bg-card p-3 shadow-card"
+                aria-label={item.label}
+                hidden={open ? undefined : true}
+                data-nav-panel={open ? "open" : "closed"}
+                className={cn(
+                  "fixed left-1/2 z-50 max-h-[min(70vh,calc(100dvh-var(--site-header-offset)-1rem))] -translate-x-1/2 overflow-y-auto overscroll-contain pt-3",
+                  (item.groups?.length ?? 0) > 1
+                    ? "w-[min(760px,calc(100vw-2rem))]"
+                    : "w-[min(420px,calc(100vw-2rem))]",
+                )}
+                style={{ top: "calc(var(--site-header-offset) - 0.75rem)" }}
+                onMouseEnter={clearClose}
               >
-                <div className="grid grid-cols-3 gap-3">
-                  {TOOL_COLUMNS.map((column) => {
-                    const Icon = column.icon;
-                    return (
-                      <div key={column.id}>
-                        <p className="flex items-center gap-1.5 px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                          <Icon className="h-3.5 w-3.5 text-primary" aria-hidden />
-                          {column.label}
-                        </p>
-                        <ul className="mt-1">
-                          {column.links.map((link) => (
-                            <li key={link.href}>
-                              <Link
-                                href={link.href}
-                                aria-current={pathMatches(pathname, [link.href]) ? "page" : undefined}
-                                className="block rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                              >
-                                {link.label}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-                </div>
+                <NavPanel item={item} pathname={pathname} onNavigate={() => setOpenId(null)} />
               </div>
             </div>
-            </>
-          )}
-        </div>
-        {PRIMARY_LINKS.slice(1).map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            aria-current={pathMatches(pathname, link.match) ? "page" : undefined}
-            className={linkClass(pathMatches(pathname, link.match))}
-          >
-            {link.label}
-          </Link>
-        ))}
-        <Link
-          href="/history"
-          aria-label="History"
-          aria-current={pathMatches(pathname, ["/history"]) ? "page" : undefined}
-          className={cn(
-            "ml-1 inline-flex h-9 w-9 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            pathMatches(pathname, ["/history"])
-              ? "text-primary"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-        >
-          <History className="h-4 w-4" aria-hidden />
-        </Link>
+          );
+        })}
       </nav>
 
-      <button
-        ref={menuButtonRef}
-        type="button"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border text-foreground lg:hidden"
-        aria-expanded={mobileOpen}
-        aria-controls={mobileId}
-        onClick={() => setMobileOpen((open) => !open)}
-      >
-        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        <span className="sr-only">{mobileOpen ? "Close menu" : "Open menu"}</span>
-      </button>
-
-      {mobileOpen && (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-40 bg-foreground/20 lg:hidden"
-            aria-label="Close menu"
-            onClick={() => setMobileOpen(false)}
-          />
-          <div
-            ref={mobileRef}
-            id={mobileId}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Menu"
-            className="absolute inset-x-0 top-16 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-border bg-card px-3 py-3 shadow-card lg:hidden"
-          >
-            <ul className="space-y-0.5">
-              {PRIMARY_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="block min-h-11 rounded-md px-2 py-2.5 text-base font-medium">
-                    {link.label}
+      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        {showCta ? <TestSpeedLink className="hidden xl:inline-flex" /> : null}
+        <span className="hidden xl:inline-flex">
+          <HistoryLink />
+        </span>
+        <ThemeToggle />
+        <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
+          <Dialog.Trigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-border text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring xl:hidden"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileOpen ? <X className="h-5 w-5" aria-hidden /> : <Menu className="h-5 w-5" aria-hidden />}
+            </button>
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay
+              className="fixed inset-x-0 bottom-0 z-40 bg-[#0F172A]/40 xl:hidden"
+              style={{ top: "var(--site-header-offset)" }}
+            />
+            <Dialog.Content
+              id={`${baseId}-mobile`}
+              aria-describedby={`${baseId}-mobile-description`}
+              className="site-nav-drawer fixed inset-x-0 z-40 max-h-[calc(100dvh-var(--site-header-offset))] overflow-y-auto border-b border-border bg-card px-3 py-3 shadow-card outline-none xl:hidden"
+              style={{
+                top: "var(--site-header-offset)",
+                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+              }}
+            >
+              <Dialog.Title className="sr-only">Menu</Dialog.Title>
+              <Dialog.Description id={`${baseId}-mobile-description`} className="sr-only">
+                Primary pages and tools.
+              </Dialog.Description>
+              {showCta ? <TestSpeedLink className="mb-2 h-11 w-full" /> : null}
+              <ul className="space-y-0.5">
+                <li>
+                  <Link
+                    href={SPEED_TEST_HREF}
+                    aria-current={isCurrentPage(pathname, SPEED_TEST_HREF, NAV_ITEMS[0]?.activeHrefs ?? []) ? "page" : undefined}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex min-h-11 items-center rounded-md px-2 text-base font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    Speed Test
                   </Link>
                 </li>
-              ))}
-              <li>
-                <Link href="/history" className="block min-h-11 rounded-md px-2 py-2.5 text-base font-medium">
-                  History
-                </Link>
-              </li>
-            </ul>
-            <div className="mt-2 space-y-1 border-t border-border pt-2">
-              {TOOL_COLUMNS.map((column) => {
-                const open = openGroups[column.id] === true;
-                const panelId = `${mobileId}-${column.id}`;
-                const Icon = column.icon;
-                return (
-                  <div key={column.id}>
-                    <button
-                      type="button"
-                      aria-expanded={open}
-                      aria-controls={panelId}
-                      className="flex min-h-11 w-full items-center justify-between rounded-md px-2 text-left text-sm font-semibold"
-                      onClick={() => setOpenGroups((current) => ({ ...current, [column.id]: !open }))}
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <Icon className="h-4 w-4 text-primary" aria-hidden />
-                        {column.label}
-                      </span>
-                      <ChevronDown className={cn("h-4 w-4", open && "rotate-180")} aria-hidden />
-                    </button>
-                    {open && (
-                      <ul id={panelId} className="pb-1">
-                        {column.links.map((link) => (
-                          <li key={link.href}>
-                            <Link href={link.href} className="block min-h-11 rounded-md px-8 py-2.5 text-sm">
-                              {link.label}
-                            </Link>
-                          </li>
+              </ul>
+              <Accordion type="single" collapsible value={section} onValueChange={setSection} className="mt-1 border-t border-border">
+                {NAV_ITEMS.filter((item) => item.groups?.length).map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <AccordionItem key={item.id} value={item.id} className="border-border">
+                      <AccordionTrigger className="min-h-11 py-2 text-base font-semibold hover:no-underline">
+                        <span className="inline-flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-primary" aria-hidden />
+                          {item.label}
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-2">
+                        {item.groups?.map((group) => (
+                          <div key={group.id}>
+                            {group.label ? (
+                              <p className="px-3 pt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {group.label}
+                              </p>
+                            ) : null}
+                            <ul>
+                              {group.links.map((link) => {
+                                const current = isCurrentPage(pathname, link.href);
+                                return (
+                                  <li key={link.href}>
+                                    <Link
+                                      href={link.href}
+                                      aria-current={current ? "page" : undefined}
+                                      onClick={() => setMobileOpen(false)}
+                                      className={cn(
+                                        "flex min-h-11 items-center rounded-md px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                        current ? "bg-[rgba(0,134,106,0.1)] font-semibold text-[var(--accent-text)] underline decoration-2 underline-offset-4" : "text-foreground",
+                                      )}
+                                    >
+                                      {link.label}
+                                    </Link>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
                         ))}
-                      </ul>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </>
-      )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+              <div className="mt-1 border-t border-border pt-1">
+                <HistoryLink labeled />
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </div>
     </>
   );
+}
+
+function NavPanel({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const wide = (item.groups?.length ?? 0) > 1;
+  return (
+    <div className="site-nav-panel p-3">
+      <div className={cn("grid gap-3", wide && "grid-cols-2")}>
+        {item.groups?.map((group) => (
+          <div key={group.id}>
+            {group.label ? (
+              <p className="px-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{group.label}</p>
+            ) : null}
+            <ul className={group.label ? "mt-1" : undefined}>
+              {group.links.map((link) => (
+                <li key={link.href}>
+                  <MenuLink link={link} pathname={pathname} onNavigate={onNavigate} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function panelId(baseId: string, id: string) {
+  return `${baseId}-panel-${id}`;
+}
+
+function triggerId(baseId: string, id: string) {
+  return `${baseId}-trigger-${id}`;
 }

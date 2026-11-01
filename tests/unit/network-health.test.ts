@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { compareSnapshots, noteError, percentChange } from "@/lib/network-health/compare";
+import { CHANGE_LABELS, compareSnapshots, noteError, percentChange } from "@/lib/network-health/compare";
+import { coverageOverview } from "@/lib/network-health/overview";
 import { buildHealthRecommendations } from "@/lib/network-health/recommendations";
+import { emptyPlan } from "@/lib/mesh/plan";
 import { snapshotFromHistory, snapshotFromRoom } from "@/lib/network-health/snapshot";
 import { readComparisons, saveComparison } from "@/lib/network-health/store";
 import type { StoredHistoryEntry } from "@/lib/speedtest/history-store";
@@ -91,10 +93,47 @@ describe("baseline comparisons", () => {
     expect(warnings).toContain("Ethernet");
   });
 
+  it("warns when the room, loaded latency, or week differ", () => {
+    expect(CHANGE_LABELS["ethernet-backhaul"]).toBe("Ethernet backhaul installation");
+    expect(CHANGE_LABELS.firmware).toBe("Router firmware update");
+    expect(CHANGE_LABELS.channel).toBe("Channel configuration change");
+    expect(CHANGE_LABELS["router-mode"]).toBe("Router mode change");
+    const before = snapshotFromRoom({
+      roomId: "a", roomLabel: "Office", downloadMbps: 10, uploadMbps: 1, pingMs: 10, jitterMs: 1,
+      testedAt: "2026-10-01T12:00:00.000Z", endpointName: "Edge", loadedLatencyMs: 40,
+    });
+    const after = snapshotFromRoom({
+      roomId: "b", roomLabel: "Kitchen", downloadMbps: 20, uploadMbps: 2, pingMs: 8, jitterMs: 1,
+      testedAt: "2026-11-01T12:00:00.000Z", endpointName: "Edge",
+    });
+    const warnings = compareSnapshots(before, after).warnings.join(" ");
+    expect(warnings).toContain("different rooms");
+    expect(warnings).toContain("Loaded latency was recorded on only one");
+    expect(warnings).toContain("more than a week apart");
+  });
+
   it("warns when a server name was not recorded", () => {
     const before = snapshotFromHistory(entry({ serverName: undefined }));
     const after = snapshotFromHistory(entry({ id: "h2" }));
     expect(compareSnapshots(before, after).warnings.join(" ")).toContain("did not record");
+  });
+});
+
+describe("network health overview", () => {
+  it("does not estimate coverage until a node is saved", () => {
+    expect(coverageOverview(null).status).toBe("unavailable");
+    expect(coverageOverview(emptyPlan()).weakPercent).toBeNull();
+  });
+
+  it("marks a placed node as an estimate rather than a measurement", () => {
+    const plan = emptyPlan();
+    const floor = plan.floors[0];
+    floor.rooms = [{ id: "room", name: "Office", x: 0, y: 0, w: 20, h: 16, material: "drywall", priority: false, problem: false }];
+    floor.nodes = [{ id: "node", name: "Primary", x: 4, y: 4, role: "primary" }];
+    const overview = coverageOverview(plan);
+    expect(overview.status).toBe("estimated");
+    expect(overview.weakPercent).toEqual(expect.any(Number));
+    expect(overview.floorName).toBe(floor.name);
   });
 });
 

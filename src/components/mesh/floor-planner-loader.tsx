@@ -6,7 +6,7 @@ const FloorPlanner = dynamic(
   () => import("@/components/mesh/floor-planner").then((mod) => mod.FloorPlanner),
   {
     ssr: false,
-    loading: () => <p className="text-sm text-muted-foreground">Loading the floor planner…</p>,
+    loading: () => <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading the floor planner…</div>,
   },
 );
 

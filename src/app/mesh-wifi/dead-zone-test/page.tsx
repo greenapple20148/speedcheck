@@ -18,7 +18,7 @@ export default function DeadZonePage() {
       path="/mesh-wifi/dead-zone-test"
       crumbs={meshCrumbs("Mesh Wi-Fi dead zones")}
       intro="Stand in the room, run the test, and the result is stored with that room on this device. The test does not start by itself."
-      methodology="Download, upload, latency, and jitter come from the existing measurement service. The page records the time and the endpoint name. It does not record RSSI or the mesh node name."
+      methodology="Download, upload, latency, jitter, and loaded latency when the standard test records it come from the existing measurement service. A room with several tests shows the median. The page records the time, the endpoint name, and the measurement provider. It does not record RSSI or the mesh node name."
       faqs={[
         { question: "Can a slow room mean the ISP is slow?", answer: "Yes. Compare the room with a test beside the primary node before you move hardware." },
       ]}

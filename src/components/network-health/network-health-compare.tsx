@@ -1,11 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { readHistory } from "@/lib/speedtest/history-store";
+import { summarizeRoom } from "@/lib/mesh/measurements";
 import { loadPlan } from "@/lib/mesh/store";
 import { CHANGE_LABELS, compareSnapshots, type ChangeKind } from "@/lib/network-health/compare";
-import { snapshotFromHistory, snapshotFromRoom, type HealthSnapshot } from "@/lib/network-health/snapshot";
+import { snapshotFromHistory, snapshotFromRoom, snapshotFromSpeedResult, type HealthSnapshot } from "@/lib/network-health/snapshot";
 import { exportComparison, readComparisons, saveComparison, type SavedComparison } from "@/lib/network-health/store";
+
+const SpeedTestDashboard = dynamic(
+  () => import("@/components/speedtest/dashboard/speed-test-dashboard").then((mod) => mod.SpeedTestDashboard),
+  { ssr: false, loading: () => <p className="text-sm text-muted-foreground">Loading the speed test…</p> },
+);
 
 const CHANGE_KINDS = Object.keys(CHANGE_LABELS) as ChangeKind[];
 
@@ -18,13 +25,14 @@ export function NetworkHealthCompare() {
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<SavedComparison | null>(null);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     try {
       const history = readHistory().map(snapshotFromHistory);
       const plan = loadPlan();
       const rooms = plan.floors.flatMap((floor) => floor.rooms.flatMap((room) => {
-        const measurement = plan.measurements.find((row) => row.roomId === room.id);
+        const measurement = summarizeRoom(plan.measurements, room.id);
         if (!measurement) return [];
         return [snapshotFromRoom({ ...measurement, roomLabel: `${floor.name} · ${room.name}` })];
       }));
@@ -73,13 +81,33 @@ export function NetworkHealthCompare() {
       <p className="text-sm text-muted-foreground">Comparisons stay in this browser. Leave out Wi-Fi passwords, account names, and addresses.</p>
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
       {snapshots.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No saved measurements yet. Run a speed test or a room test first. Nothing starts from this page.</p>
+        <p className="text-sm text-muted-foreground">No saved measurements yet. Run a test below, or use a room test you already saved. Nothing starts until you press Start.</p>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <SelectList label="Baseline" snapshots={snapshots} value={baselineId} onChange={setBaselineId} />
           <SelectList label="Follow-up" snapshots={snapshots} value={followId} onChange={setFollowId} />
         </div>
       )}
+      <div className="space-y-3">
+        <button type="button" className="min-h-11 rounded-xl border border-border px-4 text-sm font-medium" onClick={() => setTesting(true)}>
+          {baseline ? "Run follow-up test" : "Run a baseline test"}
+        </button>
+        {testing && (
+          <div className="rounded-2xl border border-border p-3">
+            <p className="mb-2 text-sm text-muted-foreground">Nothing runs until you press Start. The finished result is selected as the {baseline ? "follow-up" : "baseline"}. It is stored with a comparison only when you save.</p>
+            <SpeedTestDashboard
+              defaultMode="standard"
+              onComplete={(result) => {
+                const snapshot = snapshotFromSpeedResult(result);
+                setSnapshots((current) => [snapshot, ...current.filter((item) => item.id !== snapshot.id)]);
+                if (!baselineId) setBaselineId(snapshot.id);
+                else setFollowId(snapshot.id);
+                setTesting(false);
+              }}
+            />
+          </div>
+        )}
+      </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm">
           What changed

@@ -117,3 +117,20 @@ export const suitabilityLabel: Record<Suitability, string> = {
   poor: "Limited",
   unknown: "—",
 };
+
+export type QualityOutcome = "Looks good" | "May be limited" | "Needs attention";
+
+/** Coarser label for the homepage. Excellent and good share one outcome. */
+export function qualityOutcome(suitability: Suitability): QualityOutcome | null {
+  if (suitability === "excellent" || suitability === "good") return "Looks good";
+  if (suitability === "fair") return "May be limited";
+  if (suitability === "poor") return "Needs attention";
+  return null;
+}
+
+export const INSIGHT_DISPLAY_LABEL: Record<string, string> = {
+  browsing: "Web browsing",
+  streaming: "HD/4K streaming",
+  "video-calls": "Video calls",
+  gaming: "Online gaming",
+};

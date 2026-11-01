@@ -50,57 +50,62 @@ export default function HomePage() {
         }}
       />
 
-      <section className="mx-auto max-w-[960px] px-4 pb-0 pt-2 text-center">
-        <h1 className="mx-auto max-w-xl font-heading text-xl font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">
-          Test Your Internet. Understand Your Connection.
-        </h1>
-        <p className="mx-auto mt-1 max-w-md text-[13px] leading-snug text-muted-foreground">
-          Measure download, upload, latency, and jitter. Nothing runs until you start the test.
+      <section className="mx-auto max-w-[1280px] px-4 pb-1 pt-2 text-center">
+        <h2 className="font-heading text-lg font-semibold leading-tight tracking-tight text-foreground sm:text-xl">
+          Test Your Internet Speed
+        </h2>
+        <p className="mx-auto mt-1 max-w-xl text-[13px] leading-snug text-muted-foreground">
+          Measure your download speed, upload speed, and connection responsiveness in seconds.
         </p>
       </section>
 
       <div id="speed-test" className="pt-1">
-        <SpeedTestDashboard />
+        <SpeedTestDashboard showHistory />
       </div>
 
       <HomeToolCards />
 
-      <section className="mx-auto mt-8 w-full max-w-[960px] px-4" aria-labelledby="read-results">
-        <h2 id="read-results" className="text-lg font-semibold text-foreground">
-          How to read a result
-        </h2>
-        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-          {[
-            ["Download and upload", "Megabits per second from bytes actually transferred and the timed window."],
-            ["Idle ping", "Median HTTP round trip to the measurement endpoint. This is not ICMP."],
-            ["Jitter", "Average change between successive latency samples."],
-            ["Loaded latency", "Median HTTP round trip while a download or upload is in progress."],
-          ].map(([title, body]) => (
-            <li key={title} className="panel p-4 text-sm">
-              <p className="font-semibold text-foreground">{title}</p>
-              <p className="mt-1 text-muted-foreground">{body}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="mx-auto mt-8 w-full max-w-[960px] px-4">
-        <h2 className="text-lg font-semibold text-foreground">Checks worth trying first</h2>
-        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
-          <li>Pause cloud backups and downloads, then run the test again.</li>
-          <li>Repeat once on Ethernet if you can, and compare it with Wi-Fi.</li>
-          <li>If speed is fine but latency jumps under load, open the bufferbloat test.</li>
-          <li>Save the result before you change more than one thing.</li>
-        </ol>
-        <p className="mt-3 text-sm">
-          <Link href="/internet-troubleshooter" className="font-medium text-primary hover:underline">
-            Open the troubleshooter
-          </Link>{" "}
-          for a checklist tied to your symptoms.
+      <article className="mx-auto mt-8 w-full max-w-[1280px] px-4 text-sm leading-relaxed text-muted-foreground">
+        <h1 className="font-heading text-2xl font-semibold text-foreground">Free Internet Speed Test</h1>
+        <p className="mt-3">
+          A speed test measures the path between this browser and a measurement server. Nothing starts until you press the button. The numbers on the page come from that run.
         </p>
-      </section>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">How a speed test works</h2>
+        <p className="mt-2">
+          The test checks responsiveness first, then moves data down and up for a short time. Download and upload speeds are throughput: bytes transferred during the timed window, expressed in megabits per second. The page does not invent a result when a phase has not run.
+        </p>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">Download speed</h2>
+        <p className="mt-2">
+          Download is how fast data arrives. Streaming, software updates, and web pages depend on it. A single short test is one sample of the path, not a guarantee of the speed your plan advertises.
+        </p>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">Upload speed</h2>
+        <p className="mt-2">
+          Upload is how fast data leaves. Video calls, backups, and sending large files need it. Many home plans are asymmetric, so upload is often lower than download. You can estimate a transfer with the{" "}
+          <Link href="/upload-time-calculator" className="font-medium text-primary hover:underline">upload time calculator</Link>{" "}
+          or the{" "}
+          <Link href="/download-time-calculator" className="font-medium text-primary hover:underline">download time calculator</Link>.
+        </p>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">Latency and jitter</h2>
+        <p className="mt-2">
+          Latency is the round trip before a response, in milliseconds. Jitter is how much that delay changes between samples. Calls and games feel worse when either one is high, even if throughput looks fine. Standard mode can also measure latency while data is moving. Lightweight mode does not.
+        </p>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">Why results vary</h2>
+        <p className="mt-2">
+          Wi-Fi, other devices, the server, the time of day, and the test length all change the result. Pause backups and compare two runs before you treat one number as the connection. The{" "}
+          <Link href="/dns-speed-test" className="font-medium text-primary hover:underline">DNS timing</Link>{" "}
+          check is separate, and only runs when the browser exposes it.
+        </p>
+        <h2 className="mt-6 text-lg font-semibold text-foreground">Wi-Fi versus Ethernet</h2>
+        <p className="mt-2">
+          Ethernet removes the wireless hop, so it is the cleaner comparison when a cable is available. Wi-Fi adds distance, walls, and shared airtime. A slow room is not automatically a weak signal. The{" "}
+          <Link href="/network-health" className="font-medium text-primary hover:underline">network health</Link>{" "}
+          page keeps a measured snapshot, and the{" "}
+          <Link href="/mesh-wifi/planner" className="font-medium text-primary hover:underline">mesh planner</Link>{" "}
+          is where you place nodes and record room tests.
+        </p>
+      </article>
 
-      <section className="mx-auto mt-8 w-full max-w-[960px] px-4" aria-labelledby="guides-heading">
+      <section className="mx-auto mt-8 w-full max-w-[1280px] px-4" aria-labelledby="guides-heading">
         <h2 id="guides-heading" className="text-lg font-semibold text-foreground">
           Popular guides
         </h2>
@@ -115,7 +120,7 @@ export default function HomePage() {
         </ul>
       </section>
 
-      <div className="mx-auto mt-8 w-full max-w-[960px] px-4 pb-12">
+      <div className="mx-auto mt-8 w-full max-w-[1280px] px-4 pb-12">
         <FaqSection items={HOME_FAQS} />
         <AdSlot format="horizontal" slot="home-after-faq" />
       </div>

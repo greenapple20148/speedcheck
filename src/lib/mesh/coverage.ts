@@ -40,16 +40,33 @@ export function explicitWallLossDb(walls: MeshWall[], ax: number, ay: number, bx
   return db;
 }
 
-/** Continuous planning color from weak to strong. This is not a dBm reading. */
-export function coverageFill(score: number): string {
-  const t = Math.max(0, Math.min(100, score)) / 100;
-  const red: [number, number, number] = [248, 113, 113];
-  const amber: [number, number, number] = [250, 204, 21];
-  const teal: [number, number, number] = [20, 184, 166];
-  const mix = (a: [number, number, number], b: [number, number, number], amount: number) =>
-    a.map((channel, index) => Math.round(channel + ((b[index] ?? channel) - channel) * amount));
-  const rgb = t > 0.55 ? mix(amber, teal, (t - 0.55) / 0.45) : mix(red, amber, t / 0.55);
-  return `rgba(${rgb.join(",")},${(0.34 + t * 0.38).toFixed(2)})`;
+/**
+ * Continuous color for the heuristic score. Stops sit on the same thresholds
+ * as levelFor (18 weak, 40 moderate, 62 strong): very weak red, weak orange,
+ * moderate yellow, then light green into strong teal.
+ * This does not change the score, and it is not a dBm reading.
+ */
+const COVERAGE_STOPS: Array<{ at: number; rgb: [number, number, number] }> = [
+  { at: 0, rgb: [239, 68, 68] },
+  { at: 18, rgb: [249, 115, 22] },
+  { at: 40, rgb: [234, 179, 8] },
+  { at: 62, rgb: [132, 204, 22] },
+  { at: 100, rgb: [0, 134, 106] },
+];
+
+export function coverageFill(score: number, opacity = 0.62): string {
+  const value = Math.max(0, Math.min(100, Number.isFinite(score) ? score : 0));
+  let index = 0;
+  while (index < COVERAGE_STOPS.length - 2 && value > (COVERAGE_STOPS[index + 1]?.at ?? 100)) index += 1;
+  const start = COVERAGE_STOPS[index] ?? COVERAGE_STOPS[0];
+  const end = COVERAGE_STOPS[index + 1] ?? start;
+  const span = (end?.at ?? 1) - (start?.at ?? 0) || 1;
+  const amount = (value - (start?.at ?? 0)) / span;
+  const rgb = (start?.rgb ?? [0, 0, 0]).map((channel, channelIndex) =>
+    Math.round(channel + (((end?.rgb[channelIndex] ?? channel) - channel) * amount)),
+  );
+  const alpha = Math.max(0, Math.min(1, opacity));
+  return `rgba(${rgb.join(", ")}, ${alpha.toFixed(2)})`;
 }
 
 export function estimateCoverage(input: {

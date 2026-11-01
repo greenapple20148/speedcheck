@@ -1,6 +1,16 @@
 import type { MeshFloor, MeshHome, MeshPlan } from "@/lib/mesh/types";
 import { MESH_SCHEMA_VERSION } from "@/lib/mesh/types";
 
+export const MAX_FLOORS = 6;
+
+export function canAddFloor(count: number): boolean {
+  return Number.isFinite(count) && count < MAX_FLOORS;
+}
+
+export function canDeleteFloor(count: number): boolean {
+  return Number.isFinite(count) && count > 1;
+}
+
 export function newId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `m_${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`;
@@ -52,16 +62,22 @@ export function emptyPlan(): MeshPlan {
 }
 
 export function duplicateFloor(source: MeshFloor): MeshFloor {
+  const nodeIds = new Map(source.nodes.map((node) => [node.id, newId()]));
   return {
     id: newId(),
     name: `${source.name} copy`.slice(0, 40),
     widthFt: source.widthFt,
     heightFt: source.heightFt,
     rooms: source.rooms.map((room) => ({ ...room, id: newId(), points: room.points?.map((point) => ({ ...point })) })),
-    nodes: source.nodes.map((node) => ({ ...node, id: newId() })),
+    nodes: source.nodes.map((node) => ({
+      ...node,
+      id: nodeIds.get(node.id) ?? newId(),
+      parentId: node.parentId ? nodeIds.get(node.parentId) : undefined,
+    })),
     outlets: source.outlets.map((outlet) => ({ ...outlet, id: newId() })),
     walls: (source.walls ?? []).map((wall) => ({ ...wall, id: newId() })),
     imageDataUrl: source.imageDataUrl ?? null,
+    image: source.image ? { ...source.image } : undefined,
   };
 }
 

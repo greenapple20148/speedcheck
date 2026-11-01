@@ -15,6 +15,11 @@ interface ToolShellProps {
   crumbs?: Crumb[];
   schema?: "application" | "article";
   dateModified?: string;
+  /** Hide the centered title block when the page renders its own H1. */
+  hideHeader?: boolean;
+  /** Use the wider dashboard width. Other tools stay at max-w-6xl. */
+  wide?: boolean;
+  methodologyHeading?: string;
   children: React.ReactNode;
 }
 
@@ -29,6 +34,9 @@ export function ToolShell({
   crumbs,
   schema = "application",
   dateModified,
+  hideHeader = false,
+  wide = false,
+  methodologyHeading = "How this measurement works",
   children,
 }: ToolShellProps) {
   const trail = crumbs ?? [{ label: title }];
@@ -41,18 +49,20 @@ export function ToolShell({
   if (faqLd) structured.push(faqLd);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+    <div className={`mx-auto px-4 py-6 sm:py-8 ${wide ? "max-w-[1440px]" : "max-w-6xl"}`}>
       <JsonLd data={structured} />
       <Breadcrumbs items={trail} currentPath={path} className="justify-center" />
-      <header className="mx-auto mb-4 max-w-3xl text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h1>
-        <p className="mt-2 text-muted-foreground">{intro}</p>
-      </header>
+      {!hideHeader && (
+        <header className="mx-auto mb-4 max-w-3xl text-center">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h1>
+          <p className="mt-2 text-muted-foreground">{intro}</p>
+        </header>
+      )}
       {children}
       {methodology && (
         <section className="mt-10 max-w-3xl" aria-labelledby="method-heading">
           <h2 id="method-heading" className="text-lg font-semibold text-foreground">
-            How this measurement works
+            {methodologyHeading}
           </h2>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">{methodology}</p>
         </section>

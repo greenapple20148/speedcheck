@@ -21,6 +21,7 @@ const columns = [
       { href: "/download-time-calculator", label: "Download time" },
       { href: "/mbps-to-mbs", label: "Mbps to MB/s" },
       { href: "/internet-troubleshooter", label: "Troubleshooter" },
+      { href: "/router-setup", label: "Router setup" },
       { href: "/mesh-wifi", label: "Mesh Wi-Fi" },
       { href: "/network-health", label: "Network health" },
     ],

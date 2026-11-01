@@ -64,7 +64,9 @@ test.describe("tool flows", () => {
     });
     await page.goto("/");
     await page.getByRole("button", { name: "Start Speed Test", exact: true }).click();
-    await expect(page.getByText("Measurement service unavailable")).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Internet speed test" }).getByRole("alert"),
+    ).toContainText("Measurement service unavailable");
     await expect(page.getByRole("heading", { name: "Download", exact: true }).locator("xpath=../..")).toContainText("—");
   });
 
@@ -74,6 +76,6 @@ test.describe("tool flows", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Start Speed Test", exact: true }).click();
     await page.getByRole("button", { name: "Stop", exact: true }).click();
-    await expect(page.getByText("Test cancelled")).toBeVisible();
+    await expect(page.locator("span").filter({ hasText: /^Test cancelled$/ })).toBeVisible();
   });
 });

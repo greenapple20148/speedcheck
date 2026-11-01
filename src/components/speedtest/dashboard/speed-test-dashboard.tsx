@@ -5,14 +5,26 @@ import { cancelSession, runSpeedTest } from "@/lib/speedtest/engine";
 import { getPreviousUploadMbps } from "@/lib/speedtest/history";
 import {
   appendHistory,
+  clearHistory,
   readHistory,
   readPlan,
   readPrefs,
   writeHistory,
   type PlanSettings,
+  type StoredHistoryEntry,
 } from "@/lib/speedtest/history-store";
 import { buildConnectionAssessment } from "@/lib/speedtest/connection-assessment";
 import { uploadDeltaCaption } from "@/lib/speedtest/ui-config";
+import { downloadResultCard } from "@/lib/speedtest/result-card";
+import {
+  applyRunEvent,
+  beginRun,
+  buildShareSummary,
+  createIdleRun,
+  markCancelled,
+  markFailed,
+  type RunView,
+} from "@/lib/speedtest/run-state";
 import { trackEvent } from "@/lib/analytics/events";
 import type {
   ClientNetworkInfo,
@@ -23,17 +35,15 @@ import type {
   SpeedMetrics,
   SpeedSample,
   TestMode,
-  TestPhase,
   SpeedtestProvider,
   TestResultPayload,
 } from "@/types/speedtest";
 import { cn, formatSpeedParts } from "@/lib/utils";
-import { ChevronDown } from "lucide-react";
-import { ModeToggle } from "./mode-toggle";
-import { StartTestButton } from "./start-test-button";
+import { ChevronDown, Copy, ImageDown } from "lucide-react";
 import { DiagnoseConnectionPanel } from "@/components/diagnostics/diagnose-connection-panel";
-import { CloudflareSpeedLayout } from "./cloudflare-speed-layout";
 import { AdvancedDiagnosticsPanel } from "./advanced-diagnostics-panel";
+import { SpeedDashboardLayout } from "./dashboard-layout";
+import { LocalHistory } from "./local-history";
 
 const SAMPLE_INTERVAL_MS = 120;
 const DETAILS_PANEL_ID = "speed-test-detailed-results";
@@ -42,6 +52,8 @@ interface SpeedTestDashboardProps {
   defaultMode?: TestMode;
   showModeToggle?: boolean;
   className?: string;
+  /** Homepage shows device-local history. Embedded tests omit it. */
+  showHistory?: boolean;
   /** Optional. Existing pages omit this. Mesh room tests use it to store a finished run. */
   onComplete?: (result: {
     metrics: SpeedMetrics;
@@ -51,20 +63,14 @@ interface SpeedTestDashboardProps {
   }) => void;
 }
 
-const idleProgress: ProgressState = {
-  phase: "idle",
-  progress: 0,
-  currentMbps: null,
-  metrics: {
-    downloadMbps: null,
-    uploadMbps: null,
-    pingMs: null,
-    jitterMs: null,
-    downloadedBytes: 0,
-    uploadedBytes: 0,
-    durationMs: 0,
-  },
-};
+function isRunningPhase(phase: RunView["phase"]): boolean {
+  return (
+    phase !== "idle" &&
+    phase !== "complete" &&
+    phase !== "error" &&
+    phase !== "cancelled"
+  );
+}
 
 function readBrowserLinkEstimate(): string | null {
   if (typeof navigator === "undefined") return null;
@@ -77,12 +83,12 @@ function readBrowserLinkEstimate(): string | null {
 }
 
 const statusCopy: Record<string, string> = {
-  preparing: "Preparing session…",
-  ping: "Measuring latency…",
-  download: "Testing download…",
-  upload: "Testing upload…",
-  saving: "Saving results…",
-  error: "Something went wrong",
+  preparing: "Preparing session",
+  ping: "Measuring latency",
+  download: "Testing download",
+  upload: "Testing upload",
+  saving: "Saving results",
+  error: "Error",
   cancelled: "Test cancelled",
 };
 
@@ -90,15 +96,15 @@ export function SpeedTestDashboard({
   defaultMode = "standard",
   showModeToggle = true,
   className,
+  showHistory = false,
   onComplete,
 }: SpeedTestDashboardProps) {
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const [mode, setMode] = useState<TestMode>(defaultMode);
-  const [state, setState] = useState<ProgressState>(idleProgress);
+  const [view, setView] = useState<RunView>(createIdleRun);
   const [network, setNetwork] = useState<ClientNetworkInfo | null>(null);
   const [server, setServer] = useState<ServerInfo | null>(null);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [samples, setSamples] = useState<SpeedSample[]>([]);
   const [testedAt, setTestedAt] = useState<Date | null>(null);
   const [browserLinkEstimate, setBrowserLinkEstimate] = useState<string | null>(null);
@@ -112,23 +118,22 @@ export function SpeedTestDashboard({
   const [connectionTag, setConnectionTag] = useState<ConnectionTag>("wifi");
   const [lastHistoryId, setLastHistoryId] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanSettings | null>(null);
-  const [historySnapshot, setHistorySnapshot] = useState(readHistory);
+  const [historySnapshot, setHistorySnapshot] = useState<StoredHistoryEntry[]>([]);
   const [savedOnDevice, setSavedOnDevice] = useState(false);
+  const [summaryCopied, setSummaryCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const abortRef = useRef<AbortController | null>(null);
   const sessionRef = useRef<SessionConfig | null>(null);
   const testStartedRef = useRef<number | null>(null);
   const phaseStartedRef = useRef<number | null>(null);
-  const lastPhaseRef = useRef<TestPhase>("idle");
+  const lastPhaseRef = useRef<RunView["phase"]>("idle");
   const lastSampleRef = useRef<number>(0);
-  const pendingProgressRef = useRef<ProgressState | null>(null);
+  const pendingProgressRef = useRef<{ runId: string; progress: ProgressState } | null>(null);
   const rafRef = useRef<number | null>(null);
+  const runIdRef = useRef<string | null>(null);
+  const activeRef = useRef(false);
 
-  const running =
-    state.phase !== "idle" &&
-    state.phase !== "complete" &&
-    state.phase !== "error" &&
-    state.phase !== "cancelled";
+  const running = isRunningPhase(view.phase);
 
   const loadNetwork = useCallback(async () => {
     try {
@@ -224,15 +229,17 @@ export function SpeedTestDashboard({
   }, [measurementBaseUrl, measurementProvider]);
 
   useEffect(() => {
-    if (state.phase === "complete") {
+    if (view.phase === "complete") {
       setPreviousUploadMbps(getPreviousUploadMbps());
     }
-  }, [state.phase, state.metrics.uploadMbps]);
+  }, [view.phase, view.metrics.uploadMbps]);
 
-  const appendSample = useCallback((progress: ProgressState) => {
+  const appendSample = useCallback((runId: string, progress: ProgressState) => {
+    if (runIdRef.current !== runId) return;
     if (
       (progress.phase !== "download" && progress.phase !== "upload") ||
-      progress.currentMbps == null
+      progress.currentMbps == null ||
+      progress.currentMbps <= 0
     ) {
       return;
     }
@@ -255,26 +262,38 @@ export function SpeedTestDashboard({
     ]);
   }, []);
 
-  const scheduleVisualUpdate = useCallback((progress: ProgressState) => {
-    pendingProgressRef.current = progress;
+  const scheduleVisualUpdate = useCallback((runId: string, progress: ProgressState) => {
+    pendingProgressRef.current = { runId, progress };
     if (rafRef.current != null) return;
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = null;
       const next = pendingProgressRef.current;
-      if (next) setState(next);
+      pendingProgressRef.current = null;
+      if (!next || runIdRef.current !== next.runId) return;
+      setView((current) =>
+        applyRunEvent(current, {
+          runId: next.runId,
+          phase: next.progress.phase,
+          phaseProgress: next.progress.phaseProgress ?? null,
+          currentMbps: next.progress.currentMbps,
+          metrics: next.progress.metrics,
+          error: next.progress.error,
+        }),
+      );
     });
   }, []);
 
-  const handleProgress = useCallback(
-    (progress: ProgressState) => {
+  const acceptProgress = useCallback(
+    (runId: string, progress: ProgressState) => {
+      if (runIdRef.current !== runId) return;
       if (progress.phase !== lastPhaseRef.current) {
         lastPhaseRef.current = progress.phase;
         if (progress.phase === "download" || progress.phase === "upload") {
           phaseStartedRef.current = performance.now();
         }
       }
-      appendSample(progress);
-      scheduleVisualUpdate(progress);
+      appendSample(runId, progress);
+      scheduleVisualUpdate(runId, progress);
     },
     [appendSample, scheduleVisualUpdate],
   );
@@ -295,26 +314,32 @@ export function SpeedTestDashboard({
 
   const persistResult = useCallback(
     async (metrics: ProgressState["metrics"], session: SessionConfig) => {
-      const saved = await saveResult({
-        downloadMbps: metrics.downloadMbps ?? 0,
-        uploadMbps: metrics.uploadMbps ?? 0,
-        pingMs: metrics.pingMs ?? 0,
-        jitterMs: metrics.jitterMs ?? 0,
-        mode,
-        serverId: session.server.id,
-        serverName: session.server.name,
-        isp: network?.isp,
-        city: network?.city,
-        country: network?.country,
-        isPublic: false,
-        bufferbloatIdleMs: metrics.bufferbloatIdleMs,
-        bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
-        bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
-        bufferbloatGrade: metrics.bufferbloatGrade,
-        connectionTag,
-      });
+      const measured =
+        metrics.downloadMbps != null &&
+        metrics.uploadMbps != null &&
+        metrics.pingMs != null &&
+        metrics.jitterMs != null;
+      const saved = measured
+        ? await saveResult({
+            downloadMbps: metrics.downloadMbps!,
+            uploadMbps: metrics.uploadMbps!,
+            pingMs: metrics.pingMs!,
+            jitterMs: metrics.jitterMs!,
+            mode,
+            serverId: session.server.id,
+            serverName: session.server.name,
+            isp: network?.isp,
+            city: network?.city,
+            country: network?.country,
+            isPublic: false,
+            bufferbloatIdleMs: metrics.bufferbloatIdleMs,
+            bufferbloatLoadedDownMs: metrics.bufferbloatLoadedDownMs,
+            bufferbloatLoadedUpMs: metrics.bufferbloatLoadedUpMs,
+            bufferbloatGrade: metrics.bufferbloatGrade,
+            connectionTag,
+          })
+        : null;
       const historyId = saved?.id ?? crypto.randomUUID();
-      if (saved?.id) setShareUrl(`/results/${saved.id}`);
       setLastHistoryId(historyId);
       appendHistory({
         id: historyId,
@@ -342,19 +367,24 @@ export function SpeedTestDashboard({
   );
 
   const start = () => {
-    if (running || isPending) return;
+    if (activeRef.current || running || isPending) return;
     const needsDedicatedUrl = measurementProvider === "dedicated";
     if (!measurementReady || (needsDedicatedUrl && !measurementBaseUrl)) {
-      setState((s) => ({
-        ...s,
-        phase: "error",
-        error:
-          measurementNotice ??
-          "Speed test is not available on this deployment yet.",
-      }));
+      const failed = beginRun(crypto.randomUUID());
+      setView(
+        markFailed(
+          failed,
+          measurementNotice ?? "Speed test is not available on this deployment yet.",
+        ),
+      );
       return;
     }
-    setShareUrl(null);
+    const runId = crypto.randomUUID();
+    activeRef.current = true;
+    runIdRef.current = runId;
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    pendingProgressRef.current = null;
     setSamples([]);
     setTestedAt(null);
     setDetailsOpen(false);
@@ -362,116 +392,165 @@ export function SpeedTestDashboard({
     setConnectionTag("wifi");
     setLastHistoryId(null);
     setSavedOnDevice(false);
-    lastPhaseRef.current = "idle";
+    lastPhaseRef.current = "preparing";
     testStartedRef.current = performance.now();
     phaseStartedRef.current = testStartedRef.current;
     lastSampleRef.current = 0;
+    setView(beginRun(runId));
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     startTransition(async () => {
       trackEvent("speed_test_started", { mode });
       void loadNetwork();
-      setState({ ...idleProgress, phase: "preparing", progress: 0.02 });
       try {
         const { metrics, session } = await runSpeedTest({
           mode,
           provider: measurementProvider,
           baseUrl: measurementBaseUrl ?? undefined,
           signal: controller.signal,
-          onProgress: handleProgress,
+          onProgress: (progress) => acceptProgress(runId, progress),
         });
+        if (runIdRef.current !== runId || controller.signal.aborted) return;
         sessionRef.current = session;
         setServer(session.server ?? null);
         if (readPrefs().saveHistory) {
-          setState({
-            phase: "saving",
-            progress: 0.95,
-            currentMbps: metrics.downloadMbps,
-            metrics,
-          });
+          setView((current) =>
+            current.runId === runId
+              ? applyRunEvent(current, {
+                  runId,
+                  phase: "saving",
+                  phaseProgress: null,
+                  currentMbps: null,
+                  metrics,
+                })
+              : current,
+          );
           await persistResult(metrics, session);
         }
-        setTestedAt(new Date());
-        setState({
-          phase: "complete",
-          progress: 1,
-          currentMbps: null,
-          metrics,
-        });
+        if (runIdRef.current !== runId) return;
+        const finishedAt = new Date();
+        setTestedAt(finishedAt);
+        setView((current) =>
+          current.runId === runId
+            ? applyRunEvent(current, {
+                runId,
+                phase: "complete",
+                phaseProgress: null,
+                currentMbps: null,
+                metrics,
+              })
+            : current,
+        );
         trackEvent("speed_test_completed", { mode });
         onCompleteRef.current?.({
           metrics,
           serverName: session.server?.name ?? null,
-          testedAt: new Date().toISOString(),
+          testedAt: finishedAt.toISOString(),
           provider: measurementProvider,
         });
         if (mode === "standard" && metrics.bufferbloatGrade) {
           trackEvent("bufferbloat_test_completed", { grade: metrics.bufferbloatGrade });
         }
       } catch (err) {
+        if (runIdRef.current !== runId) return;
         if (controller.signal.aborted) {
-          setState((s) => ({ ...s, phase: "cancelled" }));
+          setView((current) => (current.runId === runId ? markCancelled(current) : current));
           trackEvent("speed_test_cancelled", { mode });
           return;
         }
         const message = err instanceof Error ? err.message : "Speed test failed";
-        setState((s) => ({ ...s, phase: "error", error: message }));
+        setView((current) => (current.runId === runId ? markFailed(current, message) : current));
         trackEvent("speed_test_failed", { mode, error: message });
+      } finally {
+        if (runIdRef.current === runId) activeRef.current = false;
       }
     });
   };
 
-  const cancel = async () => {
+  const cancel = () => {
+    const id = runIdRef.current;
+    runIdRef.current = null;
+    activeRef.current = false;
     abortRef.current?.abort();
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    pendingProgressRef.current = null;
     const token = sessionRef.current?.token;
-    await cancelSession(
-      token ?? "",
-      measurementBaseUrl ?? undefined,
-      measurementProvider,
-    );
-    setState((s) => ({ ...s, phase: "cancelled" }));
-    trackEvent("speed_test_cancelled", { mode });
+    void cancelSession(token ?? "", measurementBaseUrl ?? undefined, measurementProvider);
+    if (id) {
+      setView((current) => (current.runId === id ? markCancelled(current) : current));
+      trackEvent("speed_test_cancelled", { mode });
+    }
   };
 
-  const buttonStatus =
-    state.phase === "download"
-      ? "Testing Download…"
-      : state.phase === "upload"
-        ? "Testing Upload…"
-        : statusCopy[state.phase] ?? "Testing…";
+  const buttonStatus = statusCopy[view.phase] ?? "Testing";
 
-  const complete = state.phase === "complete";
+  const complete = view.phase === "complete";
 
   const uploadCaption = useMemo(
-    () => uploadDeltaCaption(state.metrics.uploadMbps, previousUploadMbps),
-    [state.metrics.uploadMbps, previousUploadMbps],
+    () => uploadDeltaCaption(view.metrics.uploadMbps, previousUploadMbps),
+    [view.metrics.uploadMbps, previousUploadMbps],
   );
 
   const assessment = useMemo(() => {
     if (!complete) return null;
     return buildConnectionAssessment({
-      ...state.metrics,
+      ...view.metrics,
       mode,
     });
-  }, [complete, state.metrics, mode]);
+  }, [complete, view.metrics, mode]);
 
   const liveAnnouncement = useMemo(() => {
     if (running) return buttonStatus;
-    if (complete && state.metrics.downloadMbps != null) {
-      const parts = formatSpeedParts(state.metrics.downloadMbps);
+    if (view.phase === "cancelled") return "Test cancelled";
+    if (view.phase === "error") return view.error ?? "Error";
+    if (complete && view.metrics.downloadMbps != null) {
+      const parts = formatSpeedParts(view.metrics.downloadMbps);
       if (!parts) return "Test complete.";
       return `Test complete. Download speed ${parts.amount} ${parts.unit}.`;
     }
     return "";
-  }, [running, complete, buttonStatus, state.metrics.downloadMbps]);
+  }, [running, complete, buttonStatus, view.phase, view.error, view.metrics.downloadMbps]);
+
+  const protocol =
+    measurementProvider === "cloudflare"
+      ? "HTTPS"
+      : server?.url
+        ? (() => {
+            try {
+              return new URL(server.url).protocol.replace(":", "").toUpperCase();
+            } catch {
+              return null;
+            }
+          })()
+        : null;
+
+  const copySummary = async () => {
+    const text = buildShareSummary({
+      downloadMbps: view.metrics.downloadMbps,
+      uploadMbps: view.metrics.uploadMbps,
+      pingMs: view.metrics.pingMs,
+      jitterMs: view.metrics.jitterMs,
+      mode,
+      testedAt,
+      serverName: server?.name ?? null,
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      setSummaryCopied(true);
+      window.setTimeout(() => setSummaryCopied(false), 2000);
+    } catch {
+      setSummaryCopied(false);
+    }
+  };
 
   return (
     <section
       aria-label="Internet speed test"
-      className={cn("mx-auto w-full max-w-[960px] px-4", className)}
+      className={cn("speed-dashboard mx-auto w-full max-w-[1280px] px-4", className)}
     >
-      {!measurementReady && measurementNotice && state.phase === "idle" && (
+      {!measurementReady && measurementNotice && view.phase === "idle" && (
         <div
           className="mb-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5 text-[13px] leading-snug text-foreground"
           role="status"
@@ -485,44 +564,28 @@ export function SpeedTestDashboard({
           {liveAnnouncement}
         </p>
 
-        <CloudflareSpeedLayout
-          state={state}
+        <SpeedDashboardLayout
+          view={view}
           samples={samples}
           server={server}
           network={network}
-          assessment={assessment}
+          mode={mode}
+          showModeToggle={showModeToggle}
+          modeDisabled={running || isPending}
           running={running}
-          complete={complete}
-          statusLine={buttonStatus}
           canStart={
             measurementReady &&
             (measurementProvider !== "dedicated" || Boolean(measurementBaseUrl))
           }
+          testedAt={testedAt}
+          onModeChange={setMode}
           onStart={start}
           onCancel={cancel}
-          controls={
-            <div className="flex flex-col items-center gap-3">
-              {showModeToggle && (
-                <ModeToggle mode={mode} disabled={running} onChange={setMode} compact />
-              )}
-              <StartTestButton
-                phase={state.phase}
-                running={running}
-                statusLine={buttonStatus}
-                disabled={
-                  !measurementReady ||
-                  (measurementProvider === "dedicated" && !measurementBaseUrl)
-                }
-                onStart={start}
-                onCancel={cancel}
-              />
-            </div>
-          }
         />
 
-        {state.error && (
+        {view.error && (
           <p className="mt-3 text-[14px] text-destructive" role="alert">
-            {state.error}
+            {view.error}
           </p>
         )}
 
@@ -533,26 +596,41 @@ export function SpeedTestDashboard({
         )}
 
         {complete && (
-          <DiagnoseConnectionPanel
-            className="mt-4"
-            metrics={state.metrics}
-            mode={mode}
-            server={server}
-            plan={plan}
-            history={historySnapshot}
-          />
-        )}
-
-        {complete && (
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <button
+              type="button"
+              onClick={() => void copySummary()}
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--sd-border)] bg-[var(--sd-card)] px-3 text-[14px] font-semibold text-[var(--sd-text)] hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00866A]"
+            >
+              <Copy className="h-4 w-4" aria-hidden />
+              {summaryCopied ? "Copied" : "Copy summary"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                downloadResultCard({
+                  downloadMbps: view.metrics.downloadMbps,
+                  uploadMbps: view.metrics.uploadMbps,
+                  pingMs: view.metrics.pingMs,
+                  jitterMs: view.metrics.jitterMs,
+                  mode,
+                  testedAt,
+                  serverName: server?.name ?? null,
+                })
+              }
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[var(--sd-border)] bg-[var(--sd-card)] px-3 text-[14px] font-semibold text-[var(--sd-text)] hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00866A]"
+            >
+              <ImageDown className="h-4 w-4" aria-hidden />
+              Download image
+            </button>
             <button
               type="button"
               onClick={() => {
                 const session = sessionRef.current;
-                if (session) void persistResult(state.metrics, session);
+                if (session) void persistResult(view.metrics, session);
               }}
               disabled={savedOnDevice}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-border px-3 text-[14px] font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-70"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--sd-border)] px-3 text-[14px] font-semibold text-[var(--sd-text)] hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00866A] disabled:opacity-70"
             >
               {savedOnDevice ? "Saved on this device" : "Save result on this device"}
             </button>
@@ -562,7 +640,7 @@ export function SpeedTestDashboard({
               aria-expanded={detailsOpen}
               aria-controls={DETAILS_PANEL_ID}
               onClick={() => setDetailsOpen(!detailsOpen)}
-              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-3 text-[14px] font-semibold text-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-[14px] font-semibold text-[#00866A] hover:bg-[#14B8A6]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00866A]"
             >
               View detailed diagnostics
               <ChevronDown
@@ -576,6 +654,17 @@ export function SpeedTestDashboard({
           </div>
         )}
 
+        {complete && (
+          <DiagnoseConnectionPanel
+            className="mt-4"
+            metrics={view.metrics}
+            mode={mode}
+            server={server}
+            plan={plan}
+            history={historySnapshot}
+          />
+        )}
+
         {complete && assessment && (
           <AdvancedDiagnosticsPanel
             showToggle={false}
@@ -583,7 +672,7 @@ export function SpeedTestDashboard({
             onOpenChange={setDetailsOpen}
             panelId={DETAILS_PANEL_ID}
             assessment={assessment}
-            metrics={state.metrics}
+            metrics={view.metrics}
             mode={mode}
             network={network}
             server={server}
@@ -592,11 +681,22 @@ export function SpeedTestDashboard({
             samples={samples}
             plan={plan}
             history={historySnapshot}
-            shareUrl={shareUrl}
+            shareUrl={null}
+            protocol={protocol}
             connectionTag={connectionTag}
             onConnectionTagChange={(tag) => {
               setConnectionTag(tag);
               if (lastHistoryId) patchHistoryTag(lastHistoryId, tag);
+            }}
+          />
+        )}
+
+        {showHistory && (
+          <LocalHistory
+            entries={historySnapshot}
+            onClear={() => {
+              clearHistory();
+              setHistorySnapshot([]);
             }}
           />
         )}

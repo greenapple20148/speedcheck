@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { estimateCoverage, wallLossDb } from "@/lib/mesh/coverage";
-import { bestDownloadMbps, throughputBand } from "@/lib/mesh/measurements";
+import { appendRoomSample, bestDownloadMbps, bestRoomDownload, roomSampleFromResult, summarizeRoom, throughputBand } from "@/lib/mesh/measurements";
+import { meshBrandFor } from "@/lib/mesh/router-setup-guide";
 import { clientToFeet, feetPerPixel, pointInRoom, segmentsCross, snapFt } from "@/lib/mesh/geometry";
 import { suggestNodeCount } from "@/lib/mesh/nodes";
 import { placementOptions } from "@/lib/mesh/placement";
@@ -74,6 +75,34 @@ describe("mesh placement and troubleshooting", () => {
     expect(items[0]?.guideHref).toBeTruthy();
   });
 
+  it("does not invent an upload figure or a connected node", () => {
+    const upload = troubleshootMesh({ symptoms: ["slow-upload"], nodeCount: 1, floors: 1, wired: false, measurements: [] });
+    expect(upload[0]?.cause).toMatch(/not been measured/i);
+    expect(upload[0]?.evidence).not.toMatch(/\d/);
+    const roaming = troubleshootMesh({ symptoms: ["distant-node"], nodeCount: 1, floors: 1, wired: false, satelliteCount: 0, measurements: [] });
+    expect(roaming[0]?.evidence).toMatch(/cannot see which node/i);
+  });
+
+  it("cites a room gap from saved medians", () => {
+    const items = troubleshootMesh({
+      symptoms: ["dead-zone"],
+      nodeCount: 2,
+      floors: 1,
+      wired: false,
+      satelliteCount: 1,
+      rooms: [
+        { id: "a", name: "Office", floorName: "Floor 1" },
+        { id: "b", name: "Kitchen", floorName: "Floor 1" },
+      ],
+      measurements: [
+        { roomId: "a", downloadMbps: 100, uploadMbps: 10, pingMs: 10, jitterMs: 2, testedAt: "2026-11-01T12:00:00.000Z", endpointName: "Edge" },
+        { roomId: "b", downloadMbps: 20, uploadMbps: 4, pingMs: 30, jitterMs: 5, testedAt: "2026-11-01T12:00:00.000Z", endpointName: "Edge" },
+      ],
+    });
+    expect(items[0]?.evidence).toContain("Kitchen");
+    expect(items[0]?.confidence).toBe("high");
+  });
+
   it("does not push Wi-Fi 7 without Wi-Fi 7 devices", () => {
     expect(suggestWifiGeneration({ wifi7Devices: false, needs6GHz: false, manyDevices: false }).title).toContain("Wi-Fi 6");
   });
@@ -102,6 +131,63 @@ describe("floor geometry", () => {
     expect(pointInRoom(room, 12, 5)).toBe(false);
     expect(segmentsCross(0, 5, 10, 5, 5, 0, 5, 10)).toBe(true);
     expect(segmentsCross(0, 0, 2, 0, 0, 1, 2, 1)).toBe(false);
+  });
+});
+
+describe("room samples", () => {
+  const base = {
+    roomId: "kitchen",
+    downloadMbps: 100,
+    uploadMbps: 10,
+    pingMs: 20,
+    jitterMs: 4,
+    testedAt: "2026-11-01T12:00:00.000Z",
+    endpointName: "Edge",
+    provider: "cloudflare" as const,
+  };
+
+  it("uses the median of several samples and keeps the loaded latency when present", () => {
+    const samples = [
+      { ...base, downloadMbps: 10, pingMs: 40, loadedLatencyMs: 80 },
+      { ...base, downloadMbps: 30, pingMs: 10, loadedLatencyMs: 40, testedAt: "2026-11-01T13:00:00.000Z" },
+      { ...base, downloadMbps: 20, pingMs: 30, loadedLatencyMs: null },
+    ];
+    const summary = summarizeRoom(samples, "kitchen");
+    expect(summary?.downloadMbps).toBe(20);
+    expect(summary?.pingMs).toBe(30);
+    expect(summary?.loadedLatencyMs).toBe(60);
+    expect(summary?.sampleCount).toBe(3);
+    expect(bestRoomDownload(samples)).toBe(20);
+  });
+
+  it("caps samples per room and records the provider from a finished test", () => {
+    let stored = [] as ReturnType<typeof appendRoomSample>;
+    for (let index = 0; index < 10; index += 1) {
+      stored = appendRoomSample(stored, { ...base, downloadMbps: index, testedAt: `2026-11-01T12:0${index}:00.000Z` });
+    }
+    expect(stored).toHaveLength(8);
+    expect(stored[0]?.downloadMbps).toBe(9);
+    const sample = roomSampleFromResult("hall", {
+      metrics: { downloadMbps: 50, uploadMbps: 5, pingMs: 12, jitterMs: 2, downloadedBytes: 1, uploadedBytes: 1, durationMs: 1, bufferbloatLoadedDownMs: 40, bufferbloatLoadedUpMs: 55 },
+      serverName: "Edge",
+      testedAt: "2026-11-01T12:00:00.000Z",
+      provider: "cloudflare",
+    });
+    expect(sample.loadedLatencyMs).toBe(55);
+    expect(sample.provider).toBe("cloudflare");
+  });
+
+  it("maps mesh brands without treating an Archer router as a Deco kit", () => {
+    expect(meshBrandFor("tp-link", "deco")).toBe("tp-link-deco");
+    expect(meshBrandFor("tp-link", "archer")).toBe("generic");
+    expect(meshBrandFor("eero", "eero-6")).toBe("eero");
+  });
+
+  it("still reads a plan saved before loaded latency existed", () => {
+    const plan = emptyPlan();
+    plan.measurements = [{ ...base, loadedLatencyMs: undefined, provider: undefined }];
+    const parsed = parseMeshPlan(plan);
+    expect(parsed.ok).toBe(true);
   });
 });
 

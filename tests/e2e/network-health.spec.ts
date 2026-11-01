@@ -66,7 +66,7 @@ test.describe("network health", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/network-health?room=room-kitchen");
     await expect(page.getByRole("heading", { level: 1, name: "Network health" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Download", exact: true }).locator("..")).toContainText("100");
+    await expect(page.getByRole("heading", { name: "Download", exact: true }).locator("xpath=ancestor::article")).toContainText("100");
     await expect(page.getByText("Cloudflare").first()).toBeVisible();
     await expect(page.getByText("Not measured").first()).toBeVisible();
     await expect(page.getByRole("heading", { name: "Loaded latency is high" })).toBeVisible();
@@ -83,6 +83,8 @@ test.describe("network health", () => {
     });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/network-health/compare");
+    await expect(page.getByLabel("What changed")).toContainText("Ethernet backhaul installation");
+    await expect(page.getByRole("button", { name: "Run follow-up test" })).toBeVisible();
     await page.getByRole("group", { name: "Baseline" }).getByRole("radio", { name: /Edge A/ }).check();
     await page.getByRole("group", { name: "Follow-up" }).getByRole("radio", { name: /Edge B/ }).check();
     await expect(page.getByText("The tests used different servers: Edge A and Edge B.")).toBeVisible();
@@ -109,5 +111,9 @@ test.describe("network health", () => {
     await expect(page.getByText("No recommendation yet. The rules wait for a measured problem.")).toBeVisible();
     await expect(page.getByText("A complete download, upload, latency, and jitter result is required")).toBeVisible();
     await expect(page.getByText("No rooms are saved in the mesh planner.")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Mesh coverage" })).toContainText("Add a node");
+    await expect(page.getByRole("region", { name: "Connected devices" })).toContainText("does not list devices");
+    await expect(page.getByRole("region", { name: "Router status" })).toContainText("does not connect");
+    await expect(page.getByRole("region", { name: "Before and after" })).toContainText("No saved comparison");
   });
 });
