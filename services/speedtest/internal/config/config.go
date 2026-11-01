@@ -14,6 +14,8 @@ type Config struct {
 	ServerName           string
 	ServerRegion         string
 	ServerLocation       string
+	ServerLatitude       *float64
+	ServerLongitude      *float64
 	HMACSecret           string
 	AdminToken           string
 	CORSOrigins          []string
@@ -36,6 +38,8 @@ func Load() Config {
 		ServerName:          getenv("SPEEDTEST_SERVER_NAME", "Local Dev"),
 		ServerRegion:        getenv("SPEEDTEST_SERVER_REGION", "local"),
 		ServerLocation:      getenv("SPEEDTEST_SERVER_LOCATION", "Development"),
+		ServerLatitude:      getenvOptionalFloat("SPEEDTEST_SERVER_LATITUDE"),
+		ServerLongitude:     getenvOptionalFloat("SPEEDTEST_SERVER_LONGITUDE"),
 		HMACSecret:          getenv("SPEEDTEST_HMAC_SECRET", "dev-hmac-secret-change-in-production"),
 		AdminToken:          getenv("SPEEDTEST_ADMIN_TOKEN", "dev-admin-token"),
 		CORSOrigins:         splitCSV(getenv("SPEEDTEST_CORS_ORIGINS", "http://127.0.0.1:43123,http://localhost:43123")),
@@ -56,6 +60,18 @@ func getenv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func getenvOptionalFloat(key string) *float64 {
+	v := os.Getenv(key)
+	if v == "" {
+		return nil
+	}
+	n, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return nil
+	}
+	return &n
 }
 
 func getenvInt(key string, fallback int) int {

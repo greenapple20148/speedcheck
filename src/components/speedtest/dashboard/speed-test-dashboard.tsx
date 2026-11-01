@@ -24,6 +24,7 @@ import type {
   SpeedSample,
   TestMode,
   TestPhase,
+  SpeedtestProvider,
   TestResultPayload,
 } from "@/types/speedtest";
 import { cn, formatSpeedParts } from "@/lib/utils";
@@ -103,6 +104,8 @@ export function SpeedTestDashboard({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [previousUploadMbps, setPreviousUploadMbps] = useState<number | null>(null);
   const [measurementBaseUrl, setMeasurementBaseUrl] = useState<string | null>(null);
+  const [measurementProvider, setMeasurementProvider] =
+    useState<SpeedtestProvider>("dedicated");
   const [measurementReady, setMeasurementReady] = useState(false);
   const [measurementNotice, setMeasurementNotice] = useState<string | null>(null);
   const [connectionTag, setConnectionTag] = useState<ConnectionTag>("wifi");
@@ -157,13 +160,19 @@ export function SpeedTestDashboard({
         const res = await fetch("/api/speedtest/config", { cache: "no-store" });
         const data = (await res.json()) as {
           baseUrl?: string | null;
+          provider?: SpeedtestProvider;
           ready?: boolean;
           message?: string;
           probeOk?: boolean;
         };
         if (cancelled) return;
+        const provider = data.provider ?? "dedicated";
+        setMeasurementProvider(provider);
         setMeasurementBaseUrl(data.baseUrl ?? null);
-        const ready = Boolean(data.ready && data.baseUrl);
+        const ready =
+          provider === "cloudflare"
+            ? Boolean(data.ready)
+            : Boolean(data.ready && data.baseUrl);
         setMeasurementReady(ready);
         if (!ready) {
           setMeasurementNotice(
@@ -193,7 +202,7 @@ export function SpeedTestDashboard({
   }, []);
 
   useEffect(() => {
-    if (!measurementBaseUrl) return;
+    if (measurementProvider !== "dedicated" || !measurementBaseUrl) return;
     let cancelled = false;
     (async () => {
       try {
@@ -211,7 +220,7 @@ export function SpeedTestDashboard({
     return () => {
       cancelled = true;
     };
-  }, [measurementBaseUrl]);
+  }, [measurementBaseUrl, measurementProvider]);
 
   useEffect(() => {
     if (state.phase === "complete") {
@@ -331,7 +340,8 @@ export function SpeedTestDashboard({
 
   const start = () => {
     if (running || isPending) return;
-    if (!measurementReady || !measurementBaseUrl) {
+    const needsDedicatedUrl = measurementProvider === "dedicated";
+    if (!measurementReady || (needsDedicatedUrl && !measurementBaseUrl)) {
       setState((s) => ({
         ...s,
         phase: "error",
@@ -363,7 +373,8 @@ export function SpeedTestDashboard({
       try {
         const { metrics, session } = await runSpeedTest({
           mode,
-          baseUrl: measurementBaseUrl,
+          provider: measurementProvider,
+          baseUrl: measurementBaseUrl ?? undefined,
           signal: controller.signal,
           onProgress: handleProgress,
         });
@@ -382,7 +393,7 @@ export function SpeedTestDashboard({
         setState({
           phase: "complete",
           progress: 1,
-          currentMbps: metrics.downloadMbps,
+          currentMbps: null,
           metrics,
         });
         trackEvent("speed_test_completed", { mode });
@@ -410,7 +421,11 @@ export function SpeedTestDashboard({
   const cancel = async () => {
     abortRef.current?.abort();
     const token = sessionRef.current?.token;
-    if (token) await cancelSession(token);
+    await cancelSession(
+      token ?? "",
+      measurementBaseUrl ?? undefined,
+      measurementProvider,
+    );
     setState((s) => ({ ...s, phase: "cancelled" }));
     trackEvent("speed_test_cancelled", { mode });
   };
@@ -475,7 +490,10 @@ export function SpeedTestDashboard({
           running={running}
           complete={complete}
           statusLine={buttonStatus}
-          canStart={measurementReady && Boolean(measurementBaseUrl)}
+          canStart={
+            measurementReady &&
+            (measurementProvider !== "dedicated" || Boolean(measurementBaseUrl))
+          }
           onStart={start}
           onCancel={cancel}
           controls={
@@ -487,7 +505,10 @@ export function SpeedTestDashboard({
                 phase={state.phase}
                 running={running}
                 statusLine={buttonStatus}
-                disabled={!measurementReady || !measurementBaseUrl}
+                disabled={
+                  !measurementReady ||
+                  (measurementProvider === "dedicated" && !measurementBaseUrl)
+                }
                 onStart={start}
                 onCancel={cancel}
               />

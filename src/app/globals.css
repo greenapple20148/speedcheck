@@ -96,6 +96,7 @@ html[data-theme="dark"] {
   --chart-5: var(--text-primary);
   --chart-grid: var(--border-primary);
   --chart-axis: #8d97b2;
+  --speed-map-bg: var(--input-bg);
 }
 
 :root,
@@ -188,6 +189,7 @@ html[data-theme="dark"] {
   --chart-5: var(--text-primary);
   --chart-grid: var(--border-primary);
   --chart-axis: var(--text-faint);
+  --speed-map-bg: var(--bg-tertiary);
 }
 
 @layer base {

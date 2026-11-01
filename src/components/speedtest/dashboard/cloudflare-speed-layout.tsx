@@ -508,11 +508,15 @@ export function CloudflareSpeedLayout({
 
         <div className="panel px-4 py-3">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-            Request loss
+            Packet loss
           </p>
-          <p className="mt-1 font-heading text-2xl font-medium tabular-nums text-foreground">—</p>
+          <p className="mt-1 font-heading text-2xl font-medium tabular-nums text-foreground">
+            {m.packetLossPercent != null ? `${m.packetLossPercent.toFixed(1)}%` : "—"}
+          </p>
           <p className="mt-1 text-[11px] text-muted-foreground">
-            Not measured on the speed test. Use the request-loss tool.
+            {m.packetLossPercent != null
+              ? "Measured during this test."
+              : "Not measured on this run. Use the request-loss tool for a separate check."}
           </p>
         </div>
 
