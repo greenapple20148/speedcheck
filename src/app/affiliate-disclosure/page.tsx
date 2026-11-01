@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
@@ -9,7 +10,9 @@ export const metadata: Metadata = buildMetadata({
 
 export default function AffiliateDisclosurePage() {
   return (
-    <article className="prose prose-neutral mx-auto max-w-3xl px-4 py-10 prose-headings:font-heading">
+    <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
+      <Breadcrumbs items={[{ label: "Affiliate disclosure" }]} />
+      <article className="prose prose-neutral max-w-none prose-headings:font-heading">
       <h1>Affiliate Disclosure</h1>
       <p>
         Some links and offer cards on SpeedCheck are sponsored or affiliate links. We may earn a
@@ -20,5 +23,6 @@ export default function AffiliateDisclosurePage() {
         appropriate. Recommendations are not paid ranking of speed test results.
       </p>
     </article>
+    </div>
   );
 }

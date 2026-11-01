@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { FaqSection } from "@/components/seo/faq-section";
+import { PageHeader } from "@/components/ui/page-header";
+import { RelatedActions } from "@/components/ui/related-actions";
 import { JsonLd } from "@/components/seo/json-ld";
 import { GuideViewed } from "@/components/seo/guide-viewed";
 import { GUIDES, getGuide } from "@/content/guides";
@@ -50,9 +52,9 @@ export default async function GuidePage({
       />
       <GuideViewed slug={guide.slug} />
       <Breadcrumbs items={[{ href: "/guides", label: "Guides" }, { label: guide.title }]} />
-      <h1 className="text-3xl font-semibold tracking-tight text-foreground">{guide.title}</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Last reviewed {guide.reviewed}</p>
-      <p className="mt-4 text-muted-foreground">{guide.description}</p>
+      <PageHeader title={guide.title} description={guide.description}>
+        <p className="mt-2 text-sm text-muted-foreground">Last reviewed {guide.reviewed}</p>
+      </PageHeader>
       <p className="mt-4">
         <Link href={guide.toolHref} className="font-semibold text-primary hover:underline">
           {guide.toolLabel}
@@ -62,7 +64,7 @@ export default async function GuidePage({
         <section key={section.heading} className="mt-8">
           <h2 className="text-xl font-semibold text-foreground">{section.heading}</h2>
           {section.paragraphs.map((paragraph) => (
-            <p key={paragraph} className="mt-3 text-sm leading-6 text-muted-foreground">
+            <p key={paragraph} className="mt-3 text-base leading-7 text-muted-foreground">
               {paragraph}
             </p>
           ))}
@@ -71,17 +73,7 @@ export default async function GuidePage({
       <div className="mt-10">
         <FaqSection items={guide.faqs} />
       </div>
-      <nav className="mt-8" aria-label="Related">
-        <ul className="flex flex-wrap gap-3">
-          {guide.related.map((item) => (
-            <li key={item.href}>
-              <Link href={item.href} className="text-sm font-medium text-primary hover:underline">
-                {item.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <RelatedActions items={guide.related} />
     </article>
   );
 }

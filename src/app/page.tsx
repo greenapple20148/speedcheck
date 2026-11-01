@@ -65,8 +65,8 @@ export default function HomePage() {
 
       <HomeToolCards />
 
-      <article className="mx-auto mt-8 w-full max-w-[1280px] px-4 text-sm leading-relaxed text-muted-foreground">
-        <h1 className="font-heading text-2xl font-semibold text-foreground">Free Internet Speed Test</h1>
+      <article className="mx-auto mt-8 w-full max-w-3xl px-4 text-base leading-7 text-muted-foreground">
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">Free Internet Speed Test</h1>
         <p className="mt-3">
           A speed test measures the path between this browser and a measurement server. Nothing starts until you press the button. The numbers on the page come from that run.
         </p>
@@ -109,10 +109,10 @@ export default function HomePage() {
         <h2 id="guides-heading" className="text-lg font-semibold text-foreground">
           Popular guides
         </h2>
-        <ul className="mt-3 flex flex-wrap gap-2">
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
           {guides.map((guide) => (
             <li key={guide.href}>
-              <Link href={guide.href} className="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm font-medium hover:border-primary">
+              <Link href={guide.href} className="flex min-h-11 items-center rounded-[20px] border border-border bg-card px-4 py-3 text-sm font-medium text-foreground hover:border-[var(--accent-text)]">
                 {guide.label}
               </Link>
             </li>

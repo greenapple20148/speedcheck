@@ -14,8 +14,8 @@ export default function MethodologyPage() {
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
       <Breadcrumbs items={[{ label: "Methodology" }]} />
-      <h1 className="text-3xl font-semibold tracking-tight">How measurements work</h1>
-      <p className="mt-4 text-sm leading-6 text-muted-foreground">
+      <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">How measurements work</h1>
+      <p className="mt-4 text-base leading-7 text-muted-foreground">
         Every figure comes from the configured measurement service. If that service is off, the test shows an error. It does not substitute a guess.
       </p>
       <h2 className="mt-8 text-xl font-semibold">Download</h2>

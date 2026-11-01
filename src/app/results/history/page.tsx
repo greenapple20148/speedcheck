@@ -18,6 +18,7 @@ import {
   type PlanSettings,
 } from "@/lib/speedtest/history-store";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const RANGES: { id: HistoryRange; label: string }[] = [
   { id: "24h", label: "24 hours" },
@@ -72,9 +73,10 @@ export default function ResultsHistoryPage() {
         <PlanSettingsForm initial={plan} onChange={setPlan} />
 
         {entries.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-[var(--card-border)] bg-[var(--surface-subtle)] p-6 text-sm text-muted-foreground">
-            No saved tests yet. After a speed test, choose “Save result on this device,” or turn on automatic saving in Settings.
-          </p>
+          <EmptyState
+            title="No saved tests yet"
+            body="After a speed test, choose “Save result on this device,” or turn on automatic saving in Settings."
+          />
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">
