@@ -22,6 +22,7 @@ const columns = [
       { href: "/mbps-to-mbs", label: "Mbps to MB/s" },
       { href: "/internet-troubleshooter", label: "Troubleshooter" },
       { href: "/mesh-wifi", label: "Mesh Wi-Fi" },
+      { href: "/network-health", label: "Network health" },
     ],
   },
   {

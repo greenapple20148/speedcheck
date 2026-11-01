@@ -65,7 +65,7 @@ test.describe("tool flows", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Start Speed Test", exact: true }).click();
     await expect(page.getByText("Measurement service unavailable")).toBeVisible();
-    await expect(page.locator(".speed-value")).toHaveText("—");
+    await expect(page.getByRole("heading", { name: "Download", exact: true }).locator("xpath=../..")).toContainText("—");
   });
 
   test("an in-progress test can be canceled", async ({ page, request }) => {

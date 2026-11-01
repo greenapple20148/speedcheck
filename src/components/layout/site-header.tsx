@@ -28,7 +28,7 @@ export function SiteHeader() {
       className="sticky top-0 z-40 border-b border-border backdrop-blur-md"
       style={{ backgroundColor: "var(--header-bg)" }}
     >
-      <div className="relative mx-auto flex h-16 max-w-[960px] items-center justify-between gap-3 px-4">
+      <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
         <Link
           href="/"
           className="flex items-center gap-2.5 rounded-full font-heading text-lg font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
