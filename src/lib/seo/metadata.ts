@@ -13,12 +13,14 @@ export function buildMetadata({
   path = "/",
   index = true,
   ogImage,
+  ogType = "website",
 }: {
   title: string;
   description: string;
   path?: string;
   index?: boolean;
   ogImage?: string;
+  ogType?: "website" | "article";
 }): Metadata {
   const url = absoluteUrl(path);
   const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
@@ -37,7 +39,7 @@ export function buildMetadata({
       description,
       url,
       siteName: SITE_NAME,
-      type: "website",
+      type: ogType,
       locale: "en_US",
       images: [{ url: imageUrl, width: 1200, height: 630, alt: SITE_NAME }],
     },

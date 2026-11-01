@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getResult, makeResultPublic } from "@/lib/db/store";
+import { deleteResult, getResult, makeResultPublic } from "@/lib/db/store";
 
 export async function GET(
   _req: NextRequest,
@@ -28,4 +28,16 @@ export async function PATCH(
     return NextResponse.json(updated);
   }
   return NextResponse.json({ error: "Unsupported patch" }, { status: 400 });
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  ctx: { params: Promise<{ id: string }> },
+) {
+  const { id } = await ctx.params;
+  const removed = await deleteResult(id);
+  if (!removed) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return new NextResponse(null, { status: 204 });
 }

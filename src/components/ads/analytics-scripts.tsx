@@ -1,9 +1,32 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Script from "next/script";
+import { adsActive } from "@/lib/ads/config";
+import { CONSENT_STORAGE_KEY } from "@/components/ads/consent-banner";
+
+function consentAccepted(): boolean {
+  try {
+    return localStorage.getItem(CONSENT_STORAGE_KEY) === "accepted";
+  } catch {
+    return false;
+  }
+}
 
 export function AnalyticsScripts() {
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   const adsClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
-  const adsEnabled = process.env.NEXT_PUBLIC_ENABLE_ADS === "true";
+  const adsEnabled = adsActive();
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    const read = () => setAllowed(consentAccepted());
+    read();
+    window.addEventListener("speedcheck:consent", read);
+    return () => window.removeEventListener("speedcheck:consent", read);
+  }, []);
+
+  if (!allowed) return null;
 
   return (
     <>

@@ -2,24 +2,51 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo/metadata";
 import { ISPS } from "@/content/isps";
 import { LOCATIONS } from "@/content/locations";
+import { MESH_SITEMAP_PATHS } from "@/lib/mesh/catalog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPaths = [
     "/",
+    "/speed-test",
     "/internet-speed-test",
     "/wifi-speed-test",
     "/upload-speed-test",
     "/ping-test",
     "/jitter-test",
-    "/results/history",
+    "/bufferbloat-test",
+    "/packet-loss-test",
+    "/connection-stability-test",
+    "/gaming-speed-test",
+    "/streaming-speed-test",
+    "/video-call-test",
+    "/dns-speed-test",
+    "/internet-troubleshooter",
+    "/why-is-my-internet-slow",
+    "/wifi-vs-ethernet",
+    "/slow-upload-speed",
+    "/high-ping-fix",
+    "/download-time-calculator",
+    "/upload-time-calculator",
+    "/mbps-to-mbs",
+    "/internet-speed-calculator",
+    "/history",
     "/diagnostics",
-    "/tools/mbps-to-mbs",
+    "/guides",
     "/guides/why-is-my-internet-slow",
     "/guides/what-is-good-internet-speed",
     "/guides/how-to-improve-wifi-speed",
+    "/guides/what-is-bufferbloat",
+    "/guides/what-is-latency",
+    "/guides/why-upload-is-slower-than-download",
+    "/guides/how-to-reduce-ping-while-gaming",
+    "/guides/how-fast-is-100-mbps",
+    "/methodology",
+    "/about",
+    "/contact",
     "/privacy",
     "/terms",
     "/affiliate-disclosure",
+    ...MESH_SITEMAP_PATHS,
   ];
 
   const ispPaths = ISPS.filter((i) => i.indexed).map((i) => `/isp/${i.slug}`);

@@ -41,6 +41,7 @@ Browser
 | `src/app` | Next.js routes and SEO pages |
 | `src/components` | UI, speedometer, ads, layout |
 | `src/lib/speedtest` | Client measurement engine |
+| `src/lib/network` | Shared measurement math, diagnosis, and methodology notes |
 | `services/speedtest` | Go measurement backend |
 | `supabase/migrations` | SQL schema |
 | `docs/` | Living documentation |
@@ -60,3 +61,13 @@ Browser
 - Per-session byte budgets
 - Server-wide concurrency limits
 - Daily transfer caps with graceful 429 responses
+
+## Current platform shape
+
+The product name in the UI is MySpeedGauge. Pages and calculators render in Next.js. Timed transfers still go to the Go service, either directly or through `/api/speedtest/measure`. A result is written to Supabase or the local results file only when the user saves it, or when Settings turns automatic history on.
+
+`MEASUREMENT_TESTS_ENABLED=false` makes `/api/speedtest/config` report tests unavailable. The UI shows that message and does not substitute a guessed speed.
+
+AI explanations stay off unless `DIAGNOSTICS_AI_ENABLED=true` and an API key are set. `/internet-troubleshooter` uses fixed rules and does not call that API.
+
+Pure math (megabits, jitter, medians, request-loss percentage) lives in `src/lib/network`. The transfer loop remains `src/lib/speedtest/engine.ts`.

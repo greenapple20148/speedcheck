@@ -11,7 +11,7 @@ const tools = [
     enabled: true,
   },
   {
-    href: "/results/history",
+    href: "/history",
     icon: BarChart3,
     title: "Performance history",
     description: "Trends saved in this browser. Sign in + Supabase for cloud history (Phase 2).",

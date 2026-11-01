@@ -14,10 +14,11 @@ import (
 )
 
 type Server struct {
-	Cfg      config.Config
-	Sessions *session.Manager
-	Quota    *bandwidth.Controller
-	Limiter  *RateLimiter
+	Cfg         config.Config
+	Sessions    *session.Manager
+	Quota       *bandwidth.Controller
+	Limiter     *RateLimiter
+	PingLimiter *RateLimiter
 }
 
 func (s *Server) Routes() http.Handler {
@@ -131,6 +132,10 @@ func (s *Server) handleCancel(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		methodNotAllowed(w)
+		return
+	}
+	if s.PingLimiter != nil && !s.PingLimiter.Allow(r) {
+		writeError(w, http.StatusTooManyRequests, "rate limit exceeded")
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
@@ -347,7 +352,7 @@ func (s *Server) withCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if origin != "" {
-			if _, ok := allowed[origin]; ok || len(allowed) == 0 {
+			if _, ok := allowed[origin]; ok {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Set("Vary", "Origin")
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")

@@ -4,8 +4,9 @@ import { buildMetadata } from "@/lib/seo/metadata";
 export const metadata: Metadata = buildMetadata({
   title: "Speed Test History",
   description:
-    "Track your past speed test results, compare trends to your internet plan, and filter by Wi‑Fi or wired connection.",
+    "Saved speed tests now live on the history page.",
   path: "/results/history",
+  index: false,
 });
 
 export default function ResultsHistoryLayout({

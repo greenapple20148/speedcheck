@@ -27,6 +27,8 @@ export interface StoredHistoryEntry {
   bufferbloatLoadedUpMs?: number | null;
   bufferbloatGrade?: BufferbloatGrade | null;
   connectionTag?: ConnectionTag | null;
+  /** True when this browser also stored the row on the results API. */
+  persisted?: boolean;
 }
 
 function normalizeEntry(raw: unknown): StoredHistoryEntry | null {
@@ -55,6 +57,7 @@ function normalizeEntry(raw: unknown): StoredHistoryEntry | null {
       o.connectionTag === "wifi" || o.connectionTag === "wired"
         ? o.connectionTag
         : null,
+    persisted: o.persisted === true,
   };
 }
 
@@ -93,6 +96,11 @@ export function deleteHistoryEntry(id: string): void {
   writeHistory(readHistory().filter((e) => e.id !== id));
 }
 
+export function clearHistory(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(HISTORY_KEY);
+}
+
 export function readPlan(): PlanSettings | null {
   if (typeof window === "undefined") return null;
   try {
@@ -117,4 +125,42 @@ export function writePlan(plan: PlanSettings | null): void {
     return;
   }
   localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
+}
+
+export const PREFS_KEY = "speedcheck_prefs";
+
+export interface LocalPreferences {
+  /** When true, completed tests are written to this browser and the results API. */
+  saveHistory: boolean;
+  units: "decimal" | "binary";
+  stabilityDurationSec: 30 | 60 | 300;
+}
+
+const DEFAULT_PREFS: LocalPreferences = {
+  saveHistory: false,
+  units: "decimal",
+  stabilityDurationSec: 30,
+};
+
+export function readPrefs(): LocalPreferences {
+  if (typeof window === "undefined") return DEFAULT_PREFS;
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return DEFAULT_PREFS;
+    const o = JSON.parse(raw) as Record<string, unknown>;
+    const duration = o.stabilityDurationSec;
+    return {
+      saveHistory: o.saveHistory === true,
+      units: o.units === "binary" ? "binary" : "decimal",
+      stabilityDurationSec:
+        duration === 60 || duration === 300 || duration === 30 ? duration : 30,
+    };
+  } catch {
+    return DEFAULT_PREFS;
+  }
+}
+
+export function writePrefs(prefs: LocalPreferences): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
 }

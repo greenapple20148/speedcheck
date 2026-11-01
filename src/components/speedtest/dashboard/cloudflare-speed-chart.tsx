@@ -14,6 +14,7 @@ interface CloudflareSpeedChartProps {
   kind: "download" | "upload";
   color: string;
   height?: number;
+  sparkline?: boolean;
 }
 
 export function CloudflareSpeedChart({
@@ -21,14 +22,15 @@ export function CloudflareSpeedChart({
   kind,
   color,
   height = 100,
+  sparkline = false,
 }: CloudflareSpeedChartProps) {
   const filtered = samples.filter((s) => s.kind === kind);
 
   if (filtered.length === 0) {
     return (
       <div
-        className="w-full rounded-sm bg-muted/30"
-        style={{ height }}
+        className={sparkline ? "mt-3 h-0.5 w-full rounded-full bg-muted" : "w-full rounded-sm bg-muted/30"}
+        style={sparkline ? undefined : { height }}
         aria-hidden
       />
     );
@@ -42,19 +44,25 @@ export function CloudflareSpeedChart({
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
-          margin={{ top: 6, right: 4, left: 0, bottom: 10 }}
+          margin={
+            sparkline
+              ? { top: 4, right: 0, left: 0, bottom: 2 }
+              : { top: 6, right: 4, left: 0, bottom: 10 }
+          }
         >
-          <CartesianGrid
-            stroke="var(--chart-grid)"
-            strokeDasharray="3 3"
-            vertical={false}
-          />
+          {!sparkline && (
+            <CartesianGrid
+              stroke="var(--chart-grid)"
+              strokeDasharray="3 3"
+              vertical={false}
+            />
+          )}
           <YAxis hide domain={[0, max * 1.15]} />
           <Line
             type="monotone"
             dataKey="v"
             stroke={color}
-            strokeWidth={2}
+            strokeWidth={sparkline ? 1.75 : 2}
             strokeLinecap="butt"
             strokeLinejoin="round"
             dot={false}

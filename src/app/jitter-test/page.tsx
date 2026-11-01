@@ -1,31 +1,36 @@
 import type { Metadata } from "next";
-import { ToolPage } from "@/components/seo/tool-page";
+import { HttpProbePanel } from "@/components/diagnostics/http-probe-panel";
+import { ToolShell } from "@/components/seo/tool-shell";
 import { buildMetadata } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Jitter Test",
+  title: "Jitter Test — Measure Latency Variation",
   description:
-    "Measure network jitter—the variation in latency that causes choppy calls and unstable gameplay.",
+    "See how much HTTP round-trip time changes from sample to sample. High jitter is reported separately from the median.",
   path: "/jitter-test",
 });
 
 export default function JitterTestPage() {
   return (
-    <ToolPage
-      title="Jitter Test"
-      description="Jitter test"
+    <ToolShell
+      title="Jitter test"
+      description="Variation between HTTP latency samples"
       path="/jitter-test"
-      intro="Jitter measures how much latency varies between packets. High jitter causes robotic audio and rubber-banding in games."
-      bullets={[
-        "Aim for jitter under 10–15 ms for smooth calls",
-        "Bufferbloat and congested Wi‑Fi often raise jitter",
-        "QoS or SQM on your router can stabilize latency",
+      intro="Jitter here is the average gap between successive HTTP round trips. A steady 40 ms is different from a connection that swings between 20 ms and 90 ms."
+      methodology="Samples are HTTP requests to one endpoint. The first sample is dropped. Jitter uses only successful samples, in order."
+      faqs={[
+        {
+          question: "Can jitter be high when the average looks fine?",
+          answer:
+            "Yes. Calls and games react to the swings. Read the jitter figure next to the median, not instead of it.",
+        },
       ]}
-      defaultMode="lightweight"
       related={[
         { href: "/ping-test", label: "Ping test" },
-        { href: "/guides/why-is-my-internet-slow", label: "Why is my internet slow?" },
+        { href: "/connection-stability-test", label: "Stability test" },
       ]}
-    />
+    >
+      <HttpProbePanel mode="jitter" />
+    </ToolShell>
   );
 }

@@ -6,6 +6,15 @@ describe("resolveMeasurementConfig", () => {
     vi.unstubAllEnvs();
   });
 
+  it("disables tests when the kill switch is false", () => {
+    vi.stubEnv("MEASUREMENT_TESTS_ENABLED", "false");
+    vi.stubEnv("NEXT_PUBLIC_SPEEDTEST_URL", "https://measure.example.com");
+    const cfg = resolveMeasurementConfig("https://myspeedgauge.com");
+    expect(cfg.ready).toBe(false);
+    expect(cfg.baseUrl).toBeNull();
+    expect(cfg.mode).toBe("none");
+  });
+
   it("uses direct public HTTPS URL in production", () => {
     vi.stubEnv(
       "NEXT_PUBLIC_SPEEDTEST_URL",

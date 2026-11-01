@@ -72,6 +72,17 @@ function dedicatedConfig(
 }
 
 export function resolveMeasurementConfig(siteOrigin: string): MeasurementConfig {
+  if (process.env.MEASUREMENT_TESTS_ENABLED === "false") {
+    return {
+      baseUrl: null,
+      mode: "none",
+      provider: "dedicated",
+      ready: false,
+      message:
+        "Bandwidth-intensive tests are temporarily disabled. Other pages stay available.",
+    };
+  }
+
   const publicUrl = process.env.NEXT_PUBLIC_SPEEDTEST_URL?.replace(/\/$/, "");
   const internal = process.env.SPEEDTEST_INTERNAL_URL?.replace(/\/$/, "");
   const pageIsLocal = isLoopbackUrl(siteOrigin);

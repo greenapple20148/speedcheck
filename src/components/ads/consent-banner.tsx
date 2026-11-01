@@ -3,22 +3,23 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { adsRequested } from "@/lib/ads/config";
 
-const KEY = "speedcheck_consent_v1";
+export const CONSENT_STORAGE_KEY = "speedcheck_consent_v1";
 
 /**
  * Lightweight consent scaffolding for analytics/ads.
  * Replace with a CMP (e.g. IAB TCF) before enabling AdSense in regulated regions.
  */
 export function ConsentBanner() {
-  const adsOn = process.env.NEXT_PUBLIC_ENABLE_ADS === "true";
+  const adsOn = adsRequested();
   const analyticsOn = Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!adsOn && !analyticsOn) return;
     try {
-      if (!localStorage.getItem(KEY)) setVisible(true);
+      if (!localStorage.getItem(CONSENT_STORAGE_KEY)) setVisible(true);
     } catch {
       setVisible(true);
     }
@@ -28,7 +29,7 @@ export function ConsentBanner() {
 
   const decide = (value: "accepted" | "rejected") => {
     try {
-      localStorage.setItem(KEY, value);
+      localStorage.setItem(CONSENT_STORAGE_KEY, value);
     } catch {
       // ignore
     }

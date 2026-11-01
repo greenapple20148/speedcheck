@@ -9,12 +9,26 @@ test.describe("real measurement flow", () => {
     await expect(
       page.getByText(/Preparing|Measuring|Testing download|Testing upload|Saving/i).first(),
     ).toBeVisible();
-    await expect(page.getByText("Connection quality")).toBeVisible({
+    await expect(page.getByRole("button", { name: "Test Again", exact: true })).toBeVisible({
       timeout: 75_000,
     });
-    await expect(page.getByText("DOWNLOAD")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Download", exact: true })).toBeVisible();
     // After completion, download Mbps should not remain as an em dash placeholder
     await expect(page.locator(".speed-value")).not.toHaveText("—");
+  });
+
+  test("standard test measures latency during transfer", async ({ page }) => {
+    test.setTimeout(90_000);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Standard", exact: true }).click();
+    await page.getByRole("button", { name: "Start Speed Test", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Test Again", exact: true })).toBeVisible({
+      timeout: 80_000,
+    });
+    await page.getByRole("button", { name: "View detailed diagnostics" }).click();
+    const loaded = page.getByText("Download-loaded ping").locator("xpath=..");
+    await expect(loaded).toContainText(/\d+(\.\d+)? ms/);
+    await expect(loaded).not.toContainText("Not measured");
   });
 });
 
@@ -29,10 +43,10 @@ test.describe("responsive + a11y smoke", () => {
       const start = page.getByRole("button", { name: "Start Speed Test", exact: true });
       await expect(start).toBeVisible();
       await expect(start).toBeInViewport();
-      await expect(page.getByText("DOWNLOAD")).toBeInViewport();
-      await expect(page.getByText("Upload", { exact: true }).first()).toBeInViewport();
-      await expect(page.getByText("Ping", { exact: true }).first()).toBeInViewport();
-      await expect(page.getByText("Jitter", { exact: true }).first()).toBeInViewport();
+      await expect(page.getByRole("heading", { name: "Download", exact: true })).toBeInViewport();
+      await expect(page.getByRole("heading", { name: "Upload", exact: true })).toBeInViewport();
+      await expect(page.getByRole("heading", { name: "Latency", exact: true })).toBeInViewport();
+      await expect(page.getByRole("heading", { name: "Jitter", exact: true })).toBeInViewport();
       await expect(page.getByText("Lightweight", { exact: true })).toBeInViewport();
     });
   }

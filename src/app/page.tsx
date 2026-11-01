@@ -1,21 +1,25 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SpeedTestDashboard } from "@/components/speedtest/dashboard/speed-test-dashboard";
-import { TroubleshootingSection } from "@/components/speedtest/troubleshooting";
+import { HomeToolCards } from "@/components/home/tool-cards";
 import { FaqSection } from "@/components/seo/faq-section";
 import { JsonLd } from "@/components/seo/json-ld";
 import { AdSlot } from "@/components/ads/ad-slot";
-import { AffiliateOffers } from "@/components/ads/affiliate-offers";
 import { HOME_FAQS } from "@/content/faqs";
-import { AFFILIATE_OFFERS } from "@/content/affiliates";
-import { absoluteUrl } from "@/lib/seo/metadata";
+import { absoluteUrl, buildMetadata } from "@/lib/seo/metadata";
 
-const related = [
-  { href: "/internet-speed-test", label: "Internet speed test" },
-  { href: "/wifi-speed-test", label: "Wi‑Fi speed test" },
-  { href: "/upload-speed-test", label: "Upload speed test" },
-  { href: "/ping-test", label: "Ping test" },
-  { href: "/jitter-test", label: "Jitter test" },
-  { href: "/tools/mbps-to-mbs", label: "Mbps to MB/s converter" },
+export const metadata: Metadata = buildMetadata({
+  title: "Test Your Internet Speed & Connection Quality | MySpeedGauge",
+  description:
+    "Measure speed, latency, stability, and connection quality. See what is slowing you down and how to check the next fix.",
+  path: "/",
+});
+
+const guides = [
+  { href: "/guides/why-is-my-internet-slow", label: "Why is my internet slow?" },
+  { href: "/guides/what-is-bufferbloat", label: "What is bufferbloat?" },
+  { href: "/guides/what-is-latency", label: "What is latency?" },
+  { href: "/guides/how-fast-is-100-mbps", label: "How fast is 100 Mbps?" },
 ];
 
 export default function HomePage() {
@@ -31,68 +35,92 @@ export default function HomePage() {
           operatingSystem: "Any",
           offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
           description:
-            "Free internet speed test measuring download, upload, ping, and jitter.",
+            "Free internet diagnostics for download, upload, HTTP latency, jitter, and latency under load.",
         }}
       />
       <JsonLd
         data={{
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: HOME_FAQS.map((f) => ({
+          mainEntity: HOME_FAQS.map((faq) => ({
             "@type": "Question",
-            name: f.question,
-            acceptedAnswer: { "@type": "Answer", text: f.answer },
+            name: faq.question,
+            acceptedAnswer: { "@type": "Answer", text: faq.answer },
           })),
         }}
       />
 
-      <section className="mx-auto max-w-[1100px] px-3 pb-0 pt-2 text-center sm:px-4 sm:pt-3">
-        <h1 className="text-[1.5rem] font-semibold leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
-          How fast is your internet?
+      <section className="mx-auto max-w-[960px] px-4 pb-0 pt-3 text-center">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          Network performance test
+        </p>
+        <h1 className="mx-auto mt-1 max-w-[16rem] font-heading text-xl font-semibold leading-tight tracking-tight text-foreground sm:max-w-none sm:text-2xl">
+          Test Your Internet. Understand Your Connection.
         </h1>
-        <p className="mx-auto mt-1 max-w-lg text-[13px] text-muted-foreground sm:text-[14px]">
-          Measure your connection speed and stability in seconds.
+        <p className="mx-auto mt-1 max-w-lg text-[13px] leading-snug text-muted-foreground">
+          Measure speed, latency, stability and connection quality. Discover what&apos;s slowing you down and how to fix it.
         </p>
       </section>
 
-      <div id="speed-test" className="pb-1 pt-2">
+      <div id="speed-test" className="pt-2">
         <SpeedTestDashboard />
       </div>
 
-      <div className="mx-auto mt-8 max-w-[960px] border-t border-border bg-muted px-4 py-8 sm:py-10">
-        <TroubleshootingSection />
-      </div>
+      <HomeToolCards />
 
-      <section className="mx-auto mt-12 w-full max-w-[960px] px-4" aria-labelledby="learn-heading">
-        <h2 id="learn-heading" className="heading-2 text-foreground">
-          Understand your results
+      <section className="mx-auto mt-16 w-full max-w-[960px] px-4" aria-labelledby="read-results">
+        <h2 id="read-results" className="text-lg font-semibold text-foreground">
+          How to read a result
         </h2>
-        <p className="mt-2 max-w-2xl text-muted-foreground">
-          Learn what good speeds look like and how to fix common connection problems.
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          {related.map((r) => (
-            <Link
-              key={r.href}
-              href={r.href}
-              className="rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              {r.label}
-            </Link>
+        <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          {[
+            ["Download and upload", "Megabits per second from bytes actually transferred and the timed window."],
+            ["Idle ping", "Median HTTP round trip to the measurement endpoint. This is not ICMP."],
+            ["Jitter", "Average change between successive latency samples."],
+            ["Loaded latency", "Median HTTP round trip while a download or upload is in progress."],
+          ].map(([title, body]) => (
+            <li key={title} className="panel p-4 text-sm">
+              <p className="font-semibold text-foreground">{title}</p>
+              <p className="mt-1 text-muted-foreground">{body}</p>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
 
-      <div className="mx-auto w-full max-w-[960px] px-4">
-        <AdSlot format="horizontal" slot="home-below-results" className="my-6" />
-      </div>
+      <section className="mx-auto mt-8 w-full max-w-[960px] px-4">
+        <h2 className="text-lg font-semibold text-foreground">Checks worth trying first</h2>
+        <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+          <li>Pause cloud backups and downloads, then run the test again.</li>
+          <li>Repeat once on Ethernet if you can, and compare it with Wi-Fi.</li>
+          <li>If speed is fine but latency jumps under load, open the bufferbloat test.</li>
+          <li>Save the result before you change more than one thing.</li>
+        </ol>
+        <p className="mt-3 text-sm">
+          <Link href="/internet-troubleshooter" className="font-medium text-primary hover:underline">
+            Open the troubleshooter
+          </Link>{" "}
+          for a checklist tied to your symptoms.
+        </p>
+      </section>
 
-      <div className="mx-auto mt-8 w-full max-w-[960px] px-4">
-        <AffiliateOffers offers={AFFILIATE_OFFERS} />
-      </div>
+      <section className="mx-auto mt-8 w-full max-w-[960px] px-4" aria-labelledby="guides-heading">
+        <h2 id="guides-heading" className="text-lg font-semibold text-foreground">
+          Popular guides
+        </h2>
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {guides.map((guide) => (
+            <li key={guide.href}>
+              <Link href={guide.href} className="inline-flex min-h-11 items-center rounded-full border border-border bg-card px-4 text-sm font-medium hover:border-primary">
+                {guide.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
 
-      <div className="mx-auto mt-12 w-full max-w-[960px] px-4 pb-12">
+      <div className="mx-auto mt-8 w-full max-w-[960px] px-4 pb-12">
         <FaqSection items={HOME_FAQS} />
+        <AdSlot format="horizontal" slot="home-after-faq" />
       </div>
     </>
   );

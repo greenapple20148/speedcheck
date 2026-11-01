@@ -155,6 +155,25 @@ export async function makeResultPublic(id: string): Promise<StoredResult | null>
   return store.results[idx];
 }
 
+export async function deleteResult(id: string): Promise<boolean> {
+  if (!/^[a-f0-9]{16}$/.test(id)) return false;
+  const supabase = getSupabase();
+  if (supabase) {
+    const { error, count } = await supabase
+      .from("test_results")
+      .delete({ count: "exact" })
+      .eq("id", id);
+    if (error) return false;
+    return (count ?? 0) > 0;
+  }
+  const store = await readLocal();
+  const next = store.results.filter((result) => result.id !== id);
+  if (next.length === store.results.length) return false;
+  store.results = next;
+  await writeLocal(store);
+  return true;
+}
+
 export async function recordAnalyticsEvent(
   name: string,
   props: Record<string, unknown>,

@@ -5,7 +5,8 @@ export const metadata: Metadata = buildMetadata({
   title: "Mbps to MB/s Converter",
   description:
     "Convert megabits per second (Mbps) to megabytes per second (MB/s) with a simple free calculator.",
-  path: "/tools/mbps-to-mbs",
+  path: "/mbps-to-mbs",
+  index: false,
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

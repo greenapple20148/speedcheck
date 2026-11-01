@@ -1,8 +1,7 @@
 /** Client-safe feature gates (build-time public env). */
 
 export const featureFlags = {
-  aiDiagnostics:
-    process.env.NEXT_PUBLIC_FEATURE_AI_DIAGNOSTICS !== "false",
+  aiDiagnostics: process.env.NEXT_PUBLIC_FEATURE_AI_DIAGNOSTICS === "true",
   ispReport: process.env.NEXT_PUBLIC_FEATURE_ISP_REPORT === "true",
   gamingDiagnostics:
     process.env.NEXT_PUBLIC_FEATURE_GAMING_DIAGNOSTICS === "true",
@@ -11,7 +10,7 @@ export const featureFlags = {
 
 export function isAiDiagnosticsServerEnabled(): boolean {
   return (
-    process.env.DIAGNOSTICS_AI_ENABLED !== "false" &&
+    process.env.DIAGNOSTICS_AI_ENABLED === "true" &&
     Boolean(process.env.OPENAI_API_KEY?.trim())
   );
 }

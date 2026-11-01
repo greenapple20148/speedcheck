@@ -14,15 +14,27 @@ import (
 
 func main() {
 	cfg := config.Load()
+	const defaultHMAC = "dev-hmac-secret-change-in-production"
+	const defaultAdmin = "dev-admin-token"
+	if os.Getenv("SPEEDTEST_PRODUCTION") == "true" &&
+		(cfg.HMACSecret == defaultHMAC || cfg.AdminToken == defaultAdmin) {
+		log.Fatal("refusing to start: SPEEDTEST_PRODUCTION=true but the HMAC secret or admin token is still a default")
+	}
+	if cfg.HMACSecret == defaultHMAC {
+		log.Println("warning: measurement service is using the default HMAC secret")
+	}
+
 	sessions := session.NewManager(cfg.HMACSecret, cfg.SessionTTL, cfg.LightBudgetBytes, cfg.StandardBudgetBytes)
 	quota := bandwidth.NewController(cfg.MaxConcurrentTests, cfg.DailyBandwidthBytes)
 	limiter := handlers.NewRateLimiter(cfg.RateLimitPerIP, time.Minute)
+	pingLimiter := handlers.NewRateLimiter(cfg.PingRateLimitPerIP, time.Minute)
 
 	srv := &handlers.Server{
-		Cfg:      cfg,
-		Sessions: sessions,
-		Quota:    quota,
-		Limiter:  limiter,
+		Cfg:         cfg,
+		Sessions:    sessions,
+		Quota:       quota,
+		Limiter:     limiter,
+		PingLimiter: pingLimiter,
 	}
 
 	server := &http.Server{

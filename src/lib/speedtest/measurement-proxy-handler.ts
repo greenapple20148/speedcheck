@@ -18,6 +18,27 @@ function proxyEnabled(): boolean {
   return process.env.NODE_ENV === "development";
 }
 
+/** Public proxy surface. Admin routes stay on the measurement host. */
+function allowedMeasurementPath(pathSegments: string[]): boolean {
+  if (pathSegments.length === 0 || pathSegments.length > 2) return false;
+  if (
+    pathSegments.some(
+      (segment) =>
+        segment === "" ||
+        segment === "." ||
+        segment === ".." ||
+        segment.includes("\\") ||
+        segment.includes("/"),
+    )
+  ) {
+    return false;
+  }
+  const [head, rest] = pathSegments;
+  if (head === "sessions") return pathSegments.length === 1 || rest === "cancel";
+  if (pathSegments.length !== 1) return false;
+  return ["health", "servers", "ping", "download", "upload"].includes(head);
+}
+
 async function forward(req: NextRequest, pathSegments: string[]) {
   if (!proxyEnabled()) {
     return NextResponse.json(
@@ -27,6 +48,10 @@ async function forward(req: NextRequest, pathSegments: string[]) {
       },
       { status: 503 },
     );
+  }
+
+  if (!allowedMeasurementPath(pathSegments)) {
+    return NextResponse.json({ error: "Unknown measurement path." }, { status: 404 });
   }
 
   const upstream = serverMeasurementOrigin();

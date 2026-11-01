@@ -44,9 +44,9 @@ export function HistoryTable({ entries, onDelete }: HistoryTableProps) {
   if (entries.length === 0) return null;
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--card-border)]">
+    <div className="panel overflow-x-auto">
       <table className="w-full min-w-[640px] text-left text-[14px]">
-        <thead className="bg-[var(--surface-subtle)] text-[11px] uppercase tracking-wide text-muted-foreground">
+        <thead className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
           <tr>
             <SortTh label="Date" active={sortKey === "createdAt"} asc={sortAsc} onClick={() => toggleSort("createdAt")} />
             <SortTh label="Download" active={sortKey === "downloadMbps"} asc={sortAsc} onClick={() => toggleSort("downloadMbps")} />
@@ -60,7 +60,7 @@ export function HistoryTable({ entries, onDelete }: HistoryTableProps) {
         </thead>
         <tbody>
           {sorted.map((e) => (
-            <tr key={e.id} className="border-t border-[var(--card-border)]">
+            <tr key={e.id} className="border-t border-border hover:bg-[var(--surface-subtle)]">
               <td className="px-3 py-2 whitespace-nowrap text-muted-foreground">
                 {new Date(e.createdAt).toLocaleString()}
               </td>
@@ -72,12 +72,14 @@ export function HistoryTable({ entries, onDelete }: HistoryTableProps) {
               <td className="px-3 py-2 capitalize">{e.connectionTag ?? "—"}</td>
               <td className="px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <Link
-                    href={`/results/${e.id}`}
-                    className="text-sm font-medium text-[var(--accent-teal)] hover:underline"
-                  >
-                    View
-                  </Link>
+                  {e.persisted ? (
+                    <Link
+                      href={`/results/${e.id}`}
+                      className="text-sm font-medium text-[var(--accent-teal)] hover:underline"
+                    >
+                      View
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     aria-label={`Delete test from ${new Date(e.createdAt).toLocaleString()}`}
