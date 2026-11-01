@@ -506,14 +506,14 @@ export function CloudflareSpeedLayout({
         {complete && <ConnectionQualitySummary metrics={m} visible />}
         {complete && <LoadedLatencySummary metrics={m} />}
 
-        <div className="panel px-4 py-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-lg border border-border px-3 py-2">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
             Packet loss
           </p>
-          <p className="mt-1 font-heading text-2xl font-medium tabular-nums text-foreground">
+          <p className="font-heading text-lg font-medium tabular-nums text-foreground">
             {m.packetLossPercent != null ? `${m.packetLossPercent.toFixed(1)}%` : "—"}
           </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
+          <p className="w-full text-[11px] text-muted-foreground">
             {m.packetLossPercent != null
               ? "Measured during this test."
               : "Not measured on this run. Use the request-loss tool for a separate check."}

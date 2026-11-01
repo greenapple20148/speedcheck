@@ -35,7 +35,7 @@ export function StartTestButton({
           type="button"
           variant="outline"
           onClick={onCancel}
-          className="min-h-14 h-14 w-full min-w-[180px] rounded-full border-border bg-transparent px-8 text-base font-semibold text-foreground shadow-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+          className="h-11 min-h-11 w-full min-w-[180px] rounded-lg border-border bg-transparent px-6 text-sm font-semibold text-foreground shadow-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
         >
           <Loader2 className="h-4 w-4 motion-safe:animate-spin" aria-hidden />
           Stop
@@ -49,7 +49,7 @@ export function StartTestButton({
       type="button"
       onClick={onStart}
       disabled={disabled}
-      className="min-h-14 h-14 w-full min-w-[180px] rounded-full bg-primary px-10 text-base font-semibold text-primary-foreground shadow-glow hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
+      className="h-11 min-h-11 w-full min-w-[180px] rounded-lg bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-none hover:bg-primary-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-auto"
     >
       {idleLabel(phase)}
     </Button>

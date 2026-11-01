@@ -11,13 +11,14 @@ export const metadata: Metadata = buildMetadata({
 });
 
 const CARDS = [
-  { href: "/mesh-wifi/planner", title: "Floor planner", body: "Draw rooms, drag nodes, and see an estimated coverage map you can correct with measurements." },
-  { href: "/mesh-wifi/dead-zone-test", title: "Room tests", body: "Run the speed test in a room you choose and keep that result with the room." },
+  { href: "/mesh-wifi/planner", title: "Mesh Planner", body: "Draw rooms, drag nodes, and see an estimated coverage map you can correct with measurements." },
+  { href: "/mesh-wifi/setup", title: "Mesh Setup Assistant", body: "A model-aware checklist for eero, Nest, Deco, Orbi, ZenWiFi, Velop, or another kit." },
+  { href: "/mesh-wifi/placement-optimizer", title: "Node Placement", body: "Four layouts you can apply and then edit. Not a claim of a perfect plan." },
+  { href: "/mesh-wifi/dead-zone-test", title: "Room Testing", body: "Run the speed test in a room you choose and keep that result with the room." },
+  { href: "/mesh-wifi/planner", title: "Router Login Assistant", body: "Open Connect to router in the floor planner. The gateway stays in this browser." },
+  { href: "/mesh-wifi/troubleshooter", title: "Wi-Fi Troubleshooting", body: "Rules from your symptoms and any room tests you saved." },
   { href: "/mesh-wifi/node-calculator", title: "Node calculator", body: "A starting count from size and construction, including when one router is enough." },
-  { href: "/mesh-wifi/setup", title: "Setup wizard", body: "A model-aware checklist for eero, Nest, Deco, Orbi, ZenWiFi, Velop, or another kit." },
-  { href: "/mesh-wifi/placement-optimizer", title: "Placement options", body: "Four layouts you can apply and then edit. Not a claim of a perfect plan." },
   { href: "/mesh-wifi/backhaul-advisor", title: "Backhaul", body: "Ethernet, wireless, coax, and powerline, with the limits called out." },
-  { href: "/mesh-wifi/troubleshooter", title: "Mesh troubleshooter", body: "Rules from your symptoms and any room tests you saved." },
   { href: "/mesh-wifi/wifi-6-vs-wifi-7", title: "Wi-Fi 6, 6E, and 7", body: "What changes in a house, and when the newest kit does not help." },
 ];
 
@@ -41,7 +42,7 @@ export default function MeshHomePage() {
     >
       <ul className="grid gap-3 sm:grid-cols-2">
         {CARDS.map((card) => (
-          <li key={card.href}>
+          <li key={card.title}>
             <Link href={card.href} className="block h-full rounded-2xl border border-border bg-card p-4 hover:border-primary">
               <h2 className="text-base font-semibold">{card.title}</h2>
               <p className="mt-1 text-sm text-muted-foreground">{card.body}</p>

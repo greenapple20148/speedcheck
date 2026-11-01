@@ -47,6 +47,7 @@ interface SpeedTestDashboardProps {
     metrics: SpeedMetrics;
     serverName: string | null;
     testedAt: string;
+    provider: "cloudflare" | "dedicated";
   }) => void;
 }
 
@@ -330,12 +331,14 @@ export function SpeedTestDashboard({
         bufferbloatGrade: metrics.bufferbloatGrade,
         connectionTag,
         persisted: Boolean(saved?.id),
+        provider: measurementProvider,
+        packetLossPercent: metrics.packetLossPercent ?? null,
       });
       setHistorySnapshot(readHistory());
       setSavedOnDevice(true);
       trackEvent("history_saved", { mode });
     },
-    [connectionTag, mode, network, saveResult],
+    [connectionTag, measurementProvider, mode, network, saveResult],
   );
 
   const start = () => {
@@ -401,6 +404,7 @@ export function SpeedTestDashboard({
           metrics,
           serverName: session.server?.name ?? null,
           testedAt: new Date().toISOString(),
+          provider: measurementProvider,
         });
         if (mode === "standard" && metrics.bufferbloatGrade) {
           trackEvent("bufferbloat_test_completed", { grade: metrics.bufferbloatGrade });

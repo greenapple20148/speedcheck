@@ -22,6 +22,8 @@ Placement options space nodes, prefer marked Ethernet outlets, or move toward pr
 
 The plan is stored in `localStorage` under `myspeedgauge_mesh_plan_v1`. Export downloads that JSON. Import rejects files that contain password, credential, secret, or admin fields. There is no Wi-Fi password field.
 
+Connect to router stays in the browser. It checks the gateway address locally and, after confirmation, opens that page in a new tab. The gateway is not written into the saved plan, analytics, or Supabase, and the server does not call the router.
+
 `supabase/migrations/20261101010000_mesh_plans.sql` adds an owner-only `mesh_plans` table. The app does not write it. Cloud sync stays off until sign-in exists and the visitor asks for it.
 
 ## Print

@@ -60,7 +60,7 @@ test.describe("production audit screenshots", () => {
     await page.getByRole("button", { name: "Tools", exact: true }).click();
     await page
       .getByRole("navigation", { name: "Primary" })
-      .getByRole("link", { name: "Bufferbloat test", exact: true })
+      .getByRole("link", { name: "Bufferbloat Test", exact: true })
       .click();
     await expect(page).toHaveURL(/bufferbloat-test/);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

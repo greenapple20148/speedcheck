@@ -12,9 +12,8 @@ test.describe("real measurement flow", () => {
     await expect(page.getByRole("button", { name: "Test Again", exact: true })).toBeVisible({
       timeout: 75_000,
     });
-    await expect(page.getByRole("heading", { name: "Download", exact: true })).toBeVisible();
-    // After completion, download Mbps should not remain as an em dash placeholder
-    await expect(page.locator(".speed-value")).not.toHaveText("—");
+    const download = page.getByRole("heading", { name: "Download", exact: true }).locator("xpath=../..");
+    await expect(download).toContainText(/\d+(\.\d+)?\s*Mbps/);
   });
 
   test("standard test measures latency during transfer", async ({ page }) => {

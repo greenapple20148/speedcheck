@@ -12,6 +12,7 @@ import type { MeshFloor, MeshPlan, MeshRoom, WallMaterial, WifiBand } from "@/li
 import { spacingWarnings } from "@/lib/mesh/warnings";
 import { useMeshPlan } from "@/components/mesh/use-mesh-plan";
 import { PlannerCanvas, type PlannerOverlay, type PlannerSelection } from "@/components/mesh/planner-canvas";
+import { RouterConnectionDialog } from "@/components/mesh/router-connection-dialog";
 
 const SpeedTestDashboard = dynamic(
   () => import("@/components/speedtest/dashboard/speed-test-dashboard").then((mod) => mod.SpeedTestDashboard),
@@ -373,6 +374,7 @@ export function FloorPlanner() {
         <ToolButton pressed={tool === "wall"} label="Draw wall" shortcut="W" onClick={() => setTool("wall")}>Draw wall</ToolButton>
         <ToolButton pressed={false} label="Add node" shortcut="N" onClick={placeNode}>Add node</ToolButton>
         <ToolButton pressed={false} label="Add outlet" shortcut="O" onClick={placeOutlet}>Add outlet</ToolButton>
+        <RouterConnectionDialog />
         <label className="ml-auto text-xs text-muted-foreground">
           View
           <select className="ml-2 rounded-lg border border-border bg-background px-2 py-1 text-sm text-foreground" value={`${overlay}:${band}`} aria-label="Coverage view and band" onChange={(event) => {
@@ -503,6 +505,12 @@ export function FloorPlanner() {
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectedRoom.problem} onChange={() => patchFloor((current) => ({ ...current, rooms: current.rooms.map((room) => room.id === selectedRoom.id ? { ...room, problem: !room.problem } : room) }))} /> Problem room</label>
               <button type="button" className="text-sm text-primary" onClick={() => patchFloor((current) => ({ ...current, rooms: current.rooms.map((room) => room.id === selectedRoom.id ? { ...room, points: roomPoints(room) } : room) }))}>Edit corners</button>
               <button type="button" className="min-h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground" onClick={() => setTesting(true)}>Test this room</button>
+              {plan.measurements.find((row) => row.roomId === selectedRoom.id) && (
+                <div className="rounded-xl border border-border px-3 py-2 text-sm">
+                  <p>Measured download {formatRoomMbps(plan.measurements.find((row) => row.roomId === selectedRoom.id)?.downloadMbps)}. This is throughput, separate from the coverage estimate.</p>
+                  <a className="mt-1 inline-flex font-medium text-primary" href={`/network-health?room=${selectedRoom.id}`}>View in Network Health</a>
+                </div>
+              )}
               {testing && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">Stand in {selectedRoom.name}. Nothing runs until you press Start. The result is throughput, not signal strength.</p>
@@ -704,6 +712,10 @@ function ImageButton({ onLoad, label = "Upload floor plan" }: { onLoad: (dataUrl
       }} />
     </label>
   );
+}
+
+function formatRoomMbps(value: number | null | undefined): string {
+  return value == null ? "not measured" : `${Math.round(value * 10) / 10} Mbps`;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

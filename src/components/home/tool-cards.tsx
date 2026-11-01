@@ -3,7 +3,7 @@ import { HOME_TOOL_CARDS } from "@/content/tools";
 
 export function HomeToolCards() {
   return (
-    <section className="mx-auto mt-12 w-full max-w-[960px] px-4" aria-labelledby="tools-heading">
+    <section className="mx-auto mt-6 w-full max-w-[960px] px-4" aria-labelledby="tools-heading">
       <h2 id="tools-heading" className="text-lg font-semibold text-foreground">
         More diagnostics
       </h2>

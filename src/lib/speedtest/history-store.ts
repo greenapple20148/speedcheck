@@ -29,6 +29,8 @@ export interface StoredHistoryEntry {
   connectionTag?: ConnectionTag | null;
   /** True when this browser also stored the row on the results API. */
   persisted?: boolean;
+  provider?: "cloudflare" | "dedicated" | null;
+  packetLossPercent?: number | null;
 }
 
 function normalizeEntry(raw: unknown): StoredHistoryEntry | null {
@@ -58,6 +60,8 @@ function normalizeEntry(raw: unknown): StoredHistoryEntry | null {
         ? o.connectionTag
         : null,
     persisted: o.persisted === true,
+    provider: o.provider === "cloudflare" || o.provider === "dedicated" ? o.provider : null,
+    packetLossPercent: numOrNull(o.packetLossPercent),
   };
 }
 

@@ -47,6 +47,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
       { href: "/slow-upload-speed", label: "Slow upload", summary: "Why the uplink feels stuck." },
       { href: "/high-ping-fix", label: "High latency", summary: "What to change and how to retest." },
       { href: "/mesh-wifi", label: "Mesh Wi-Fi planner", summary: "Place nodes and measure each room." },
+      { href: "/network-health", label: "Network health", summary: "Measured speed, latency, and before/after comparisons." },
     ],
   },
   {

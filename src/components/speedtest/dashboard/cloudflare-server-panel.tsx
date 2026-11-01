@@ -2,7 +2,6 @@
 
 import type { ClientNetworkInfo, ServerInfo } from "@/types/speedtest";
 import { formatPublicIpDisplay, formatServerLocation } from "@/lib/network/display-fields";
-import { ServerLocationMap } from "./server-location-map";
 
 interface CloudflareServerPanelProps {
   server: ServerInfo | null;
@@ -33,7 +32,6 @@ export function CloudflareServerPanel({
       <h3 className="font-sans text-[13px] font-semibold tracking-normal text-foreground">
         Server location
       </h3>
-      <ServerLocationMap server={server} />
       <p className="text-[13px] text-muted-foreground">{location}</p>
       <dl className="grid gap-2 sm:grid-cols-3">
         <InfoBox label="Server" value={server?.name ?? "—"} />
