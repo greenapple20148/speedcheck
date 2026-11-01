@@ -20,6 +20,7 @@ import type {
   ProgressState,
   ServerInfo,
   SessionConfig,
+  SpeedMetrics,
   SpeedSample,
   TestMode,
   TestPhase,
@@ -40,6 +41,12 @@ interface SpeedTestDashboardProps {
   defaultMode?: TestMode;
   showModeToggle?: boolean;
   className?: string;
+  /** Optional. Existing pages omit this. Mesh room tests use it to store a finished run. */
+  onComplete?: (result: {
+    metrics: SpeedMetrics;
+    serverName: string | null;
+    testedAt: string;
+  }) => void;
 }
 
 const idleProgress: ProgressState = {
@@ -81,7 +88,10 @@ export function SpeedTestDashboard({
   defaultMode = "standard",
   showModeToggle = true,
   className,
+  onComplete,
 }: SpeedTestDashboardProps) {
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   const [mode, setMode] = useState<TestMode>(defaultMode);
   const [state, setState] = useState<ProgressState>(idleProgress);
   const [network, setNetwork] = useState<ClientNetworkInfo | null>(null);
@@ -376,6 +386,14 @@ export function SpeedTestDashboard({
           metrics,
         });
         trackEvent("speed_test_completed", { mode });
+        onCompleteRef.current?.({
+          metrics,
+          serverName: session.server?.name ?? null,
+          testedAt: new Date().toISOString(),
+        });
+        if (mode === "standard" && metrics.bufferbloatGrade) {
+          trackEvent("bufferbloat_test_completed", { grade: metrics.bufferbloatGrade });
+        }
       } catch (err) {
         if (controller.signal.aborted) {
           setState((s) => ({ ...s, phase: "cancelled" }));

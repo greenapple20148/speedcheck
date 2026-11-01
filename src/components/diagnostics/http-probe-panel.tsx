@@ -78,7 +78,9 @@ export function HttpProbePanel({ mode }: { mode: ProbeMode }) {
         ? "packet_loss_test_completed"
         : mode === "stability"
           ? "stability_test_completed"
-          : "ping_test_completed";
+          : mode === "jitter"
+            ? "jitter_test_completed"
+            : "ping_test_completed";
     const targetSamples = mode === "loss" ? 30 : mode === "stability" ? 0 : 21;
     const gapMs = mode === "stability" ? 1000 : 80;
     const collected: Array<number | null> = [];

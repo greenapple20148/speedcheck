@@ -25,7 +25,7 @@ The app already measured real throughput against the Go service. Mbps is `(bytes
 - Multiple regional endpoints and any game-server measurement. The UI says so.
 - The remaining editorial backlog (night congestion, 4K streaming, ISP speed checks, and the rest of the 20-topic list). Those pages are not published.
 - WebRTC packet loss. No validated endpoint is configured, so the page reports HTTP request loss only.
-- Playwright coverage for every new route. Existing homepage and speed-test specs were updated where the copy changed. They were not re-run against a live browser in this pass unless noted in the final summary.
+- Playwright covers the homepage, a real lightweight test, a real standard test with loaded latency, tool-page screenshots, cancel and failure, the troubleshooter, a calculator, mobile navigation, and history deletion. Results are in `docs/production-readiness-report.md` for the audit run; re-run the suite after later edits.
 
 ## Suggested next milestones
 

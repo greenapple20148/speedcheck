@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/seo/metadata";
 import { ISPS } from "@/content/isps";
 import { LOCATIONS } from "@/content/locations";
+import { MESH_SITEMAP_PATHS } from "@/lib/mesh/catalog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPaths = [
@@ -45,6 +46,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/privacy",
     "/terms",
     "/affiliate-disclosure",
+    ...MESH_SITEMAP_PATHS,
   ];
 
   const ispPaths = ISPS.filter((i) => i.indexed).map((i) => `/isp/${i.slug}`);

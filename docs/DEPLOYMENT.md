@@ -118,7 +118,9 @@ Wire these into UptimeRobot, Better Stack, Grafana Cloud, or Cloudflare Health C
 - Health: `GET /health` on measurement service; Vercel deployment health
 - Rollback web: promote previous Vercel deployment
 - Rollback speedtest: `docker compose up -d` with the prior image tag
-- Feature flags: `NEXT_PUBLIC_ENABLE_ADS=false` kills ads without redeploying binary
+- Feature flags: `NEXT_PUBLIC_ENABLE_ADS=false` kills ads without redeploying the measurement binary
+- Kill switch: `MEASUREMENT_TESTS_ENABLED=false` on the Next.js server makes `/api/speedtest/config` report tests unavailable. Pages stay up.
+- Production secrets: start the Go service with `SPEEDTEST_PRODUCTION=true` only after `SPEEDTEST_HMAC_SECRET` and `SPEEDTEST_ADMIN_TOKEN` are unique. Behind your own proxy, set `SPEEDTEST_TRUST_PROXY=true`.
 - Quotas: lower `SPEEDTEST_DAILY_BANDWIDTH_GB` via `/admin/config` under incident load
 
 ## CI

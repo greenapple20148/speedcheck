@@ -50,19 +50,19 @@ export default function HomePage() {
         }}
       />
 
-      <section className="mx-auto max-w-[960px] px-4 pb-1 pt-4 text-center sm:pt-5">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+      <section className="mx-auto max-w-[960px] px-4 pb-0 pt-3 text-center">
+        <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
           Network performance test
         </p>
-        <h1 className="heading-1 mx-auto mt-3 max-w-[18ch] text-balance text-foreground">
+        <h1 className="mx-auto mt-1 max-w-[16rem] font-heading text-xl font-semibold leading-tight tracking-tight text-foreground sm:max-w-none sm:text-2xl">
           Test Your Internet. Understand Your Connection.
         </h1>
-        <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+        <p className="mx-auto mt-1 max-w-lg text-[13px] leading-snug text-muted-foreground">
           Measure speed, latency, stability and connection quality. Discover what&apos;s slowing you down and how to fix it.
         </p>
       </section>
 
-      <div id="speed-test" className="pb-1 pt-1">
+      <div id="speed-test" className="pt-2">
         <SpeedTestDashboard />
       </div>
 

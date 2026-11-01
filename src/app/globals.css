@@ -291,15 +291,15 @@ html[data-theme="dark"] {
     font-family: var(--font-space), system-ui, sans-serif;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum" 1;
-    font-size: 48px;
+    font-size: 44px;
     font-weight: 500;
-    letter-spacing: -0.045em;
+    letter-spacing: -0.04em;
     line-height: 0.9;
   }
 
   @media (min-width: 768px) {
     .hero-speed {
-      font-size: 64px;
+      font-size: 56px;
     }
   }
 

@@ -94,9 +94,9 @@ function SemiGauge({
     phase === "idle" || phase === "preparing" || phase === "ping"
       ? 0
       : speedToArcProgress(mbps, scaleMax);
-  const cx = 160;
-  const cy = 148;
-  const r = 112;
+  const cx = 180;
+  const cy = 176;
+  const r = 148;
   const length = Math.PI * r;
   // Sweep-flag 1 draws clockwise through the top of the circle (SVG y grows downward).
   const d = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
@@ -119,8 +119,8 @@ function SemiGauge({
       : `${phaseLabel} in progress`;
 
   return (
-    <div className="relative mx-auto w-full max-w-[340px]">
-      <svg viewBox="0 0 320 188" className="h-auto w-full" role="img" aria-label={ariaLabel}>
+    <div className="relative mx-auto w-full min-w-0 max-w-[320px]">
+      <svg viewBox="-12 -8 384 216" className="block h-auto w-full" role="img" aria-label={ariaLabel}>
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#14C8B4" />
@@ -148,9 +148,9 @@ function SemiGauge({
             uses CSS pixels and lifts the needle off the hub. */}
         <g transform={`translate(${cx} ${cy}) rotate(${progress * 180})`}>
           <line
-            x1={-(r - 28)}
+            x1="-38"
             y1="0"
-            x2="-10"
+            x2="-12"
             y2="0"
             stroke="currentColor"
             strokeWidth="3"
@@ -160,14 +160,16 @@ function SemiGauge({
           <circle r="5.5" fill="var(--card)" stroke="currentColor" strokeWidth="2.5" className="text-foreground" />
         </g>
       </svg>
-      <div className="pointer-events-none absolute inset-x-0 top-[22%] flex flex-col items-center sm:top-[26%]">
-        <p className="hero-speed speed-value text-foreground">{parts?.amount ?? "—"}</p>
-        <p className="mt-1 text-sm font-medium text-muted-foreground">
-          {parts ? parts.unit : "Mbps"}
-          <span className="mx-2 text-[var(--text-ghost)]">·</span>
-          <span className="text-foreground">{phaseLabel}</span>
+      <div className="pointer-events-none absolute inset-x-0 top-[30%] text-center">
+        <p className="font-heading text-[3rem] font-medium leading-none tracking-tight text-foreground tabular-nums">
+          {parts?.amount ?? "—"}
         </p>
       </div>
+      <p className="mt-1 text-center text-sm font-medium text-muted-foreground">
+        {parts ? parts.unit : "Mbps"}
+        <span className="mx-2 text-[var(--text-ghost)]">·</span>
+        <span className="text-foreground">{phaseLabel}</span>
+      </p>
     </div>
   );
 }
@@ -224,6 +226,56 @@ function StepPills({ phase }: { phase: TestPhase }) {
         );
       })}
     </ol>
+  );
+}
+
+function LoadedLatencySummary({ metrics }: { metrics: ProgressState["metrics"] }) {
+  const idle = metrics.bufferbloatIdleMs ?? metrics.pingMs;
+  const down = metrics.bufferbloatLoadedDownMs;
+  const up = metrics.bufferbloatLoadedUpMs;
+  const measured = down != null || up != null;
+  const msLabel = (value: number | null | undefined) => {
+    const text = formatMs(value, 1);
+    return text === "—" ? "—" : `${text} ms`;
+  };
+  const increase = (loaded: number | null | undefined) =>
+    loaded == null || idle == null ? null : Math.max(0, loaded - idle);
+
+  return (
+    <section className="rounded-2xl border border-border bg-[var(--surface-subtle)] px-4 py-3" aria-label="Latency under load">
+      <h3 className="text-[13px] font-semibold text-foreground">Latency under load</h3>
+      {measured ? (
+        <>
+          <dl className="mt-2 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+            <div>
+              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Idle</dt>
+              <dd className="font-medium tabular-nums">{msLabel(idle)}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Download</dt>
+              <dd className="font-medium tabular-nums">{msLabel(down)}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Upload</dt>
+              <dd className="font-medium tabular-nums">{msLabel(up)}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">Grade</dt>
+              <dd className="font-medium">{metrics.bufferbloatGrade ?? "—"}</dd>
+            </div>
+          </dl>
+          <p className="mt-2 text-[13px] leading-snug text-muted-foreground">
+            Increase while downloading: {msLabel(increase(down))}. Increase while uploading:{" "}
+            {msLabel(increase(up))}. These are HTTP round trips to this endpoint during the transfer.
+            The letter compares that increase with this site’s thresholds. It is not a certification.
+          </p>
+        </>
+      ) : (
+        <p className="mt-2 text-[13px] leading-snug text-muted-foreground">
+          Loaded latency was not measured on this run. Use Standard mode to probe latency while data is moving.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -373,8 +425,8 @@ export function CloudflareSpeedLayout({
       </div>
 
       <div className="space-y-4 px-4 py-4 sm:px-6">
-        <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
-          <div className="space-y-3">
+        <div className="grid items-center gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)] lg:gap-6">
+          <div className="min-w-0 space-y-3">
             <SemiGauge mbps={gaugeMbps} phase={phase} settled={settled} />
             <StepPills phase={phase} />
             {controls}
@@ -405,7 +457,7 @@ export function CloudflareSpeedLayout({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid min-w-0 grid-cols-2 content-center gap-3 self-center">
           <MetricBlock
             label="Download"
             value={downloadParts?.amount ?? "—"}
@@ -452,6 +504,7 @@ export function CloudflareSpeedLayout({
         </div>
 
         {complete && <ConnectionQualitySummary metrics={m} visible />}
+        {complete && <LoadedLatencySummary metrics={m} />}
 
         <div className="panel px-4 py-3">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">

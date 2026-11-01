@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { Breadcrumbs, type Crumb } from "@/components/layout/breadcrumbs";
 import { FaqSection, type FaqItem } from "@/components/seo/faq-section";
 import { JsonLd } from "@/components/seo/json-ld";
-import { faqPageJsonLd, webApplicationJsonLd } from "@/lib/seo/structured-data";
+import { articleJsonLd, faqPageJsonLd, webApplicationJsonLd } from "@/lib/seo/structured-data";
 
 interface ToolShellProps {
   title: string;
@@ -12,6 +12,9 @@ interface ToolShellProps {
   methodology?: string;
   faqs?: FaqItem[];
   related?: Array<{ href: string; label: string }>;
+  crumbs?: Crumb[];
+  schema?: "application" | "article";
+  dateModified?: string;
   children: React.ReactNode;
 }
 
@@ -23,10 +26,16 @@ export function ToolShell({
   methodology,
   faqs = [],
   related = [],
+  crumbs,
+  schema = "application",
+  dateModified,
   children,
 }: ToolShellProps) {
+  const trail = crumbs ?? [{ label: title }];
   const structured: Record<string, unknown>[] = [
-    webApplicationJsonLd({ name: title, description, path }),
+    schema === "article"
+      ? articleJsonLd({ headline: title, description, path, dateModified })
+      : webApplicationJsonLd({ name: title, description, path }),
   ];
   const faqLd = faqPageJsonLd(faqs);
   if (faqLd) structured.push(faqLd);
@@ -34,8 +43,8 @@ export function ToolShell({
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
       <JsonLd data={structured} />
-      <Breadcrumbs items={[{ label: title }]} />
-      <header className="mb-4 max-w-3xl">
+      <Breadcrumbs items={trail} currentPath={path} className="justify-center" />
+      <header className="mx-auto mb-4 max-w-3xl text-center">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">{title}</h1>
         <p className="mt-2 text-muted-foreground">{intro}</p>
       </header>

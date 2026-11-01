@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { FaqSection } from "@/components/seo/faq-section";
 import { JsonLd } from "@/components/seo/json-ld";
+import { GuideViewed } from "@/components/seo/guide-viewed";
 import { GUIDES, getGuide } from "@/content/guides";
 import { absoluteUrl, buildMetadata } from "@/lib/seo/metadata";
 
@@ -47,6 +48,7 @@ export default async function GuidePage({
           url: absoluteUrl(`/guides/${guide.slug}`),
         }}
       />
+      <GuideViewed slug={guide.slug} />
       <Breadcrumbs items={[{ href: "/guides", label: "Guides" }, { label: guide.title }]} />
       <h1 className="text-3xl font-semibold tracking-tight text-foreground">{guide.title}</h1>
       <p className="mt-2 text-sm text-muted-foreground">Last reviewed {guide.reviewed}</p>

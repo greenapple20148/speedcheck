@@ -70,6 +70,29 @@ export function faqPageJsonLd(faqs: FaqItem[]) {
   };
 }
 
+export function articleJsonLd({
+  headline,
+  description,
+  path,
+  dateModified,
+}: {
+  headline: string;
+  description: string;
+  path: string;
+  dateModified?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline,
+    description,
+    dateModified,
+    url: absoluteUrl(path),
+    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+  };
+}
+
 export function webApplicationJsonLd({
   name,
   description,

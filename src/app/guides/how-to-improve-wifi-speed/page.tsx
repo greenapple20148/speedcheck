@@ -16,7 +16,10 @@ export const metadata: Metadata = buildMetadata({
 export default function ImproveWifiGuide() {
   return (
     <article className="mx-auto max-w-3xl px-4 py-10">
-      <Breadcrumbs items={[{ label: "How to improve Wi‑Fi speed" }]} />
+      <Breadcrumbs
+        items={[{ href: "/guides", label: "Guides" }, { label: "How to improve Wi‑Fi speed" }]}
+        currentPath="/guides/how-to-improve-wifi-speed"
+      />
       <h1 className="heading-1 text-foreground">How to Improve Wi‑Fi Speed</h1>
       <p className="mt-4 text-muted-foreground">
         Before buying new gear, confirm the problem is Wi‑Fi—not your ISP—with a{" "}
@@ -44,7 +47,15 @@ export default function ImproveWifiGuide() {
         </li>
         <li>
           <strong className="text-foreground">Add mesh nodes</strong> for multi-story homes instead of
-          cheap repeaters that halve throughput.
+          cheap repeaters that halve throughput. Plan the rooms in the{" "}
+          <Link href="/mesh-wifi" className="text-primary hover:underline">
+            mesh Wi-Fi planner
+          </Link>{" "}
+          and read{" "}
+          <Link href="/mesh-wifi/guides/mesh-vs-extender" className="text-primary hover:underline">
+            mesh versus an extender
+          </Link>{" "}
+          before you buy another box.
         </li>
       </ol>
       <AdSlot />
