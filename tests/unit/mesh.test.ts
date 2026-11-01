@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { estimateCoverage, wallLossDb } from "@/lib/mesh/coverage";
 import { bestDownloadMbps, throughputBand } from "@/lib/mesh/measurements";
+import { clientToFeet, feetPerPixel, pointInRoom, segmentsCross, snapFt } from "@/lib/mesh/geometry";
 import { suggestNodeCount } from "@/lib/mesh/nodes";
 import { placementOptions } from "@/lib/mesh/placement";
 import { emptyPlan } from "@/lib/mesh/plan";
@@ -84,6 +85,23 @@ describe("room throughput bands", () => {
     expect(throughputBand(80, 100)).toBe("fast");
     expect(throughputBand(20, 100)).toBe("slow");
     expect(bestDownloadMbps([{ downloadMbps: 10 }, { downloadMbps: null }, { downloadMbps: 40 }])).toBe(40);
+  });
+});
+
+describe("floor geometry", () => {
+  it("snaps to the grid and maps pointer position into feet", () => {
+    expect(snapFt(10.4, 40)).toBe(10);
+    expect(snapFt(-4, 40)).toBe(0);
+    expect(clientToFeet(50, 25, { left: 0, top: 0, width: 100, height: 50 }, 40, 20)).toEqual({ x: 20, y: 10 });
+    expect(feetPerPixel(40, 200)).toBeCloseTo(0.2);
+  });
+
+  it("knows when a point is inside a room and when a wall is crossed", () => {
+    const room = { id: "r", name: "Room", x: 0, y: 0, w: 10, h: 10, material: "drywall" as const, priority: false, problem: false };
+    expect(pointInRoom(room, 5, 5)).toBe(true);
+    expect(pointInRoom(room, 12, 5)).toBe(false);
+    expect(segmentsCross(0, 5, 10, 5, 5, 0, 5, 10)).toBe(true);
+    expect(segmentsCross(0, 0, 2, 0, 0, 1, 2, 1)).toBe(false);
   });
 });
 

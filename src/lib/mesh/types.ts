@@ -7,6 +7,11 @@ export type WallMaterial = "open" | "drywall" | "wood" | "brick" | "concrete" | 
 export type WifiBand = "2.4" | "5" | "6";
 export type BackhaulChoice = "unknown" | "ethernet" | "wireless-shared" | "wireless-dedicated" | "moca" | "powerline";
 
+export interface MeshPoint {
+  x: number;
+  y: number;
+}
+
 export interface MeshRoom {
   id: string;
   name: string;
@@ -17,6 +22,8 @@ export interface MeshRoom {
   material: WallMaterial;
   priority: boolean;
   problem: boolean;
+  /** When set, the room is a polygon. Older plans only have the rectangle. */
+  points?: MeshPoint[];
 }
 
 export interface MeshNode {
@@ -25,6 +32,21 @@ export interface MeshNode {
   x: number;
   y: number;
   role: "primary" | "satellite";
+  /** Planning band for this node. Omitted plans use the planner’s selected band. */
+  band?: WifiBand;
+  /** How this node links to the rest of the mesh. Omitted means wireless. */
+  link?: "wired" | "wireless";
+}
+
+export interface MeshWall {
+  id: string;
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  material: WallMaterial;
+  /** A door or opening. Openings do not add wall loss. */
+  opening: boolean;
 }
 
 export interface MeshOutlet {
@@ -51,6 +73,9 @@ export interface MeshFloor {
   rooms: MeshRoom[];
   nodes: MeshNode[];
   outlets: MeshOutlet[];
+  walls?: MeshWall[];
+  /** Local preview only. Never uploaded unless the visitor later opts into cloud sync. */
+  imageDataUrl?: string | null;
 }
 
 export interface MeshHome {
@@ -86,4 +111,6 @@ export interface CoverageCell {
   y: number;
   level: CoverageLevel;
   score: number;
+  /** False when the cell sits outside drawn rooms. Older callers can ignore it. */
+  inside?: boolean;
 }

@@ -15,6 +15,8 @@ export function emptyFloor(name = "Floor 1"): MeshFloor {
     rooms: [],
     nodes: [],
     outlets: [],
+    walls: [],
+    imageDataUrl: null,
   };
 }
 
@@ -46,6 +48,20 @@ export function emptyPlan(): MeshPlan {
     activeFloorId: floor.id,
     measurements: [],
     checkedSetup: [],
+  };
+}
+
+export function duplicateFloor(source: MeshFloor): MeshFloor {
+  return {
+    id: newId(),
+    name: `${source.name} copy`.slice(0, 40),
+    widthFt: source.widthFt,
+    heightFt: source.heightFt,
+    rooms: source.rooms.map((room) => ({ ...room, id: newId(), points: room.points?.map((point) => ({ ...point })) })),
+    nodes: source.nodes.map((node) => ({ ...node, id: newId() })),
+    outlets: source.outlets.map((outlet) => ({ ...outlet, id: newId() })),
+    walls: (source.walls ?? []).map((wall) => ({ ...wall, id: newId() })),
+    imageDataUrl: source.imageDataUrl ?? null,
   };
 }
 
