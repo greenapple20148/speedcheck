@@ -180,20 +180,6 @@ function SemiGauge({
             className={cn("gauge-arc", phase === "complete" && "is-settled")}
           />
         )}
-        {progress > 0 && (
-          <g transform={`translate(${cx} ${cy}) rotate(${progress * 180})`}>
-            <line
-              x1="-28"
-              y1="0"
-              x2="-10"
-              y2="0"
-              stroke="var(--sd-text)"
-              strokeWidth="3"
-              strokeLinecap="round"
-            />
-            <circle r="4.5" fill="var(--sd-card)" stroke="var(--sd-text)" strokeWidth="2" />
-          </g>
-        )}
       </svg>
       <div className="pointer-events-none absolute inset-x-0 top-[46%] text-center">
         {ready ? (

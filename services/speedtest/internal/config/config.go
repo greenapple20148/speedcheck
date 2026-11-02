@@ -42,7 +42,7 @@ func Load() Config {
 		ServerLongitude:     getenvOptionalFloat("SPEEDTEST_SERVER_LONGITUDE"),
 		HMACSecret:          getenv("SPEEDTEST_HMAC_SECRET", "dev-hmac-secret-change-in-production"),
 		AdminToken:          getenv("SPEEDTEST_ADMIN_TOKEN", "dev-admin-token"),
-		CORSOrigins:         splitCSV(getenv("SPEEDTEST_CORS_ORIGINS", "http://127.0.0.1:43123,http://localhost:43123")),
+		CORSOrigins:         corsOrigins(getenv("SPEEDTEST_CORS_ORIGINS", "http://127.0.0.1:43123,http://localhost:43123")),
 		MaxConcurrentTests:  getenvInt("SPEEDTEST_MAX_CONCURRENT_TESTS", 50),
 		DailyBandwidthBytes: int64(getenvInt("SPEEDTEST_DAILY_BANDWIDTH_GB", 500)) * 1024 * 1024 * 1024,
 		LightBudgetBytes:    int64(getenvInt("SPEEDTEST_PER_TEST_BUDGET_MB_LIGHT", 20)) * 1024 * 1024,
@@ -84,6 +84,34 @@ func getenvInt(key string, fallback int) int {
 		return fallback
 	}
 	return n
+}
+
+// Site origins are always allowed. A measurement host deployed with only the
+// local default still has to answer the public site's CORS preflight.
+var siteOrigins = []string{
+	"https://myspeedguage.com",
+	"https://www.myspeedguage.com",
+}
+
+func corsOrigins(raw string) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, 6)
+	for _, origin := range append(splitCSV(raw), siteOrigins...) {
+		origin = normalizeOrigin(origin)
+		if origin == "" {
+			continue
+		}
+		if _, ok := seen[origin]; ok {
+			continue
+		}
+		seen[origin] = struct{}{}
+		out = append(out, origin)
+	}
+	return out
+}
+
+func normalizeOrigin(origin string) string {
+	return strings.TrimRight(strings.TrimSpace(origin), "/")
 }
 
 func splitCSV(s string) []string {

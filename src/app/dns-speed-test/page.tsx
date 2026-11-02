@@ -16,7 +16,7 @@ export default function DnsPage() {
       title="DNS timing"
       description="Browser DNS timing when the API exposes it"
       path="/dns-speed-test"
-      intro="Browsers do not let a page time an arbitrary DNS resolver. This check reads the Resource Timing lookup interval for one same-origin request, and only when that interval is actually present."
+      intro="Browsers do not let a page time an arbitrary DNS resolver. This check reads the Resource Timing lookup for one same-origin request when that interval is present. If the browser hides it because the connection was reused, the test asks Cloudflare’s resolver for a random name and shows that response time."
       methodology="domainLookupEnd minus domainLookupStart is shown when both timestamps are positive and the difference is greater than zero. A cached name, a reused connection, or a cross-origin restriction produces an unavailable state. Total HTTP time is never labeled as DNS."
       faqs={[
         {
