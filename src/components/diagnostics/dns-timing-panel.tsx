@@ -21,6 +21,7 @@ import {
   DNS_MISSING_ENTRY_MESSAGE,
   DNS_NOT_EXPOSED_EXPLANATION,
   DNS_NOT_EXPOSED_HEADING,
+  DNS_RESOLVER_NOTE,
   DNS_TIMEOUT_MESSAGE,
   blankTimingPhases,
   connectionReuseLabel,
@@ -28,6 +29,7 @@ import {
   formatDnsHero,
   formatMeasuredDuration,
   formatNavigationTimestamp,
+  measurePublicResolverMs,
   phaseWaterfall,
   requestTimingDetail,
   runDnsTimingTest,
@@ -140,6 +142,7 @@ export function DnsTimingPanel() {
           origin: window.location.origin,
           signal: controller.signal,
           readEntries: readResourceEntries,
+          measureResolver: measurePublicResolverMs,
           fetchImpl: async (url, init) => {
             const response = await fetch(url, init);
             return {
@@ -232,7 +235,7 @@ export function DnsTimingPanel() {
                 {hero}
               </p>
               <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                {DNS_MEASURED_NOTE}
+                {showing?.dnsSource === "resolver" ? DNS_RESOLVER_NOTE : DNS_MEASURED_NOTE}
               </p>
             </>
           )}
@@ -309,7 +312,9 @@ export function DnsTimingPanel() {
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
           {runState === "running"
             ? "Waiting for this attempt."
-            : "Only phases with a positive browser interval are marked measured."}
+            : showing?.dnsSource === "resolver"
+              ? "DNS is a query from this browser to a public resolver. The other rows are this site's request."
+              : "Only phases with a positive browser interval are marked measured."}
         </p>
         <ul className="mt-3 space-y-2.5">
           {phases.map((phase) => (

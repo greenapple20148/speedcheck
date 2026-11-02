@@ -28,6 +28,8 @@ export const DNS_NOT_EXPOSED_EXPLANATION =
   "Your browser did not report a separate DNS lookup for this request. This commonly happens when DNS information is cached or an existing connection is reused.";
 export const DNS_MEASURED_NOTE =
   "This is the browser Resource Timing lookup for this request. It is not a resolver benchmark. Cache and connection reuse can hide the lookup on another run.";
+export const DNS_RESOLVER_NOTE =
+  "The browser reused its connection to this site, so it did not report that lookup. This time is a DNS-over-HTTPS query from this browser to Cloudflare for a random name.";
 export const DNS_FAILURE_MESSAGE = "The timing request failed. No DNS time is shown.";
 export const DNS_TIMEOUT_MESSAGE = "The timing request timed out. No DNS time is shown.";
 export const DNS_MISSING_ENTRY_MESSAGE =
@@ -102,6 +104,8 @@ export interface DnsTestResult {
   status: DnsTestStatus;
   probeId: string;
   dnsMs: number | null;
+  /** Where dnsMs came from. Resolver is used only when the browser hid the lookup. */
+  dnsSource: "browser" | "resolver" | null;
   phases: TimingPhase[];
   connectionReuse: ConnectionReuse | null;
   diagnostics: DnsDiagnostics | null;
@@ -131,6 +135,8 @@ export interface DnsTimingDependencies {
   timeoutMs?: number;
   sleep?: (ms: number) => Promise<void>;
   signal?: AbortSignal;
+  /** Used when Resource Timing has no positive lookup, usually because the connection was reused. */
+  measureResolver?: (signal: AbortSignal) => Promise<number | null>;
 }
 
 interface PhaseInterval {
@@ -346,11 +352,61 @@ export function emptyDnsTestResult(status: DnsTestStatus, probeId = ""): DnsTest
     status,
     probeId,
     dnsMs: null,
+    dnsSource: null,
     phases: blankTimingPhases(),
     connectionReuse: null,
     diagnostics: null,
     phasesOverlap: false,
   };
+}
+
+const PUBLIC_RESOLVER_URL = "https://cloudflare-dns.com/dns-query";
+
+/** A resolver round trip for a random name. Used when the browser hides the site lookup. */
+export async function measurePublicResolverMs(
+  signal: AbortSignal,
+  deps?: {
+    fetchImpl?: typeof fetch;
+    now?: () => number;
+    createName?: () => string;
+  },
+): Promise<number | null> {
+  if (signal.aborted) return null;
+  const fetchImpl = deps?.fetchImpl ?? fetch;
+  const now = deps?.now ?? (() => performance.now());
+  const name = deps?.createName?.() ?? `${crypto.randomUUID()}.example`;
+  const started = now();
+  try {
+    const response = await fetchImpl(
+      `${PUBLIC_RESOLVER_URL}?name=${encodeURIComponent(name)}&type=A`,
+      {
+        method: "GET",
+        cache: "no-store",
+        signal,
+        headers: { Accept: "application/dns-json" },
+      },
+    );
+    if (!response.ok) return null;
+    await response.text();
+  } catch {
+    return null;
+  }
+  const elapsed = now() - started;
+  if (!Number.isFinite(elapsed) || elapsed <= 0) return null;
+  return elapsed;
+}
+
+async function measureResolverLookup(
+  measure: (signal: AbortSignal) => Promise<number | null>,
+  signal: AbortSignal,
+): Promise<number | null> {
+  try {
+    const ms = await measure(signal);
+    if (ms == null || !Number.isFinite(ms) || ms <= 0) return null;
+    return ms;
+  } catch {
+    return null;
+  }
 }
 
 export async function runDnsTimingTest(
@@ -408,10 +464,30 @@ export async function runDnsTimingTest(
     if (!match) return emptyDnsTestResult("missing-entry", probeId);
 
     const analysis = analyzeResourceTiming(match, deps.origin);
+    if (analysis.dnsMs == null && deps.measureResolver) {
+      const resolverMs = await measureResolverLookup(deps.measureResolver, controller.signal);
+      if (timedOut) return emptyDnsTestResult("timeout", probeId);
+      if (deps.signal?.aborted) return emptyDnsTestResult("cancelled", probeId);
+      if (resolverMs != null) {
+        return {
+          status: "measured",
+          probeId,
+          dnsMs: resolverMs,
+          dnsSource: "resolver",
+          phases: analysis.phases.map((phase) =>
+            phase.id === "dns" ? { ...phase, durationMs: resolverMs } : phase,
+          ),
+          connectionReuse: analysis.connectionReuse,
+          diagnostics: analysis.diagnostics,
+          phasesOverlap: analysis.phasesOverlap,
+        };
+      }
+    }
     return {
       status: analysis.dnsMs == null ? "unexposed" : "measured",
       probeId,
       dnsMs: analysis.dnsMs,
+      dnsSource: analysis.dnsMs == null ? null : "browser",
       phases: analysis.phases,
       connectionReuse: analysis.connectionReuse,
       diagnostics: analysis.diagnostics,

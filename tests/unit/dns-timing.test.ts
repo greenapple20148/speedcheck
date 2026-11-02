@@ -16,6 +16,7 @@ import {
   domainLookupMs,
   formatDnsHero,
   formatMeasuredDuration,
+  measurePublicResolverMs,
   originOnly,
   phaseWaterfall,
   requestTimingDetail,
@@ -125,6 +126,7 @@ describe("cached and unrelated timings", () => {
     expect(result.dnsMs).toBeNull();
     expect(result.dnsMs).not.toBe(0);
     expect(result.connectionReuse).toBe("confirmed");
+    expect(result.dnsSource).toBeNull();
     expect(requestTimingDetail(result.phases)).toBe("Available separately");
     expect(result.phases.find((phase) => phase.id === "response")?.durationMs).toBe(10);
     expect(JSON.stringify(result)).not.toMatch(/"dnsMs":0/);
@@ -193,6 +195,76 @@ describe("cached and unrelated timings", () => {
   });
 });
 
+describe("resolver fallback", () => {
+  it("uses a resolver query when the browser hides the lookup", async () => {
+    const cached = entry({
+      fetchStart: 50,
+      domainLookupStart: 0,
+      domainLookupEnd: 0,
+      connectStart: 0,
+      connectEnd: 0,
+      secureConnectionStart: 0,
+      requestStart: 51,
+      responseStart: 70,
+      responseEnd: 80,
+    });
+    const result = await runDnsTimingTest(
+      deps({
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          text: async () => '{"ok":true}',
+        }),
+        readEntries: () => [cached],
+        measureResolver: async () => 21.5,
+      }),
+    );
+    expect(result.status).toBe("measured");
+    expect(result.dnsSource).toBe("resolver");
+    expect(result.dnsMs).toBe(21.5);
+    expect(result.phases.find((phase) => phase.id === "dns")?.durationMs).toBe(21.5);
+    expect(result.phases.find((phase) => phase.id === "response")?.durationMs).toBe(10);
+    expect(result.diagnostics?.validDnsInterval).toBe(false);
+  });
+
+  it("stays unexposed when the resolver query fails", async () => {
+    const cached = entry({
+      domainLookupStart: 0,
+      domainLookupEnd: 0,
+      connectStart: 0,
+      connectEnd: 0,
+      secureConnectionStart: 0,
+    });
+    const result = await runDnsTimingTest(
+      deps({
+        fetchImpl: async () => ({
+          ok: true,
+          status: 200,
+          text: async () => '{"ok":true}',
+        }),
+        readEntries: () => [cached],
+        measureResolver: async () => null,
+      }),
+    );
+    expect(result.status).toBe("unexposed");
+    expect(result.dnsMs).toBeNull();
+  });
+
+  it("times a successful resolver response", async () => {
+    let clock = 0;
+    const ms = await measurePublicResolverMs(new AbortController().signal, {
+      now: () => (clock += 12),
+      createName: () => "11111111-1111-4111-8111-111111111111.example",
+      fetchImpl: async (url) => {
+        expect(String(url)).toContain("name=11111111-1111-4111-8111-111111111111.example");
+        expect(String(url)).not.toContain("myspeedguage");
+        return new Response('{"Status":3}', { status: 200 });
+      },
+    });
+    expect(ms).toBe(12);
+  });
+});
+
 describe("request correlation", () => {
   it("returns a measured lookup only for the matching probe entry", async () => {
     let requested = "";
@@ -208,6 +280,7 @@ describe("request correlation", () => {
     );
     expect(requested).toBe(`/api/diagnostics/dns-probe?probe=${PROBE}`);
     expect(result.status).toBe("measured");
+    expect(result.dnsSource).toBe("browser");
     expect(result.dnsMs).toBe(12);
     expect(formatDnsHero(result.dnsMs)).toBe("12.0 ms");
   });
