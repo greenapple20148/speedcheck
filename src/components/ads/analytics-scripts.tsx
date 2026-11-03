@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Script from "next/script";
 import { adsActive } from "@/lib/ads/config";
+import { gaMeasurementId } from "@/lib/analytics/config";
 import { CONSENT_STORAGE_KEY } from "@/components/ads/consent-banner";
 
 function consentAccepted(): boolean {
@@ -14,7 +15,7 @@ function consentAccepted(): boolean {
 }
 
 export function AnalyticsScripts() {
-  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const gaId = gaMeasurementId();
   const adsClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
   const adsEnabled = adsActive();
   const [allowed, setAllowed] = useState(false);

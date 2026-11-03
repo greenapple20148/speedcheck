@@ -21,7 +21,10 @@ export default function PrivacyPage() {
       <ul>
         <li>Speed test metrics (download, upload, ping, jitter, mode, server)</li>
         <li>Optional ISP/city hints from edge headers or short-lived lookups</li>
-        <li>Anonymous product analytics events when enabled</li>
+        <li>
+          Google Analytics page views and product events after you accept the cookie banner.
+          Speed-test throughput numbers are not included in those events.
+        </li>
       </ul>
       <h2>What we do not store by default</h2>
       <ul>
@@ -30,6 +33,12 @@ export default function PrivacyPage() {
       </ul>
       <h2>Sharing</h2>
       <p>Result pages are private unless you explicitly opt in to create a public share link.</p>
+      <h2>Analytics</h2>
+      <p>
+        Accepting the cookie banner loads Google Analytics (gtag.js). Rejecting it keeps that
+        tag from loading. You can clear the saved choice by removing this site&apos;s stored
+        consent in your browser.
+      </p>
       <h2>Ads and affiliates</h2>
       <p>
         Advertising and affiliate features are disabled unless configured. Third-party ad networks
