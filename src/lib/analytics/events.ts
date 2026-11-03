@@ -1,3 +1,5 @@
+import { gaMeasurementId } from "@/lib/analytics/config";
+
 type EventProps = Record<string, string | number | boolean | null | undefined>;
 
 const MEASUREMENT_KEYS = new Set([
@@ -32,7 +34,7 @@ export function trackEvent(name: string, props: EventProps = {}) {
   window.speedcheckAnalytics = window.speedcheckAnalytics || [];
   window.speedcheckAnalytics.push({ name, props: sanitized, ts: Date.now() });
 
-  if (typeof window.gtag === "function" && process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID) {
+  if (typeof window.gtag === "function" && gaMeasurementId()) {
     window.gtag("event", name, sanitized);
   }
 

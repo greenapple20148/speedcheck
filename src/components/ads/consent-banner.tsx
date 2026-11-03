@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { adsRequested } from "@/lib/ads/config";
+import { gaMeasurementId } from "@/lib/analytics/config";
 
 export const CONSENT_STORAGE_KEY = "speedcheck_consent_v1";
 
@@ -13,7 +14,7 @@ export const CONSENT_STORAGE_KEY = "speedcheck_consent_v1";
  */
 export function ConsentBanner() {
   const adsOn = adsRequested();
-  const analyticsOn = Boolean(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID);
+  const analyticsOn = Boolean(gaMeasurementId());
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
