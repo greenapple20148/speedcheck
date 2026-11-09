@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  async redirects() {
+    return [
+      {
+        source: "/tools/mbps-to-mbs",
+        destination: "/mbps-to-mbs",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
