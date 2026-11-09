@@ -148,6 +148,61 @@ export default function ResultsHistoryPage() {
           </>
         )}
       </div>
+
+      {/* Educational Guide for Search Engines and Users */}
+      <section className="mt-16 border-t border-[var(--card-border)] pt-12" aria-labelledby="history-guide-heading">
+        <h2 id="history-guide-heading" className="text-2xl font-bold tracking-tight text-foreground">
+          Why Tracking Your Speed Test History Matters
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          A single speed test is just a snapshot. Tracking your internet performance over time helps you verify your plan, diagnose intermittent issues, and hold your service provider accountable.
+        </p>
+
+        <div className="mt-8 grid gap-6 sm:grid-cols-3">
+          <div className="rounded-2xl border border-[var(--card-border)] bg-card p-5">
+            <h3 className="font-semibold text-foreground">Prove ISP Throttling</h3>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Documenting consistent speed drops during evening peak hours (7 PM – 11 PM) gives you verifiable data to share with ISP customer service or tier-2 support technicians.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[var(--card-border)] bg-card p-5">
+            <h3 className="font-semibold text-foreground">Isolate Wi-Fi vs Ethernet</h3>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Tagging your runs as wired or wireless lets you see exactly how much throughput and latency you lose across rooms and walls compared to a direct router connection.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[var(--card-border)] bg-card p-5">
+            <h3 className="font-semibold text-foreground">Validate Router Upgrades</h3>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              Track results before and after rebooting modems, installing mesh nodes, or updating firmware to confirm whether changes actually improved your connection quality.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-12 rounded-2xl border border-[var(--card-border)] bg-card p-6">
+          <h3 className="text-lg font-semibold text-foreground">Frequently Asked Questions</h3>
+          <div className="mt-6 divide-y divide-[var(--card-border)]">
+            <div className="py-4">
+              <h4 className="font-medium text-foreground">How is my speed test history stored?</h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your speed test history is stored securely in your web browser&apos;s local storage (<code className="rounded bg-muted px-1.5 py-0.5 text-xs">localStorage</code>). We do not save your IP address or sell your test logs.
+              </p>
+            </div>
+            <div className="py-4">
+              <h4 className="font-medium text-foreground">Why are my evening speeds lower than morning speeds?</h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Cable internet operates on neighborhood shared nodes. When neighbors stream 4K movies and game simultaneously in the evening, node congestion can reduce individual bandwidth by 20% to 50%.
+              </p>
+            </div>
+            <div className="py-4">
+              <h4 className="font-medium text-foreground">How do I export or back up my saved results?</h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                You can copy or screenshot your results table anytime. If you clear your browser cookies and site storage, local tests will be reset.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
